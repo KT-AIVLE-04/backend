@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.regex.Pattern;
 
 @Service
-public class UserPasswordPolicyService {
+public class UserPasswordPolicy {
 
     // 허용 특수문자 집합 ( () < > “ ‘ ; 는 제외 )
     private static final String SPECIAL_CHARS = "!@#$%^&*_-+=|\\/?.,:[]{}";
