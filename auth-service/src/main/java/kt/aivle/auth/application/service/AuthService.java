@@ -71,7 +71,6 @@ public class AuthService implements AuthUseCase {
         // 3. 비밀번호 검증
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {
             userLoginFailService.increaseFailCount(user);
-            userRepositoryPort.save(user);
             throw new BusinessException(NOT_MATCHES_PASSWORD);
         }
 
