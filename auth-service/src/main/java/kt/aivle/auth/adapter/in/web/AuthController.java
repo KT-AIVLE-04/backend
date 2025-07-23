@@ -1,6 +1,7 @@
 package kt.aivle.auth.adapter.in.web;
 
 import jakarta.validation.Valid;
+import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.adapter.in.web.dto.LoginRequest;
 import kt.aivle.auth.adapter.in.web.dto.SignUpRequest;
 import kt.aivle.auth.application.port.in.AuthUseCase;
@@ -25,14 +26,14 @@ public class AuthController {
     private final ResponseUtils responseUtils;
 
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<Void>> signUp(@Valid @RequestBody SignUpRequest request) {
-        authUseCase.singUp(request.toCommand());
-        return responseUtils.build(CREATED);
+    public ResponseEntity<ApiResponse<AuthResponse>> signUp(@Valid @RequestBody SignUpRequest request) {
+        AuthResponse response = authUseCase.signUp(request.toCommand());
+        return responseUtils.build(CREATED, response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequest request) {
-        authUseCase.login(request.toCommand());
-        return responseUtils.build(OK);
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authUseCase.login(request.toCommand());
+        return responseUtils.build(OK, response);
     }
 }

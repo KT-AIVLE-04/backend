@@ -1,5 +1,6 @@
 package kt.aivle.auth.application.service;
 
+import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.in.AuthUseCase;
 import kt.aivle.auth.application.port.in.command.LoginCommand;
 import kt.aivle.auth.application.port.in.command.SignUpCommand;
@@ -7,6 +8,8 @@ import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.auth.domain.service.UserPasswordPolicy;
 import kt.aivle.common.exception.BusinessException;
+import kt.aivle.common.jwt.JwtDto;
+import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import static kt.aivle.auth.exception.AuthErrorCode.*;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class AuthService implements AuthUseCase {
 
@@ -23,9 +25,11 @@ public class AuthService implements AuthUseCase {
     private final UserLoginFailService userLoginFailService;
     private final UserPasswordPolicy passwordPolicyService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
 
+    @Transactional
     @Override
-    public void singUp(SignUpCommand command) {
+    public AuthResponse signUp(SignUpCommand command) {
         // 1. 이메일 중복 체크
         if (userRepositoryPort.existsByEmail(command.email())) {
             throw new BusinessException(DUPLICATE_EMAIL);
@@ -48,11 +52,14 @@ public class AuthService implements AuthUseCase {
                 .phoneNumber(command.phoneNumber())
                 .build();
 
-        userRepositoryPort.save(user);
+        User savedUser = userRepositoryPort.save(user);
+
+        return generateAuthResponse(savedUser);
     }
 
+    @Transactional
     @Override
-    public void login(LoginCommand command) {
+    public AuthResponse login(LoginCommand command) {
         // 1. 이메일로 사용자 조회
         User user = userRepositoryPort.findByEmail(command.email());
 
@@ -70,5 +77,15 @@ public class AuthService implements AuthUseCase {
 
         // 4. 로그인 성공 시 실패 횟수 초기화
         user.resetLoginFailCount();
+
+        return generateAuthResponse(user);
+    }
+
+    private AuthResponse generateAuthResponse(User user) {
+        JwtDto jwt = jwtUtils.generateAccessToken(user.getId(), user.getEmail());
+        return AuthResponse.builder()
+                .accessToken(jwt.accessToken())
+                .accessTokenExpiration(jwt.accessTokenExpiration())
+                .build();
     }
 }
