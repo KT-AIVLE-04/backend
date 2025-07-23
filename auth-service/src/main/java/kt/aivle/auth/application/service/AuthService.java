@@ -1,0 +1,51 @@
+package kt.aivle.auth.application.service;
+
+import kt.aivle.auth.application.port.in.AuthUseCase;
+import kt.aivle.auth.application.port.in.command.SignUpCommand;
+import kt.aivle.auth.application.port.out.UserRepositoryPort;
+import kt.aivle.auth.domain.model.User;
+import kt.aivle.auth.domain.service.UserPasswordPolicyService;
+import kt.aivle.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import static kt.aivle.auth.exception.AuthErrorCode.DUPLICATE_EMAIL;
+import static kt.aivle.auth.exception.AuthErrorCode.INVALID_PASSWORD_POLICY;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class AuthService implements AuthUseCase {
+
+    private final UserRepositoryPort userRepositoryPort;
+    private final UserPasswordPolicyService passwordPolicyService;
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public void singUp(SignUpCommand command) {
+        // 1. 이메일 중복 체크
+        if (userRepositoryPort.existsByEmail(command.email())) {
+            throw new BusinessException(DUPLICATE_EMAIL);
+        }
+
+        // 2. 비밀번호 복잡도/정책 검증
+        if (!passwordPolicyService.isValid(command.email(), command.password())) {
+            throw new BusinessException(INVALID_PASSWORD_POLICY); //
+        }
+
+        // 3. 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(command.password());
+
+        // 4. User 생성
+        User user = User.builder()
+                .email(command.email())
+                .password(encodedPassword)
+                .name(command.name())
+                .phoneNumber(command.phoneNumber())
+                .build();
+
+        userRepositoryPort.save(user);
+    }
+}
