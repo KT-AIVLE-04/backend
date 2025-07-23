@@ -1,18 +1,18 @@
 package kt.aivle.auth.application.service;
 
 import kt.aivle.auth.application.port.in.AuthUseCase;
+import kt.aivle.auth.application.port.in.command.LoginCommand;
 import kt.aivle.auth.application.port.in.command.SignUpCommand;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.User;
-import kt.aivle.auth.domain.service.UserPasswordPolicyService;
+import kt.aivle.auth.domain.service.UserPasswordPolicy;
 import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static kt.aivle.auth.exception.AuthErrorCode.DUPLICATE_EMAIL;
-import static kt.aivle.auth.exception.AuthErrorCode.INVALID_PASSWORD_POLICY;
+import static kt.aivle.auth.exception.AuthErrorCode.*;
 
 @Service
 @Transactional
@@ -20,7 +20,8 @@ import static kt.aivle.auth.exception.AuthErrorCode.INVALID_PASSWORD_POLICY;
 public class AuthService implements AuthUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
-    private final UserPasswordPolicyService passwordPolicyService;
+    private final UserLoginFailService userLoginFailService;
+    private final UserPasswordPolicy passwordPolicyService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -32,7 +33,7 @@ public class AuthService implements AuthUseCase {
 
         // 2. 비밀번호 복잡도/정책 검증
         if (!passwordPolicyService.isValid(command.email(), command.password())) {
-            throw new BusinessException(INVALID_PASSWORD_POLICY); //
+            throw new BusinessException(INVALID_PASSWORD_POLICY);
         }
 
         // 3. 비밀번호 암호화
@@ -40,6 +41,7 @@ public class AuthService implements AuthUseCase {
 
         // 4. User 생성
         User user = User.builder()
+                .provider("local")
                 .email(command.email())
                 .password(encodedPassword)
                 .name(command.name())
@@ -47,5 +49,26 @@ public class AuthService implements AuthUseCase {
                 .build();
 
         userRepositoryPort.save(user);
+    }
+
+    @Override
+    public void login(LoginCommand command) {
+        // 1. 이메일로 사용자 조회
+        User user = userRepositoryPort.findByEmail(command.email());
+
+        // 2. 계정이 잠금 되어 있는 경우
+        if (user.isLocked()) {
+            throw new BusinessException(UNAUTHORIZED_EMAIL); // 계정이 잠긴 경우
+        }
+
+        // 3. 비밀번호 검증
+        if (!passwordEncoder.matches(command.password(), user.getPassword())) {
+            userLoginFailService.increaseFailCount(user);
+            userRepositoryPort.save(user);
+            throw new BusinessException(NOT_MATCHES_PASSWORD);
+        }
+
+        // 4. 로그인 성공 시 실패 횟수 초기화
+        user.resetLoginFailCount();
     }
 }
