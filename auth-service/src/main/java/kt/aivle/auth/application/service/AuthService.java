@@ -1,10 +1,13 @@
 package kt.aivle.auth.application.service;
 
+import io.jsonwebtoken.Claims;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.in.AuthUseCase;
 import kt.aivle.auth.application.port.in.command.LoginCommand;
 import kt.aivle.auth.application.port.in.command.SignUpCommand;
+import kt.aivle.auth.application.port.in.command.TokenCommand;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
+import kt.aivle.auth.application.port.out.TokenBlacklistRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.auth.domain.service.UserPasswordPolicy;
@@ -26,6 +29,7 @@ public class AuthService implements AuthUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
+    private final TokenBlacklistRepositoryPort tokenBlacklistRepositoryPort;
     private final UserLoginFailService userLoginFailService;
     private final UserPasswordPolicy passwordPolicyService;
     private final PasswordEncoder passwordEncoder;
@@ -87,18 +91,37 @@ public class AuthService implements AuthUseCase {
 
     @Transactional
     @Override
-    public AuthResponse refresh(String refreshToken) {
-        // 1. refreshToken 토큰 유효성 검사
-        Long userId = refreshTokenRepositoryPort.findUserIdByToken(refreshToken)
+    public AuthResponse refresh(TokenCommand command) {
+        // 1. refreshToken 토큰 검사
+        Long userId = refreshTokenRepositoryPort.findUserIdByToken(command.refreshToken())
                 .orElseThrow(() -> new BusinessException(INVALID_REFRESH_TOKEN));
 
-        // 2. 토큰 생성
+        // 2. 엑세스 토큰 서명 검증만 + 만료 무시
+        Claims claims = jwtUtils.parseClaimsAllowExpired(command.accessToken());
+
+        // 3. 만료 전이면 블랙리스트에 추가
+        blacklistIfNotExpired(claims);
+
+        // 4. 토큰 생성
         AuthResponse authResponse = generateAuthResponse(userId);
 
-        // 3. 기존 refreshToken 삭제
-        refreshTokenRepositoryPort.delete(refreshToken);
+        // 5. 기존 refreshToken 삭제
+        refreshTokenRepositoryPort.delete(command.refreshToken());
 
         return authResponse;
+    }
+
+    @Transactional
+    @Override
+    public void logout(TokenCommand command) {
+        // 1. 엑세스 토큰 서명 검증만 + 만료 무시
+        Claims claims = jwtUtils.parseClaimsAllowExpired(command.accessToken());
+
+        // 2. 만료 전이면 블랙리스트에 추가
+        blacklistIfNotExpired(claims);
+
+        // 3. refreshToken 삭제
+        refreshTokenRepositoryPort.delete(command.refreshToken());
     }
 
     private AuthResponse generateAuthResponse(Long userId) {
@@ -123,4 +146,11 @@ public class AuthService implements AuthUseCase {
                 .build();
     }
 
+    private void blacklistIfNotExpired(Claims claims) {
+        if (!jwtUtils.isExpired(claims)) {
+            String jti = jwtUtils.getJti(claims);
+            long ttl = jwtUtils.getExpiration(claims) - System.currentTimeMillis();
+            tokenBlacklistRepositoryPort.addAccessTokenToBlacklist(jti, Math.max(ttl, 0));
+        }
+    }
 }

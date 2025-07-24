@@ -5,14 +5,14 @@ import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.adapter.in.web.dto.LoginRequest;
 import kt.aivle.auth.adapter.in.web.dto.SignUpRequest;
 import kt.aivle.auth.application.port.in.AuthUseCase;
+import kt.aivle.auth.application.port.in.command.TokenCommand;
 import kt.aivle.common.response.ApiResponse;
 import kt.aivle.common.response.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static kt.aivle.common.code.CommonResponseCode.CREATED;
-import static kt.aivle.common.code.CommonResponseCode.OK;
+import static kt.aivle.common.code.CommonResponseCode.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,9 +35,22 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@RequestHeader("Authorization") String authorizationHeader) {
-        String refreshToken = authorizationHeader.replaceFirst("^Bearer ", "");
-        AuthResponse response = authUseCase.refresh(refreshToken);
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            @RequestHeader("Authorization") String accessToken,
+            @RequestHeader("X-Refresh-Token") String refreshToken
+    ) {
+        accessToken = accessToken.replace("Bearer ", "");
+        AuthResponse response = authUseCase.refresh(new TokenCommand(accessToken, refreshToken));
         return responseUtils.build(OK, response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader("Authorization") String accessToken,
+            @RequestHeader("X-Refresh-Token") String refreshToken
+    ) {
+        accessToken = accessToken.replace("Bearer ", "");
+        authUseCase.logout(new TokenCommand(accessToken, refreshToken));
+        return responseUtils.build(NO_CONTENT, null);
     }
 }
