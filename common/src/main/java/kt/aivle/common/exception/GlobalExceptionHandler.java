@@ -23,8 +23,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-        log.error("서버 예외 발생: {}", e.getMessage(), e); // 스택트레이스 포함 로깅
+        log.error("서버 예외 발생: {}", e.getMessage(), e);
         return responseUtils.build(INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(InfraException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInfraException(InfraException e) {
+        log.error("인프라 예외 발생: {}", e.toString(), e);
+        return responseUtils.build(e.getCode());
     }
 
     @ExceptionHandler(BusinessException.class)
