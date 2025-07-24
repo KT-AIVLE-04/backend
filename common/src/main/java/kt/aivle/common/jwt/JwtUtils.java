@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 
 import static kt.aivle.common.code.CommonResponseCode.INVALID_TOKEN;
 
@@ -34,10 +35,12 @@ public class JwtUtils {
     public JwtDto generateAccessToken(Long userId, String email) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
+        String jti = UUID.randomUUID().toString();
 
         String token = Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("email", email)
+                .setId(jti)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -46,20 +49,7 @@ public class JwtUtils {
         return new JwtDto(token, expiry.getTime());
     }
 
-    public void validateToken(String token) {
-        try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
-        } catch (ExpiredJwtException e) {
-            throw new BusinessException(INVALID_TOKEN, "토큰이 만료되었습니다.");
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new BusinessException(INVALID_TOKEN, "유효하지 않은 토큰: " + e.getMessage());
-        }
-    }
-
-    private Claims parseClaims(String token) {
+    public Claims parseClaimsAllowExpired(String token) {
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(key)
@@ -68,6 +58,27 @@ public class JwtUtils {
                     .getBody();
         } catch (ExpiredJwtException e) {
             return e.getClaims();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new BusinessException(INVALID_TOKEN, "유효하지 않은 토큰입니다.");
         }
+    }
+
+    public void validateToken(String token) {
+        Claims claims = parseClaimsAllowExpired(token);
+        if (claims.getExpiration().getTime() < System.currentTimeMillis()) {
+            throw new BusinessException(INVALID_TOKEN, "토큰이 만료되었습니다.");
+        }
+    }
+
+    public boolean isExpired(Claims claims) {
+        return claims.getExpiration().getTime() <= System.currentTimeMillis();
+    }
+
+    public String getJti(Claims claims) {
+        return claims.getId();
+    }
+
+    public long getExpiration(Claims claims) {
+        return claims.getExpiration().getTime();
     }
 }
