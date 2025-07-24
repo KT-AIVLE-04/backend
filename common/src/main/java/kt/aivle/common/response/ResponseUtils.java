@@ -28,5 +28,3 @@ public class ResponseUtils {
         return build(code, (Void) null);
     }
 }
-
-

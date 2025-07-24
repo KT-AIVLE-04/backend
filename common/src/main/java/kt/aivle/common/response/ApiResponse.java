@@ -27,5 +27,3 @@ public record ApiResponse<T>(
         return new ApiResponse<>(code.isSuccess(), code.getMessage(), result, errors);
     }
 }
-
-
