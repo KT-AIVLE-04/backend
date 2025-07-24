@@ -9,10 +9,7 @@ import kt.aivle.common.response.ApiResponse;
 import kt.aivle.common.response.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static kt.aivle.common.code.CommonResponseCode.CREATED;
 import static kt.aivle.common.code.CommonResponseCode.OK;
@@ -34,6 +31,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authUseCase.login(request.toCommand());
+        return responseUtils.build(OK, response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@RequestHeader("Authorization") String authorizationHeader) {
+        String refreshToken = authorizationHeader.replaceFirst("^Bearer ", "");
+        AuthResponse response = authUseCase.refresh(refreshToken);
         return responseUtils.build(OK, response);
     }
 }

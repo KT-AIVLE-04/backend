@@ -4,6 +4,7 @@ import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.in.AuthUseCase;
 import kt.aivle.auth.application.port.in.command.LoginCommand;
 import kt.aivle.auth.application.port.in.command.SignUpCommand;
+import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.auth.domain.service.UserPasswordPolicy;
@@ -15,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import static kt.aivle.auth.exception.AuthErrorCode.*;
 
 @Service
@@ -22,10 +25,13 @@ import static kt.aivle.auth.exception.AuthErrorCode.*;
 public class AuthService implements AuthUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
+    private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
     private final UserLoginFailService userLoginFailService;
     private final UserPasswordPolicy passwordPolicyService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+
+    private static final long REFRESH_TOKEN_EXPIRE_MS = 14L * 24 * 60 * 60 * 1000;
 
     @Transactional
     @Override
@@ -54,37 +60,67 @@ public class AuthService implements AuthUseCase {
 
         User savedUser = userRepositoryPort.save(user);
 
-        return generateAuthResponse(savedUser);
+        return generateAuthResponse(savedUser.getId());
     }
 
     @Transactional
     @Override
     public AuthResponse login(LoginCommand command) {
         // 1. 이메일로 사용자 조회
-        User user = userRepositoryPort.findByEmail(command.email());
+        User user = userRepositoryPort.findByEmail(command.email())
+                .orElseThrow(() -> new BusinessException(NOT_FOUND_EMAIL));
 
-        // 2. 계정이 잠금 되어 있는 경우
-        if (user.isLocked()) {
-            throw new BusinessException(UNAUTHORIZED_EMAIL); // 계정이 잠긴 경우
-        }
-
-        // 3. 비밀번호 검증
+        // 2. 비밀번호 검증
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {
             userLoginFailService.increaseFailCount(user);
             throw new BusinessException(NOT_MATCHES_PASSWORD);
         }
 
+        // 3. 토큰 생성
+        AuthResponse authResponse = generateAuthResponse(user.getId());
+
         // 4. 로그인 성공 시 실패 횟수 초기화
         user.resetLoginFailCount();
 
-        return generateAuthResponse(user);
+        return authResponse;
     }
 
-    private AuthResponse generateAuthResponse(User user) {
-        JwtDto jwt = jwtUtils.generateAccessToken(user.getId(), user.getEmail());
+    @Transactional
+    @Override
+    public AuthResponse refresh(String refreshToken) {
+        // 1. refreshToken 토큰 유효성 검사
+        Long userId = refreshTokenRepositoryPort.findUserIdByToken(refreshToken)
+                .orElseThrow(() -> new BusinessException(INVALID_REFRESH_TOKEN));
+
+        // 2. 토큰 생성
+        AuthResponse authResponse = generateAuthResponse(userId);
+
+        // 3. 기존 refreshToken 삭제
+        refreshTokenRepositoryPort.delete(refreshToken);
+
+        return authResponse;
+    }
+
+    private AuthResponse generateAuthResponse(Long userId) {
+        User user = userRepositoryPort.findById(userId)
+                .orElseThrow(() -> new BusinessException(NOT_FOUND_USER));
+
+        if (user.isLocked()) {
+            throw new BusinessException(UNAUTHORIZED_EMAIL);
+        }
+
+        JwtDto jwt = jwtUtils.generateAccessToken(userId, user.getEmail());
+
+        String refreshToken = UUID.randomUUID().toString();
+        refreshTokenRepositoryPort.save(userId, refreshToken, REFRESH_TOKEN_EXPIRE_MS); // 14일 만료
+
         return AuthResponse.builder()
+                .type("Bearer")
                 .accessToken(jwt.accessToken())
                 .accessTokenExpiration(jwt.accessTokenExpiration())
+                .refreshToken(refreshToken)
+                .refreshTokenExpiration(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRE_MS)
                 .build();
     }
+
 }

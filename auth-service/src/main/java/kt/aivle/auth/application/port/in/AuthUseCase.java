@@ -8,4 +8,6 @@ public interface AuthUseCase {
     AuthResponse signUp(SignUpCommand command);
 
     AuthResponse login(LoginCommand command);
+
+    AuthResponse refresh(String refreshToken);
 }
