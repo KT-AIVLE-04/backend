@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static kt.aivle.auth.exception.AuthErrorCode.*;
 
@@ -35,7 +36,7 @@ public class AuthService implements AuthUseCase {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
-    private static final long REFRESH_TOKEN_EXPIRE_MS = 14L * 24 * 60 * 60 * 1000;
+    private static final long REFRESH_TOKEN_EXPIRE_MS = TimeUnit.DAYS.toMillis(14);
 
     @Transactional
     @Override

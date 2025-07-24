@@ -77,6 +77,7 @@ public class JwtUtils {
     public String getJti(Claims claims) {
         return claims.getId();
     }
+
     public long getExpiration(Claims claims) {
         return claims.getExpiration().getTime();
     }
