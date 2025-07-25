@@ -12,7 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static kt.aivle.common.code.CommonResponseCode.*;
+import static kt.aivle.common.code.CommonResponseCode.CREATED;
+import static kt.aivle.common.code.CommonResponseCode.OK;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,6 +52,6 @@ public class AuthController {
     ) {
         accessToken = accessToken.replace("Bearer ", "");
         authUseCase.logout(new TokenCommand(accessToken, refreshToken));
-        return responseUtils.build(NO_CONTENT, null);
+        return responseUtils.build(OK, null);
     }
 }
