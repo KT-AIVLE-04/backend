@@ -16,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import static kt.aivle.gateway.config.AuthExcludePaths.EXCLUDE_PATHS;
+
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
@@ -72,10 +74,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     // 인증 예외 경로 (추가 필요하면 여기에)
     private boolean isAuthExcludedPath(String path) {
-        return path.startsWith("/api/auth/login") ||
-                path.startsWith("/api/auth/signup") ||
-                path.startsWith("/api/auth/refresh") ||
-                path.startsWith("/api/auth/logout");
+        return EXCLUDE_PATHS.stream().anyMatch(path::startsWith);
     }
 
     @Override

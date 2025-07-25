@@ -15,6 +15,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import reactor.core.publisher.Mono;
 
+import static kt.aivle.gateway.config.AuthExcludePaths.EXCLUDE_PATHS;
+
 @Configuration
 @EnableWebFluxSecurity
 @RequiredArgsConstructor
@@ -27,12 +29,7 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers(
-                                "/api/auth/login",
-                                "/api/auth/signup",
-                                "/api/auth/refresh",
-                                "/api/auth/logout"
-                        ).permitAll()
+                        .pathMatchers(EXCLUDE_PATHS.toArray(new String[0])).permitAll()
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(e -> e
