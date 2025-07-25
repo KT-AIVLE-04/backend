@@ -59,15 +59,17 @@ public class JwtUtils {
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT token: {}", token, e);
             throw new BusinessException(INVALID_TOKEN, "유효하지 않은 토큰입니다.");
         }
     }
 
-    public void validateToken(String token) {
+    public Claims validateToken(String token) {
         Claims claims = parseClaimsAllowExpired(token);
         if (claims.getExpiration().getTime() < System.currentTimeMillis()) {
             throw new BusinessException(INVALID_TOKEN, "토큰이 만료되었습니다.");
         }
+        return claims;
     }
 
     public boolean isExpired(Claims claims) {
