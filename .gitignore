@@ -40,3 +40,6 @@ out/
 **/application*.yml
 **/.env
 .env
+
+### 개인 작업용 docs ###
+mydoc
