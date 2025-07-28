@@ -1,9 +1,7 @@
 package kt.aivle.gateway.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import kt.aivle.common.response.ApiResponse;
-import kt.aivle.gateway.exception.GatewayErrorCode;
-import lombok.RequiredArgsConstructor;
+import static kt.aivle.common.config.AuthExcludePaths.EXCLUDE_PATHS;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -13,9 +11,13 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
-import reactor.core.publisher.Mono;
 
-import static kt.aivle.gateway.config.AuthExcludePaths.EXCLUDE_PATHS;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import kt.aivle.common.response.ApiResponse;
+import kt.aivle.gateway.exception.GatewayErrorCode;
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
