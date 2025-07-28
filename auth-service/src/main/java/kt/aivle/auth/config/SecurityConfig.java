@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import jakarta.servlet.http.HttpServletRequest;
 import kt.aivle.auth.application.service.CustomOAuth2UserService;
 
 @Configuration
@@ -50,11 +51,30 @@ public class SecurityConfig {
                 })
                 .failureHandler((request, response, exception) -> {
                     // OAuth2 로그인 실패 시 처리
-                    response.sendRedirect("http://localhost:3000/auth/error?message=" + 
+                    String errorRedirectUrl = extractRedirectUrl(request);
+                    if (errorRedirectUrl == null) {
+                        errorRedirectUrl = "http://localhost:5173/auth/error"; // 기본값
+                    }
+                    response.sendRedirect(errorRedirectUrl + "?message=" + 
                         java.net.URLEncoder.encode(exception.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
                 })
             );
         
         return http.build();
+    }
+
+    private String extractRedirectUrl(HttpServletRequest request) {
+        // state 파라미터에서 리다이렉트 URL 추출
+        String state = request.getParameter("state");
+        if (state != null && state.startsWith("redirect_uri=")) {
+            try {
+                String redirectUri = state.substring("redirect_uri=".length());
+                return java.net.URLDecoder.decode(redirectUri, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                // 리다이렉트 URL 파싱 실패 시 기본값 사용
+                return null;
+            }
+        }
+        return null;
     }
 }

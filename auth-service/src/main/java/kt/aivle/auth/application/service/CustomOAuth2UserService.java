@@ -125,19 +125,30 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             // JWT 토큰 생성
             AuthResponse authResponse = generateAuthResponse(user);
             
+            // 요청에서 리다이렉트 URL 추출 (state 파라미터에서)
+            String redirectUrl = extractRedirectUrl(request);
+            if (redirectUrl == null) {
+                redirectUrl = "http://localhost:5173/auth/success"; // 기본값
+            }
+            
             // 토큰과 함께 리다이렉트 url 생성
-            String redirectUrl = String.format(
-                "http://localhost:3000/auth/success?accessToken=%s&refreshToken=%s&expiresIn=%d",
+            String finalRedirectUrl = String.format(
+                "%s?accessToken=%s&refreshToken=%s&expiresIn=%d",
+                redirectUrl,
                 java.net.URLEncoder.encode(authResponse.accessToken(), java.nio.charset.StandardCharsets.UTF_8),
                 java.net.URLEncoder.encode(authResponse.refreshToken(), java.nio.charset.StandardCharsets.UTF_8),
                 authResponse.accessTokenExpiration()
             );
             
-            response.sendRedirect(redirectUrl);
+            response.sendRedirect(finalRedirectUrl);
             
         } catch (Exception e) {
             log.error("OAuth2 성공 처리 중 오류 발생", e);
-            response.sendRedirect("http://localhost:3000/auth/error?message=" + 
+            String errorRedirectUrl = extractRedirectUrl(request);
+            if (errorRedirectUrl == null) {
+                errorRedirectUrl = "http://localhost:5173/auth/error"; // 기본값
+            }
+            response.sendRedirect(errorRedirectUrl + "?message=" + 
                 java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
         }
     }
@@ -160,5 +171,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .refreshToken(refreshToken)
                 .refreshTokenExpiration(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRE_MS)
                 .build();
+    }
+
+    private String extractRedirectUrl(HttpServletRequest request) {
+        // state 파라미터에서 리다이렉트 URL 추출
+        String state = request.getParameter("state");
+        if (state != null && state.startsWith("redirect_uri=")) {
+            try {
+                String redirectUri = state.substring("redirect_uri=".length());
+                return java.net.URLDecoder.decode(redirectUri, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                log.warn("리다이렉트 URL 파싱 실패: {}", state, e);
+            }
+        }
+        return null;
     }
 } 

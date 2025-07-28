@@ -4,10 +4,12 @@ import static kt.aivle.common.code.CommonResponseCode.CREATED;
 import static kt.aivle.common.code.CommonResponseCode.OK;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -60,5 +62,20 @@ public class AuthController {
         accessToken = accessToken.replace("Bearer ", "");
         authUseCase.logout(new TokenCommand(accessToken, refreshToken));
         return responseUtils.build(OK, null);
+    }
+
+    @GetMapping("/oauth2/google")
+    public ResponseEntity<ApiResponse<String>> getGoogleOAuth2Url(
+            @RequestParam(value = "redirect_uri", required = false) String redirectUri
+    ) {
+        String authUrl = "/api/oauth2/authorization/google";
+        
+        // 리다이렉트 URL이 있으면 state 파라미터로 추가
+        if (redirectUri != null && !redirectUri.isEmpty()) {
+            String encodedRedirectUri = java.net.URLEncoder.encode(redirectUri, java.nio.charset.StandardCharsets.UTF_8);
+            authUrl += "?state=redirect_uri=" + encodedRedirectUri;
+        }
+        
+        return responseUtils.build(OK, authUrl);
     }
 }
