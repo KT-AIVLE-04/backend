@@ -3,14 +3,12 @@ package kt.aivle.auth.properties;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Component
 @ConfigurationProperties(prefix = "spring.security.oauth2.client")
 public class OAuth2Properties {
     
