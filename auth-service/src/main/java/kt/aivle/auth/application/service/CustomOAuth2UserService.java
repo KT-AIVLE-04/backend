@@ -1,7 +1,12 @@
 package kt.aivle.auth.application.service;
 
-import java.util.Optional;
+import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
 
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -11,8 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
+import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
 import kt.aivle.auth.domain.model.OAuth2UserPrincipal;
 import kt.aivle.auth.domain.model.User;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.common.jwt.JwtDto;
+import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,6 +35,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final EntityManager entityManager;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
+    private final JwtUtils jwtUtils;
+
+    private static final long REFRESH_TOKEN_EXPIRE_MS = TimeUnit.DAYS.toMillis(14);
 
     @Override
     @Transactional
@@ -95,5 +111,54 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         
         entityManager.persist(newUser);
         return newUser;
+    }
+
+    public void handleOAuth2Success(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws Exception {
+        try {
+            OAuth2UserPrincipal oauth2User = (OAuth2UserPrincipal) authentication.getPrincipal();
+            User user = oauth2User.getUser();
+            
+            if (user.isLocked()) {
+                throw new BusinessException(UNAUTHORIZED_EMAIL);
+            }
+            
+            // JWT 토큰 생성
+            AuthResponse authResponse = generateAuthResponse(user);
+            
+            // 토큰과 함께 리다이렉트 url 생성
+            String redirectUrl = String.format(
+                "http://localhost:3000/auth/success?accessToken=%s&refreshToken=%s&expiresIn=%d",
+                java.net.URLEncoder.encode(authResponse.accessToken(), java.nio.charset.StandardCharsets.UTF_8),
+                java.net.URLEncoder.encode(authResponse.refreshToken(), java.nio.charset.StandardCharsets.UTF_8),
+                authResponse.accessTokenExpiration()
+            );
+            
+            response.sendRedirect(redirectUrl);
+            
+        } catch (Exception e) {
+            log.error("OAuth2 성공 처리 중 오류 발생", e);
+            response.sendRedirect("http://localhost:3000/auth/error?message=" + 
+                java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+
+    private AuthResponse generateAuthResponse(User user) {
+        if (user.isLocked()) {
+            throw new BusinessException(UNAUTHORIZED_EMAIL);
+        }
+
+        // JWT 토큰 생성
+        JwtDto jwt = jwtUtils.generateAccessToken(user.getId(), user.getEmail());
+
+        String refreshToken = UUID.randomUUID().toString();
+        refreshTokenRepositoryPort.save(user.getId(), refreshToken, REFRESH_TOKEN_EXPIRE_MS);
+
+        return AuthResponse.builder()
+                .type("Bearer")
+                .accessToken(jwt.accessToken())
+                .accessTokenExpiration(jwt.accessTokenExpiration())
+                .refreshToken(refreshToken)
+                .refreshTokenExpiration(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRE_MS)
+                .build();
     }
 } 
