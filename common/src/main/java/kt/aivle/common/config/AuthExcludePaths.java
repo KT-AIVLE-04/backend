@@ -8,7 +8,7 @@ public class AuthExcludePaths {
         "/api/auth/signup", 
         "/api/auth/refresh",
         "/api/auth/logout",
-        "/oauth2/authorization/**",
-        "/login/oauth2/code/**"
+        "/api/oauth2/authorization/**",
+        "/api/login/oauth2/code/**"
     );
 } 
