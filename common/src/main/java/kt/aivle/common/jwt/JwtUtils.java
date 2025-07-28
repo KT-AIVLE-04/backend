@@ -1,18 +1,25 @@
 package kt.aivle.common.jwt;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
-import kt.aivle.common.exception.BusinessException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import static kt.aivle.common.code.CommonResponseCode.INTERNAL_SERVER_ERROR;
+import static kt.aivle.common.code.CommonResponseCode.INVALID_TOKEN;
 
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
-import static kt.aivle.common.code.CommonResponseCode.INVALID_TOKEN;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.common.exception.InfraException;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -27,8 +34,16 @@ public class JwtUtils {
 
     @PostConstruct
     protected void init() {
-        byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.getSecret());
-        this.key = Keys.hmacShaKeyFor(keyBytes);
+        String secret = jwtProperties.getSecret();
+        log.info("🔑 JWT_SECRET 길이: {}, 끝 3글자: '{}'", secret != null ? secret.length() : 0, secret != null && secret.length() > 0 ? secret.substring(Math.max(0, secret.length() - 3)) : "");
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(secret);
+            this.key = Keys.hmacShaKeyFor(keyBytes);
+            log.info("JWT_SECRET Base64 디코딩 성공! Key 생성 완료");
+        } catch (IllegalArgumentException e) {
+            log.error("JWT_SECRET Base64 디코딩 실패", e);
+            throw new InfraException(INTERNAL_SERVER_ERROR, "JWT_SECRET Base64 디코딩 실패");
+        }
     }
 
     // JWT AccessToken 발급
