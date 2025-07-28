@@ -32,4 +32,14 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    @Override
+    public Optional<User> findByProviderAndProviderId(String provider, String providerId) {
+        return userRepository.findByProviderAndProviderId(provider, providerId);
+    }
+
+    @Override
+    public Optional<User> findByEmailAndProviderIsNull(String email) {
+        return userRepository.findByEmailAndProviderIsNull(email);
+    }
 }
