@@ -19,6 +19,9 @@ dependencies {
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+    // swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
