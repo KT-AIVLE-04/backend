@@ -16,11 +16,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
+import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.OAuth2UserPrincipal;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.common.exception.BusinessException;
@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final EntityManager entityManager;
+    private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
     private final JwtUtils jwtUtils;
@@ -65,25 +65,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     
     private User findOrCreateUser(String provider, String providerId, String email, String name) {
         // 기존 OAuth 사용자 확인
-        Optional<User> existingUser = entityManager
-                .createQuery("SELECT u FROM User u WHERE u.provider = :provider AND u.providerId = :providerId", User.class)
-                .setParameter("provider", provider)
-                .setParameter("providerId", providerId)
-                .getResultList()
-                .stream()
-                .findFirst();
+        Optional<User> existingUser = userRepositoryPort.findByProviderAndProviderId(provider, providerId);
         
         if (existingUser.isPresent()) {
             return existingUser.get();
         }
         
         // 같은 이메일의 일반 회원 확인
-        Optional<User> emailUser = entityManager
-                .createQuery("SELECT u FROM User u WHERE u.email = :email AND u.provider IS NULL", User.class)
-                .setParameter("email", email)
-                .getResultList()
-                .stream()
-                .findFirst();
+        Optional<User> emailUser = userRepositoryPort.findByEmailAndProviderIsNull(email);
         
         if (emailUser.isPresent()) {
             // 기존 회원을 OAuth 회원으로 연동
@@ -97,8 +86,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .phoneNumber(user.getPhoneNumber())
                     .build();
             
-            entityManager.merge(updatedUser);
-            return updatedUser;
+            return userRepositoryPort.save(updatedUser);
         }
         
         // 새 OAuth 사용자 생성
@@ -110,8 +98,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .password(passwordEncoder.encode("oauth_user_" + System.currentTimeMillis()))
                 .build();
         
-        entityManager.persist(newUser);
-        return newUser;
+        return userRepositoryPort.save(newUser);
     }
 
     public void handleOAuth2Success(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws Exception {
