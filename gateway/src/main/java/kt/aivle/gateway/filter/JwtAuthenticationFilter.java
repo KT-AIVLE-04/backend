@@ -3,6 +3,7 @@ package kt.aivle.gateway.filter;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import kt.aivle.common.jwt.JwtUtils;
+import kt.aivle.gateway.config.ExcludePaths;
 import kt.aivle.gateway.exception.GatewayErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -15,8 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
-import static kt.aivle.gateway.config.AuthExcludePaths.EXCLUDE_PATHS;
 
 @Component
 @RequiredArgsConstructor
@@ -32,7 +31,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
 
         // 인증 예외 경로면 그냥 통과
-        if (isAuthExcludedPath(path)) {
+        if (ExcludePaths.isPatternMatch(path)) {
             return chain.filter(exchange);
         }
 
@@ -70,11 +69,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     }
                     return chain.filter(exchange);
                 });
-    }
-
-    // 인증 예외 경로 (추가 필요하면 여기에)
-    private boolean isAuthExcludedPath(String path) {
-        return EXCLUDE_PATHS.stream().anyMatch(path::startsWith);
     }
 
     @Override
