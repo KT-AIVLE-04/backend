@@ -44,3 +44,7 @@ out/
 
 ### 개인 작업용 docs ###
 mydoc
+
+### log&shell
+*.log
+*.sh
