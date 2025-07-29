@@ -49,8 +49,9 @@ public class SecurityConfig {
                 .failureHandler((request, response, exception) -> {
                     // OAuth2 로그인 실패 시 처리
                     String errorRedirectUrl = extractRedirectUrl(request);
-                    if (errorRedirectUrl == null) {
-                        errorRedirectUrl = "http://localhost:5173/auth/error"; // 기본값
+                    if(errorRedirectUrl == null) {
+                        response.sendRedirect("/error?message=Invalid redirect URL");
+                        return;
                     }
                     response.sendRedirect(errorRedirectUrl + "?message=" + 
                         java.net.URLEncoder.encode(exception.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
