@@ -1,7 +1,5 @@
 package kt.aivle.gateway.filter;
 
-import static kt.aivle.common.config.AuthExcludePaths.EXCLUDE_PATHS;
-
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -15,6 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import kt.aivle.common.config.AuthExcludePaths;
 import kt.aivle.common.jwt.JwtUtils;
 import kt.aivle.gateway.exception.GatewayErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -88,25 +87,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 });
     }
 
-    // 인증 예외 경로 (AntPathMatcher 사용)
+    // 인증 예외 경로 체크
     private boolean isAuthExcludedPath(String path) {
-        log.debug("인증 예외 경로 체크: {} (패턴들: {})", path, EXCLUDE_PATHS);
-        
-        boolean isExcluded = EXCLUDE_PATHS.stream().anyMatch(pattern -> {
-            boolean matches = pathMatcher.match(pattern, path);
-            log.debug("  패턴 '{}' vs 경로 '{}' -> 매칭: {}", pattern, path, matches);
-            return matches;
-        });
-        
-        if (isExcluded) {
-            String matchedPattern = EXCLUDE_PATHS.stream()
-                .filter(pattern -> pathMatcher.match(pattern, path))
-                .findFirst().orElse("");
-            log.debug("인증 예외 경로 매칭: {} -> {}", path, matchedPattern);
-        } else {
-            log.debug("인증 예외 경로 아님: {}", path);
-        }
-        
+        boolean isExcluded = AuthExcludePaths.isPatternMatch(path);
+        log.debug("인증 예외 경로 체크: {} -> {}", path, isExcluded);
         return isExcluded;
     }
 
