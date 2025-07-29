@@ -64,17 +64,12 @@ public class SecurityConfig {
     }
 
     private String extractRedirectUrl(HttpServletRequest request) {
-        // state 파라미터에서 리다이렉트 URL 추출
-        String state = request.getParameter("state");
-        if (state != null && state.startsWith("redirect_uri=")) {
-            try {
-                String redirectUri = state.substring("redirect_uri=".length());
-                return java.net.URLDecoder.decode(redirectUri, java.nio.charset.StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                // 리다이렉트 URL 파싱 실패 시 기본값 사용
-                return null;
-            }
+        // Origin 헤더에서 프론트엔드 URL 추출
+        String origin = request.getHeader("Origin");
+        if (origin != null) {
+            return origin + "/auth/error";
         }
+        
         return null;
     }
 }
