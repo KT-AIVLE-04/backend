@@ -1,5 +1,6 @@
 package kt.aivle.auth.application.service;
 
+import static kt.aivle.auth.exception.AuthErrorCode.INVALID_REDIRECT_URL;
 import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
 
 import java.util.Optional;
@@ -125,10 +126,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             // JWT 토큰 생성
             AuthResponse authResponse = generateAuthResponse(user);
             
-            // 요청에서 리다이렉트 URL 추출 (state 파라미터에서)
+            // 요청에서 리다이렉트 URL 추출
             String redirectUrl = extractRedirectUrl(request);
             if (redirectUrl == null) {
-                redirectUrl = "http://localhost:5173/auth/success"; // 기본값
+                throw new BusinessException(INVALID_REDIRECT_URL);
             }
             
             // 토큰과 함께 리다이렉트 url 생성
@@ -146,7 +147,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             log.error("OAuth2 성공 처리 중 오류 발생", e);
             String errorRedirectUrl = extractRedirectUrl(request);
             if (errorRedirectUrl == null) {
-                errorRedirectUrl = "http://localhost:5173/auth/error"; // 기본값
+                throw new BusinessException(INVALID_REDIRECT_URL);
             }
             response.sendRedirect(errorRedirectUrl + "?message=" + 
                 java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8));

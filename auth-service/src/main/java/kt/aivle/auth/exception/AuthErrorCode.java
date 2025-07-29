@@ -1,8 +1,9 @@
 package kt.aivle.auth.exception;
 
+import org.springframework.http.HttpStatus;
+
 import kt.aivle.common.code.DefaultCode;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 public enum AuthErrorCode implements DefaultCode {
@@ -19,7 +20,10 @@ public enum AuthErrorCode implements DefaultCode {
     UNAUTHORIZED_EMAIL(HttpStatus.UNAUTHORIZED, false, "계정이 잠금되었습니다."),
 
     // 재발급
-    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, false, "유효하지 않은 재발급 토큰입니다.");
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, false, "유효하지 않은 재발급 토큰입니다."),
+
+    // OAuth2
+    INVALID_REDIRECT_URL(HttpStatus.BAD_REQUEST, false, "유효하지 않은 리다이렉트 URL입니다.");
 
 
     private final HttpStatus httpStatus;
