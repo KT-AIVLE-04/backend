@@ -5,7 +5,7 @@ import org.springframework.util.AntPathMatcher;
 import java.util.List;
 
 public class ExcludePaths {
-    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private static final ThreadLocal<AntPathMatcher> pathMatcher = ThreadLocal.withInitial(AntPathMatcher::new);
 
     public static final List<String> EXCLUDE_PATHS = List.of(
             // auth
@@ -24,6 +24,6 @@ public class ExcludePaths {
     );
 
     public static boolean isPatternMatch(String path) {
-        return EXCLUDE_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        return EXCLUDE_PATHS.stream().anyMatch(pattern -> pathMatcher.get().match(pattern, path));
     }
 }
