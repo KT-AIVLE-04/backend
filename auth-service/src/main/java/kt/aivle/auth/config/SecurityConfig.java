@@ -1,7 +1,5 @@
 package kt.aivle.auth.config;
 
-import static kt.aivle.common.config.AuthExcludePaths.EXCLUDE_PATHS;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,8 +27,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers(EXCLUDE_PATHS.toArray(new String[0])).permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll() // Gateway에서 이미 인증 처리하므로 모든 요청 허용
             )
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(authorization -> authorization
