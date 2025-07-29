@@ -15,7 +15,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import reactor.core.publisher.Mono;
 
-import static kt.aivle.gateway.config.AuthExcludePaths.EXCLUDE_PATHS;
+import static kt.aivle.gateway.config.ExcludePaths.EXCLUDE_PATHS;
 
 @Configuration
 @EnableWebFluxSecurity
