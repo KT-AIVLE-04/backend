@@ -46,7 +46,7 @@ jobs:
 
   build-and-deploy-auth-service:
     needs: [filter, upload-compose]
-    if: needs.filter.outputs.auth == 'true' || needs.filter.outputs.compose == 'true'
+    if: ${{ needs.filter.outputs.auth == 'true' || needs.filter.outputs.compose == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +93,7 @@ jobs:
 
   build-and-deploy-gateway:
     needs: [filter, upload-compose]
-    if: needs.filter.outputs.gateway == 'true' || needs.filter.outputs.compose == 'true'
+    if: ${{ needs.filter.outputs.gateway == 'true' || needs.filter.outputs.compose == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
