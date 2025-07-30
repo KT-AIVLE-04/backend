@@ -1,8 +1,6 @@
 services:
   gateway:
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
+    image: aivle-gateway:latest
     container_name: gateway
     depends_on:
       - auth-service
@@ -14,9 +12,7 @@ services:
       - backend
 
   auth-service:
-    build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+    image: aivle-auth:latest
     container_name: auth-service
     depends_on:
       - redis
