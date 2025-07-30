@@ -3,6 +3,7 @@ package kt.aivle.auth.application.service;
 import static kt.aivle.auth.exception.AuthErrorCode.INVALID_REDIRECT_URL;
 import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
+import kt.aivle.auth.adapter.out.oauth2.dto.OAuth2UserInfo;
+import kt.aivle.auth.application.port.out.OAuth2Port;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.OAuth2UserPrincipal;
@@ -38,6 +41,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
     private final JwtUtils jwtUtils;
+    
+    // OAuth2 포트 주입
+    private final OAuth2Port<OAuth2UserInfo> oAuth2Port;
 
     private static final long REFRESH_TOKEN_EXPIRE_MS = TimeUnit.DAYS.toMillis(14);
 
@@ -52,15 +58,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         
         log.info("OAuth2 Login: {}, attributes: {}", registrationId, oAuth2User.getAttributes());
         
-        // Google OAuth2 사용자 정보 추출
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String providerId = oAuth2User.getAttribute("sub");
+        // 통합된 어댑터를 통해 타입 안전한 사용자 정보 추출
+        OAuth2UserInfo userInfo = extractUserInfo(registrationId, oAuth2User.getAttributes());
+        
+        log.info("{} 사용자 정보 추출 완료 - ProviderId: {}, Email: {}, Name: {}", 
+            registrationId, userInfo.getProviderId(), userInfo.getEmail(), userInfo.getName());
         
         // 기존 사용자 확인 또는 새 사용자 생성
-        User user = findOrCreateUser(registrationId, providerId, email, name);
+        User user = findOrCreateUser(userInfo.getProvider(), userInfo.getProviderId(), userInfo.getEmail(), userInfo.getName());
         
         return new OAuth2UserPrincipal(user, oAuth2User.getAttributes(), userNameAttributeName);
+    }
+    
+    private OAuth2UserInfo extractUserInfo(String provider, Map<String, Object> attributes) {
+        // 포트를 통해 사용자 정보 추출
+        try {
+            return oAuth2Port.createUserInfoFromAttributes(provider, attributes);
+        } catch (Exception e) {
+            log.error("{} 사용자 정보 추출 중 오류 발생", provider, e);
+            throw new OAuth2AuthenticationException("사용자 정보 추출 실패: " + provider);
+        }
     }
     
     private User findOrCreateUser(String provider, String providerId, String email, String name) {

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +27,7 @@ import kt.aivle.auth.adapter.in.web.dto.SignUpRequest;
 import kt.aivle.auth.application.port.in.AuthUseCase;
 import kt.aivle.auth.application.port.in.command.LogoutCommand;
 import kt.aivle.auth.application.port.in.command.RefreshCommand;
+import kt.aivle.auth.application.service.OAuth2Service;
 import kt.aivle.common.response.ApiResponse;
 import kt.aivle.common.response.ResponseUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class AuthController {
 
     private final AuthUseCase authUseCase;
     private final ResponseUtils responseUtils;
+    private final OAuth2Service oAuth2Service;
 
     @PostMapping("/signup")
     @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다")
@@ -58,17 +61,58 @@ public class AuthController {
     @GetMapping("/oauth2/{provider}")
     @Operation(summary = "OAuth2 로그인", description = "OAuth2 제공자로 로그인을 시작합니다")
     public ResponseEntity<Void> oauth2Login(
-            @Parameter(description = "OAuth2 제공자 (google, github 등)", required = true)
+            @Parameter(description = "OAuth2 제공자 (google, kakao 등)", required = true)
             @PathVariable String provider,
             HttpServletResponse response) throws Exception {
         
         log.info("OAuth2 로그인 요청: {}", provider);
+        
+        // 지원하는 OAuth 제공자 검증
+        if (!"google".equals(provider) && !"kakao".equals(provider)) {
+            return ResponseEntity.badRequest().build();
+        }
         
         // Spring Security의 OAuth2 엔드포인트로 리다이렉트
         String redirectUrl = "/api/oauth2/authorization/" + provider;
         response.sendRedirect(redirectUrl);
         
         return ResponseEntity.status(HttpStatus.FOUND).build();
+    }
+    
+    @GetMapping("/oauth2/{provider}/url")
+    @Operation(summary = "OAuth2 인증 URL 조회", description = "OAuth2 제공자의 인증 URL을 조회합니다")
+    public ResponseEntity<ApiResponse<String>> getOAuth2AuthUrl(
+            @Parameter(description = "OAuth2 제공자 (google, kakao)", required = true)
+            @PathVariable String provider) {
+        
+        log.info("OAuth2 인증 URL 조회 요청: {}", provider);
+        
+        try {
+            String authUrl = oAuth2Service.generateAuthUrl(provider);
+            return responseUtils.build(OK, authUrl);
+        } catch (Exception e) {
+            log.error("OAuth2 인증 URL 생성 중 오류 발생", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @PostMapping("/oauth2/{provider}/callback")
+    @Operation(summary = "OAuth2 콜백 처리", description = "OAuth2 제공자의 콜백을 처리합니다")
+    public ResponseEntity<ApiResponse<AuthResponse>> handleOAuth2Callback(
+            @Parameter(description = "OAuth2 제공자 (google, kakao)", required = true)
+            @PathVariable String provider,
+            @Parameter(description = "Authorization Code", required = true)
+            @RequestParam String code) {
+        
+        log.info("OAuth2 콜백 처리 요청: {}, code: {}", provider, code);
+        
+        try {
+            AuthResponse authResponse = oAuth2Service.processOAuth2(provider, code);
+            return responseUtils.build(OK, authResponse);
+        } catch (Exception e) {
+            log.error("OAuth2 콜백 처리 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/refresh")

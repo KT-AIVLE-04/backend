@@ -1,5 +1,20 @@
 package kt.aivle.auth.application.service;
 
+import static kt.aivle.auth.exception.AuthErrorCode.DUPLICATE_EMAIL;
+import static kt.aivle.auth.exception.AuthErrorCode.INVALID_PASSWORD_POLICY;
+import static kt.aivle.auth.exception.AuthErrorCode.INVALID_REFRESH_TOKEN;
+import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_EMAIL;
+import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_USER;
+import static kt.aivle.auth.exception.AuthErrorCode.NOT_MATCHES_PASSWORD;
+import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import io.jsonwebtoken.Claims;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.in.AuthUseCase;
@@ -16,14 +31,6 @@ import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.jwt.JwtDto;
 import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import static kt.aivle.auth.exception.AuthErrorCode.*;
 
 @Service
 @RequiredArgsConstructor

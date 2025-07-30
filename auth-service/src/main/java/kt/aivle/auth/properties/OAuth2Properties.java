@@ -33,11 +33,28 @@ public class OAuth2Properties {
         private String userNameAttribute;
     }
     
+    public Registration getRegistration(String provider) {
+        return registration.get(provider.toLowerCase());
+    }
+    
+    public Provider getProvider(String provider) {
+        return this.provider.get(provider.toLowerCase());
+    }
+    
+    // 기존 메서드들도 유지 (하위 호환성)
     public Registration getGoogle() {
-        return registration.get("google");
+        return getRegistration("google");
     }
     
     public Provider getGoogleProvider() {
-        return provider.get("google");
+        return getProvider("google");
+    }
+    
+    public Registration getKakao() {
+        return getRegistration("kakao");
+    }
+    
+    public Provider getKakaoProvider() {
+        return getProvider("kakao");
     }
 } 
