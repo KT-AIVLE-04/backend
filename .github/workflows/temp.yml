@@ -85,3 +85,15 @@ jobs:
           cat ./gateway/src/main/resources/application_heredoc.yml
           echo "=== END ==="
         shell: bash
+
+      - name: Upload all test yml files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AWS_SECRET_HOST }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          source: |
+            ./gateway/src/main/resources/application_echo.yml
+            ./gateway/src/main/resources/application_printf.yml
+            ./gateway/src/main/resources/application_heredoc.yml
+          target: /home/ubuntu/temp/
