@@ -1,6 +1,6 @@
 services:
   gateway:
-    image: aivle-gateway:latest
+    image: ${DOCKER_USERNAME}/aivle-gateway:latest
     container_name: gateway
     depends_on:
       - auth-service
@@ -12,7 +12,7 @@ services:
       - backend
 
   auth-service:
-    image: aivle-auth:latest
+    image: ${DOCKER_USERNAME}/aivle-auth:latest
     container_name: auth-service
     depends_on:
       - redis
