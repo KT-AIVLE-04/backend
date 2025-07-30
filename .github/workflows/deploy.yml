@@ -63,6 +63,9 @@ jobs:
           echo "${{ secrets.APPLICATION_YML_AUTH }}" > ./auth-service/src/main/resources/application.yml
         shell: bash
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Build auth-service JAR
         run: ./gradlew :auth-service:clean :auth-service:build
 
@@ -104,6 +107,9 @@ jobs:
           mkdir -p ./gateway/src/main/resources
           echo "${{ secrets.APPLICATION_YML_GATEWAY }}" > ./gateway/src/main/resources/application.yml
         shell: bash
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Build gateway JAR
         run: ./gradlew :gateway:clean :gateway:build
