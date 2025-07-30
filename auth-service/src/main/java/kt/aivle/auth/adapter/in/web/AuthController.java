@@ -54,9 +54,4 @@ public class AuthController {
         authUseCase.logout(new TokenCommand(accessToken, refreshToken));
         return responseUtils.build(OK, null);
     }
-
-    @GetMapping("/health")
-    public String healthCheck() {
-        return "Auth Service is running";
-    }
 }
