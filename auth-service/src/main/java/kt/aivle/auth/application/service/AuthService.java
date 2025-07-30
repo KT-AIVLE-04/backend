@@ -4,8 +4,9 @@ import io.jsonwebtoken.Claims;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.application.port.in.AuthUseCase;
 import kt.aivle.auth.application.port.in.command.LoginCommand;
+import kt.aivle.auth.application.port.in.command.LogoutCommand;
+import kt.aivle.auth.application.port.in.command.RefreshCommand;
 import kt.aivle.auth.application.port.in.command.SignUpCommand;
-import kt.aivle.auth.application.port.in.command.TokenCommand;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
 import kt.aivle.auth.application.port.out.TokenBlacklistRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
@@ -92,21 +93,21 @@ public class AuthService implements AuthUseCase {
 
     @Transactional
     @Override
-    public AuthResponse refresh(TokenCommand command) {
+    public AuthResponse refresh(RefreshCommand command) {
         // 1. refreshToken 토큰 검사
         Long userId = refreshTokenRepositoryPort.findUserIdByToken(command.refreshToken())
                 .orElseThrow(() -> new BusinessException(INVALID_REFRESH_TOKEN));
 
-        // 2. 엑세스 토큰 서명 검증만 + 만료 무시
-        Claims claims = jwtUtils.parseClaimsAllowExpired(command.accessToken());
+        // 2. accessToken이 있으면 서명 검증만 + 만료 무시하고 블랙리스트에 추가
+        command.accessToken().ifPresent(accessToken -> {
+            Claims claims = jwtUtils.parseClaimsAllowExpired(accessToken);
+            blacklistIfNotExpired(claims);
+        });
 
-        // 3. 만료 전이면 블랙리스트에 추가
-        blacklistIfNotExpired(claims);
-
-        // 4. 토큰 생성
+        // 3. 토큰 생성
         AuthResponse authResponse = generateAuthResponse(userId);
 
-        // 5. 기존 refreshToken 삭제
+        // 4. 기존 refreshToken 삭제
         refreshTokenRepositoryPort.delete(command.refreshToken());
 
         return authResponse;
@@ -114,14 +115,12 @@ public class AuthService implements AuthUseCase {
 
     @Transactional
     @Override
-    public void logout(TokenCommand command) {
-        // 1. 엑세스 토큰 서명 검증만 + 만료 무시
+    public void logout(LogoutCommand command) {
+        // 1. accessToken 서명 검증만 + 만료 무시하고 블랙리스트에 추가
         Claims claims = jwtUtils.parseClaimsAllowExpired(command.accessToken());
-
-        // 2. 만료 전이면 블랙리스트에 추가
         blacklistIfNotExpired(claims);
 
-        // 3. refreshToken 삭제
+        // 2. refreshToken 삭제
         refreshTokenRepositoryPort.delete(command.refreshToken());
     }
 
