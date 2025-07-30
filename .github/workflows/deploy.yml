@@ -85,11 +85,13 @@ jobs:
           key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           script: |
             cd /home/ubuntu/deploy/
-            sed -i "s/^DOCKER_USERNAME=.*/DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}/" .env \
-              || echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            tmp_env=$(mktemp)
+            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
+            mv "$tmp_env" .env
             docker compose pull auth-service
             docker compose up -d auth-service
-            docker image prune -f
+            docker image prune -f || true
 
   build-and-deploy-gateway:
     needs: [filter, upload-compose]
@@ -132,8 +134,10 @@ jobs:
           key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           script: |
             cd /home/ubuntu/deploy/
-            sed -i "s/^DOCKER_USERNAME=.*/DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}/" .env \
-              || echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            tmp_env=$(mktemp)
+            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
+            mv "$tmp_env" .env
             docker compose pull gateway
             docker compose up -d gateway
             docker image prune -f || true
