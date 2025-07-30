@@ -60,7 +60,7 @@ jobs:
       - name: Create application.yml for auth-service
         run: |
           mkdir -p ./auth-service/src/main/resources
-          printf '%s\n' "${{ secrets.APPLICATION_YML_AUTH }}" > ./gateway/src/main/resources/application.yml
+          printf '%s\n' "${{ secrets.APPLICATION_YML_AUTH }}" > ./auth-service/src/main/resources/application.yml
         shell: bash
 
       - name: Make gradlew executable
