@@ -1,8 +1,6 @@
 services:
   gateway:
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/aivle-gateway:latest
     container_name: gateway
     depends_on:
       - auth-service
@@ -14,16 +12,12 @@ services:
       - backend
 
   auth-service:
-    build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/aivle-auth:latest
     container_name: auth-service
     depends_on:
       - redis
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-    ports:
-      - "8081:8080"
     networks:
       - backend
 
@@ -31,8 +25,6 @@ services:
     image: redis:7.2
     container_name: redis
     restart: always
-    ports:
-      - "6379:6379"
     networks:
       - backend
 
