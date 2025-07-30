@@ -60,7 +60,7 @@ jobs:
       - name: Create application.yml for auth-service
         run: |
           mkdir -p ./auth-service/src/main/resources
-          echo "${{ secrets.APPLICATION_YML_AUTH }}" > ./auth-service/src/main/resources/application.yml
+          printf '%s\n' "${{ secrets.APPLICATION_YML_GATEWAY }}" > ./gateway/src/main/resources/application.yml
         shell: bash
 
       - name: Make gradlew executable
@@ -105,7 +105,7 @@ jobs:
       - name: Create application.yml for gateway
         run: |
           mkdir -p ./gateway/src/main/resources
-          echo "${{ secrets.APPLICATION_YML_GATEWAY }}" > ./gateway/src/main/resources/application.yml
+          printf '%s\n' "${{ secrets.APPLICATION_YML_GATEWAY }}" > ./gateway/src/main/resources/application.yml
         shell: bash
 
       - name: Make gradlew executable
@@ -132,4 +132,4 @@ jobs:
               || echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
             docker compose pull gateway
             docker compose up -d gateway
-            docker image prune -f
+            docker image prune -f || true
