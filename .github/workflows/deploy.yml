@@ -2,7 +2,7 @@ name: MSA CI/CD with paths-filter
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "release" ]
 
 jobs:
   filter:
