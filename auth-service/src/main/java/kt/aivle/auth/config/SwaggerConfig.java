@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,7 +17,6 @@ import java.util.List;
 public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
-
         SecurityScheme securityScheme = new SecurityScheme()
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
@@ -32,5 +32,21 @@ public class SwaggerConfig {
                                 .addSecuritySchemes("bearerAuth", securityScheme)
                 )
                 .security(List.of(securityRequirement));
+    }
+
+    @Bean
+    public OpenApiCustomizer removeUserIdHeader() {
+        return openApi -> {
+            openApi.getPaths().values()
+                    .forEach(pathItem ->
+                            pathItem.readOperations()
+                                    .forEach(op -> {
+                                        List<io.swagger.v3.oas.models.parameters.Parameter> params = op.getParameters();
+                                        if (params != null) {
+                                            params.removeIf(p -> "X-USER-ID".equals(p.getName()));
+                                        }
+                                    })
+                    );
+        };
     }
 }
