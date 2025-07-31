@@ -1,6 +1,6 @@
 package kt.aivle.auth.application.service;
 
-import static kt.aivle.auth.exception.AuthErrorCode.INVALID_REDIRECT_URL;
+import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_USER;
 import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
 
 import java.util.Map;
@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -20,8 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
+import kt.aivle.auth.adapter.out.oauth2.dto.GoogleUserInfo;
+import kt.aivle.auth.adapter.out.oauth2.dto.KakaoUserInfo;
 import kt.aivle.auth.adapter.out.oauth2.dto.OAuth2UserInfo;
-import kt.aivle.auth.application.port.out.OAuth2Port;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.OAuth2UserPrincipal;
@@ -31,56 +32,55 @@ import kt.aivle.common.jwt.JwtDto;
 import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService implements ReactiveOAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
     private final JwtUtils jwtUtils;
-    
-    // OAuth2 포트 주입
-    private final OAuth2Port<OAuth2UserInfo> oAuth2Port;
 
     private static final long REFRESH_TOKEN_EXPIRE_MS = TimeUnit.DAYS.toMillis(14);
 
     @Override
+    public Mono<OAuth2User> loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        String provider = userRequest.getClientRegistration().getRegistrationId();
+        String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+        
+        log.info("OAuth2 사용자 로드 요청: {}", provider);
+        
+        // Spring Security가 제공한 attributes 사용
+        Map<String, Object> attributes = userRequest.getAdditionalParameters();
+        
+        // provider별로 attributes를 OAuth2UserInfo로 변환
+        return createUserInfoFromAttributes(provider, attributes)
+                .flatMap(userInfo -> {
+                    // 사용자 생성/조회를 Mono로 감싸기
+                    return Mono.fromCallable(() -> findOrCreateUser(provider, userInfo.getProviderId(), userInfo.getEmail(), userInfo.getName()))
+                            .map(user -> (OAuth2User) new OAuth2UserPrincipal(user, attributes, userNameAttributeName));
+                })
+                .doOnError(error -> log.error("OAuth2 사용자 로드 중 오류 발생: {}", provider, error));
+    }
+
+    private Mono<OAuth2UserInfo> createUserInfoFromAttributes(String provider, Map<String, Object> attributes) {
+        return Mono.fromCallable(() -> {
+            switch (provider.toLowerCase()) {
+                case "google":
+                    return new GoogleUserInfo(attributes);
+                case "kakao":
+                    return new KakaoUserInfo(attributes);
+                default:
+                    throw new BusinessException(NOT_FOUND_USER, "지원하지 않는 OAuth2 제공자: " + provider);
+            }
+        });
+    }
+    
     @Transactional
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
-        
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        String userNameAttributeName = userRequest.getClientRegistration()
-                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
-        
-        log.info("OAuth2 Login: {}, attributes: {}", registrationId, oAuth2User.getAttributes());
-        
-        // 통합된 어댑터를 통해 타입 안전한 사용자 정보 추출
-        OAuth2UserInfo userInfo = extractUserInfo(registrationId, oAuth2User.getAttributes());
-        
-        log.info("{} 사용자 정보 추출 완료 - ProviderId: {}, Email: {}, Name: {}", 
-            registrationId, userInfo.getProviderId(), userInfo.getEmail(), userInfo.getName());
-        
-        // 기존 사용자 확인 또는 새 사용자 생성
-        User user = findOrCreateUser(userInfo.getProvider(), userInfo.getProviderId(), userInfo.getEmail(), userInfo.getName());
-        
-        return new OAuth2UserPrincipal(user, oAuth2User.getAttributes(), userNameAttributeName);
-    }
-    
-    private OAuth2UserInfo extractUserInfo(String provider, Map<String, Object> attributes) {
-        // 포트를 통해 사용자 정보 추출
-        try {
-            return oAuth2Port.createUserInfoFromAttributes(provider, attributes);
-        } catch (Exception e) {
-            log.error("{} 사용자 정보 추출 중 오류 발생", provider, e);
-            throw new OAuth2AuthenticationException("사용자 정보 추출 실패: " + provider);
-        }
-    }
-    
-    private User findOrCreateUser(String provider, String providerId, String email, String name) {
+    public User findOrCreateUser(String provider, String providerId, String email, String name) {
         // 기존 OAuth 사용자 확인
         Optional<User> existingUser = userRepositoryPort.findByProviderAndProviderId(provider, providerId);
         
@@ -133,7 +133,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             // 요청에서 리다이렉트 URL 추출
             String redirectUrl = extractRedirectUrl(request);
             if (redirectUrl == null) {
-                throw new BusinessException(INVALID_REDIRECT_URL);
+                throw new BusinessException(NOT_FOUND_USER);
             }
             
             // 토큰과 함께 리다이렉트 url 생성
@@ -151,7 +151,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             log.error("OAuth2 성공 처리 중 오류 발생", e);
             String errorRedirectUrl = extractRedirectUrl(request);
             if (errorRedirectUrl == null) {
-                throw new BusinessException(INVALID_REDIRECT_URL);
+                throw new BusinessException(NOT_FOUND_USER);
             }
             response.sendRedirect(errorRedirectUrl + "?message=" + 
                 java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8));

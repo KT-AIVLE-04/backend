@@ -3,7 +3,6 @@ package kt.aivle.auth.application.service;
 import static kt.aivle.auth.exception.AuthErrorCode.DUPLICATE_EMAIL;
 import static kt.aivle.auth.exception.AuthErrorCode.INVALID_PASSWORD_POLICY;
 import static kt.aivle.auth.exception.AuthErrorCode.INVALID_REFRESH_TOKEN;
-import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_EMAIL;
 import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_USER;
 import static kt.aivle.auth.exception.AuthErrorCode.NOT_MATCHES_PASSWORD;
 import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
@@ -27,11 +26,14 @@ import kt.aivle.auth.application.port.out.TokenBlacklistRepositoryPort;
 import kt.aivle.auth.application.port.out.UserRepositoryPort;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.auth.domain.service.UserPasswordPolicy;
+import kt.aivle.auth.exception.AuthErrorCode;
 import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.jwt.JwtDto;
 import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService implements AuthUseCase {
@@ -81,7 +83,7 @@ public class AuthService implements AuthUseCase {
     public AuthResponse login(LoginCommand command) {
         // 1. 이메일로 사용자 조회
         User user = userRepositoryPort.findByEmail(command.email())
-                .orElseThrow(() -> new BusinessException(NOT_FOUND_EMAIL));
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.NOT_FOUND_USER)); // NOT_FOUND_EMAIL -> NOT_FOUND_USER
 
         // 2. 비밀번호 검증
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {

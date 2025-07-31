@@ -1,28 +1,23 @@
 package kt.aivle.auth.domain.model;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import kt.aivle.common.entity.BaseEntity;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static lombok.AccessLevel.PROTECTED;
-
 @Entity
 @Getter
-@NoArgsConstructor(access = PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
     private String provider;
     private String providerId;
-
-    @Column(unique = true)
     private String email;
     private String name;
     private String password;
     private String phoneNumber;
-
     private int loginFailCount = 0;
     private boolean locked = false;
 
