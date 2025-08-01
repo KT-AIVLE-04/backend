@@ -48,6 +48,3 @@ public class GlobalExceptionHandler {
         return responseUtils.build(BAD_REQUEST, errors);
     }
 }
-
-
-
