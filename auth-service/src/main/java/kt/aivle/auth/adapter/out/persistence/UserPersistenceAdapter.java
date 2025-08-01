@@ -1,11 +1,13 @@
 package kt.aivle.auth.adapter.out.persistence;
 
-import kt.aivle.auth.application.port.out.UserRepositoryPort;
-import kt.aivle.auth.domain.model.User;
-import lombok.RequiredArgsConstructor;
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import kt.aivle.auth.application.port.out.UserRepositoryPort;
+import kt.aivle.auth.domain.model.OAuthProvider;
+import kt.aivle.auth.domain.model.User;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -31,5 +33,10 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     @Override
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+    
+    @Override
+    public Optional<User> findByProviderAndProviderId(OAuthProvider provider, String providerId) {
+        return userRepository.findByProviderAndProviderId(provider.name(), providerId);
     }
 }
