@@ -2,7 +2,6 @@ package kt.aivle.auth.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import kt.aivle.common.entity.BaseEntity;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
