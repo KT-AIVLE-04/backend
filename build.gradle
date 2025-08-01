@@ -4,12 +4,19 @@ plugins {
 }
 
 ext {
+    set('springBootVersion', "3.5.4")
     set('springCloudVersion', "2025.0.0")
+    set('mapstructVersion', "1.5.5.Final")
+    set('jjwtVersion', "0.11.5")
+    set('springdocVersion', "2.8.9")
+    set('lombokVersion', "1.18.38")
 }
+
 
 allprojects {
     group = 'kt.aivle'
     version = '0.0.1-SNAPSHOT'
+
     repositories {
         mavenCentral()
     }
@@ -19,14 +26,14 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
 
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = 'UTF-8'
-    }
-
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
         }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
     }
 
     test {
@@ -35,18 +42,18 @@ subprojects {
 
     dependencyManagement {
         imports {
-            mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.4"
+            mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
             mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
         }
         dependencies {
-            dependency "org.mapstruct:mapstruct:1.5.5.Final"
-            dependency "org.mapstruct:mapstruct-processor:1.5.5.Final"
-            dependency "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9"
-            dependency "org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9"
-            dependency 'io.jsonwebtoken:jjwt-api:0.11.5'
-            dependency "io.jsonwebtoken:jjwt-impl:0.11.5"
-            dependency "io.jsonwebtoken:jjwt-jackson:0.11.5"
-            dependency "org.projectlombok:lombok:1.18.38"
+            dependency "org.mapstruct:mapstruct:${mapstructVersion}"
+            dependency "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+            dependency "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+            dependency "org.springdoc:springdoc-openapi-starter-webflux-ui:${springdocVersion}"
+            dependency "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+            dependency "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+            dependency "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+            dependency "org.projectlombok:lombok:${lombokVersion}"
         }
     }
 }
