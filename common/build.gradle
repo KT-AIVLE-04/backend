@@ -11,14 +11,6 @@ dependencies {
     // Web/API
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // 보안·인증
-    implementation 'io.jsonwebtoken:jjwt-api'
-    implementation 'io.jsonwebtoken:jjwt-impl'
-    implementation 'io.jsonwebtoken:jjwt-jackson'
-
-    // JPA
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
