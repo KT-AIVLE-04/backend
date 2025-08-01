@@ -1,8 +1,8 @@
 package kt.aivle.gateway.config;
 
-import org.springframework.util.AntPathMatcher;
-
 import java.util.List;
+
+import org.springframework.util.AntPathMatcher;
 
 public class ExcludePaths {
     private static final ThreadLocal<AntPathMatcher> pathMatcher = ThreadLocal.withInitial(AntPathMatcher::new);
@@ -13,6 +13,8 @@ public class ExcludePaths {
             "/api/auth/signup",
             "/api/auth/refresh",
             "/api/auth/logout",
+            "/api/auth/oauth2/authorization/**",
+            "/api/auth/oauth2/code/**",
 
             // swagger
             "/swagger-ui.html",
