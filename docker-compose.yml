@@ -23,8 +23,18 @@ services:
       - redis
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    ports:
-      - "8081:8080"
+    networks:
+      - backend
+
+  store-service:
+    build:
+      context: ./store-service
+      dockerfile: Dockerfile
+    container_name: store-service
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
     networks:
       - backend
 
@@ -35,7 +45,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: userstore
-      MYSQL_USER: lee
+      MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Seoul
     ports:
@@ -49,8 +59,6 @@ services:
     image: redis:7.2
     container_name: redis
     restart: always
-    ports:
-      - "6379:6379"
     networks:
       - backend
 

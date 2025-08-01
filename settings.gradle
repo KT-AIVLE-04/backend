@@ -2,4 +2,4 @@ rootProject.name = 'marketing'
 include 'common'
 include 'auth-service'
 include 'gateway'
-
+include 'store-service'
