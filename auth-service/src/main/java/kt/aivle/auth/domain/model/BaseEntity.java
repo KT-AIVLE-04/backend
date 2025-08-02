@@ -1,4 +1,4 @@
-package kt.aivle.common.entity;
+package kt.aivle.auth.domain.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;

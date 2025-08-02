@@ -8,9 +8,10 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      auth: ${{ steps.filter.outputs.auth }}
-      gateway: ${{ steps.filter.outputs.gateway }}
       compose: ${{ steps.filter.outputs.compose }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      auth: ${{ steps.filter.outputs.auth }}
+      store: ${{ steps.filter.outputs.store }}
     steps:
       - uses: actions/checkout@v4
 
@@ -19,13 +20,14 @@ jobs:
         uses: dorny/paths-filter@v3.0.2
         with:
           filters: |
-            auth:
-              - 'auth-service/**'
-            gateway:
-              - 'gateway/**'
             compose:
               - 'docker-compose.prod.yml'
-
+            gateway:
+              - 'gateway/**'
+            auth:
+              - 'auth-service/**'
+            store:
+              - 'store-service/**'
   upload-compose:
     needs: filter
     runs-on: ubuntu-latest
@@ -44,8 +46,57 @@ jobs:
           source: "docker-compose.yml"
           target: "/home/ubuntu/deploy/"
 
+  build-and-deploy-gateway:
+    needs: [ filter, upload-compose ]
+    if: ${{ needs.filter.outputs.gateway == 'true' || needs.filter.outputs.compose == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Create application.yml for gateway
+        run: |
+          mkdir -p ./gateway/src/main/resources
+          cat <<EOF > ./gateway/src/main/resources/application.yml
+          ${{ secrets.APPLICATION_YML_GATEWAY }}
+          EOF
+        shell: bash
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build gateway JAR
+        run: ./gradlew :gateway:clean :gateway:build
+
+      - name: Docker build & push (gateway)
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest ./gateway
+          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest
+
+      - name: Deploy gateway to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_SECRET_HOST }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          script: |
+            cd /home/ubuntu/deploy/
+            tmp_env=$(mktemp)
+            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
+            mv "$tmp_env" .env
+            docker compose pull gateway
+            docker compose up -d gateway
+            docker image prune -f || true
+
   build-and-deploy-auth-service:
-    needs: [filter, upload-compose]
+    needs: [ filter, upload-compose ]
     if: ${{ needs.filter.outputs.auth == 'true' || needs.filter.outputs.compose == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -93,9 +144,9 @@ jobs:
             docker compose up -d auth-service
             docker image prune -f || true
 
-  build-and-deploy-gateway:
-    needs: [filter, upload-compose]
-    if: ${{ needs.filter.outputs.gateway == 'true' || needs.filter.outputs.compose == 'true' }}
+  build-and-deploy-store-service:
+    needs: [ filter, upload-compose ]
+    if: ${{ needs.filter.outputs.store == 'true' || needs.filter.outputs.compose == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,27 +157,27 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Create application.yml for gateway
+      - name: Create application.yml for store-service
         run: |
-          mkdir -p ./gateway/src/main/resources
-          cat <<EOF > ./gateway/src/main/resources/application.yml
-          ${{ secrets.APPLICATION_YML_GATEWAY }}
+          mkdir -p ./store-service/src/main/resources
+          cat <<EOF > ./store-service/src/main/resources/application.yml
+          ${{ secrets.APPLICATION_YML_STORE }}
           EOF
         shell: bash
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build gateway JAR
-        run: ./gradlew :gateway:clean :gateway:build
+      - name: Build store-service JAR
+        run: ./gradlew :store-service:clean :store-service:build
 
-      - name: Docker build & push (gateway)
+      - name: Docker build & push (store-service)
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest ./gateway
-          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-store:latest ./store-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-store:latest
 
-      - name: Deploy gateway to server
+      - name: Deploy store-service to server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_SECRET_HOST }}
@@ -138,6 +189,6 @@ jobs:
             grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
             mv "$tmp_env" .env
-            docker compose pull gateway
-            docker compose up -d gateway
+            docker compose pull store-service
+            docker compose up -d store-service
             docker image prune -f || true
