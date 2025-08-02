@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
+import kt.aivle.auth.adapter.out.jwt.JwtDto;
+import kt.aivle.auth.adapter.out.jwt.JwtUtils;
 import kt.aivle.auth.application.port.in.OAuthUseCase;
 import kt.aivle.auth.application.port.out.OAuthPort;
 import kt.aivle.auth.application.port.out.RefreshTokenRepositoryPort;
@@ -24,8 +26,6 @@ import kt.aivle.auth.domain.model.OAuthProvider;
 import kt.aivle.auth.domain.model.OAuthUser;
 import kt.aivle.auth.domain.model.User;
 import kt.aivle.common.exception.BusinessException;
-import kt.aivle.common.jwt.JwtDto;
-import kt.aivle.common.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
