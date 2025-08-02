@@ -3,6 +3,7 @@ FROM openjdk:17-jdk-alpine
 WORKDIR /app
 
 COPY build/libs/*SNAPSHOT.jar app.jar
+COPY src/main/resources/.env .env
 
 EXPOSE 8080
 
