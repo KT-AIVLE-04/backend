@@ -4,6 +4,7 @@ import static kt.aivle.auth.exception.AuthErrorCode.NOT_FOUND_USER;
 import static kt.aivle.auth.exception.AuthErrorCode.OAUTH_LOGIN_FAILED;
 import static kt.aivle.auth.exception.AuthErrorCode.UNAUTHORIZED_EMAIL;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -53,8 +54,8 @@ public class OAuthService implements OAuthUseCase {
             // 1. Spring Security OAuth2User를 도메인 OAuthUser로 변환 (포트 사용)
             OAuthUser oauthUser = oAuthPort.convertFromSpringOAuth2User(oauth2User, provider);
             
-            // 2. 도메인 로직으로 사용자 처리 (포트 사용)
-            User user = oAuthPort.processOAuthUser(oauthUser);
+            // 2. 도메인 로직으로 사용자 처리
+            User user = processOAuthUser(oauthUser);
             
             // 3. JWT 토큰 생성
             AuthResponse authResponse = generateAuthResponse(user.getId());
@@ -67,6 +68,74 @@ public class OAuthService implements OAuthUseCase {
             log.error("OAuth2 라이브러리 로그인 실패: provider={}, error={}", provider, e.getMessage(), e);
             throw new BusinessException(OAUTH_LOGIN_FAILED);
         }
+    }
+
+    /**
+     * OAuth 사용자 정보로 회원 연결/가입 처리
+     * 1. 기존사용자 정보있으면 조회하고 연결
+     * 2. 기존사용자 중에 같은 이메일 있으면 조회하고 연결
+     * 3. 기존사용자 중에 같은 이메일 없으면 새로 생성
+     */
+    public User processOAuthUser(OAuthUser oauthUser) {
+        log.info("OAuth 사용자 처리 시작: provider={}", oauthUser.getProvider());
+        
+        // 1. 기존 OAuth 사용자 조회 (provider + providerId)
+        Optional<User> existingOAuthUser = userRepositoryPort.findByProviderAndProviderId(
+            oauthUser.getProvider(), oauthUser.getName());
+        
+        if (existingOAuthUser.isPresent()) {
+            log.info("기존 OAuth 사용자 로그인: userId={}, provider={}", 
+                existingOAuthUser.get().getId(), oauthUser.getProvider());
+            return existingOAuthUser.get();
+        }
+        
+        // 2. 같은 이메일로 기존 회원 조회 (OAuth 연결)
+        if (oauthUser.getEmail() != null) {
+            Optional<User> existingUserByEmail = userRepositoryPort.findByEmail(oauthUser.getEmail());
+            
+            if (existingUserByEmail.isPresent()) {
+                User existingUser = existingUserByEmail.get();
+                log.info("기존 회원에 OAuth 연결: userId={}, email={}, provider={}", 
+                    existingUser.getId(), oauthUser.getEmail(), oauthUser.getProvider());
+                
+                // 기존 회원에 OAuth 정보 연결
+                User linkedUser = User.builder()
+                    .provider(oauthUser.getProvider().name())
+                    .providerId(oauthUser.getName())
+                    .email(existingUser.getEmail())
+                    .name(existingUser.getName())
+                    .password(existingUser.getPassword())
+                    .phoneNumber(existingUser.getPhoneNumber())
+                    .loginFailCount(existingUser.getLoginFailCount())
+                    .locked(existingUser.isLocked())
+                    .build();
+                
+                return userRepositoryPort.save(linkedUser);
+            }
+        }
+        
+        // 3. 새 OAuth 사용자 생성
+        log.info("새 OAuth 사용자 가입: provider={}, email={}", 
+            oauthUser.getProvider(), oauthUser.getEmail());
+        return createNewOAuthUser(oauthUser);
+    }
+
+    /**
+     * 새 OAuth 사용자 생성
+     */
+    private User createNewOAuthUser(OAuthUser oauthUser) {
+        User newUser = User.builder()
+            .provider(oauthUser.getProvider().name())
+            .providerId(oauthUser.getName())
+            .email(oauthUser.getEmail())
+            .name(oauthUser.getDisplayName())
+            .password(null) // OAuth 회원은 비밀번호 없음
+            .phoneNumber(oauthUser.getPhoneNumber())
+            .loginFailCount(0)
+            .locked(false)
+            .build();
+        
+        return userRepositoryPort.save(newUser);
     }
 
     @Override
