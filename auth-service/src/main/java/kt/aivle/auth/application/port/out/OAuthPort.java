@@ -1,23 +1,21 @@
 package kt.aivle.auth.application.port.out;
 
-import kt.aivle.auth.domain.model.OAuthProvider;
-import kt.aivle.auth.domain.model.OAuthToken;
-import kt.aivle.auth.domain.model.OAuthUserInfo;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+
+import kt.aivle.auth.domain.model.OAuthUser;
 import kt.aivle.auth.domain.model.User;
 
 public interface OAuthPort {
     /**
-     * OAuth 인증 - 인증코드로 액세스 토큰 발급
+     * OAuth 사용자 정보로 회원 연결/가입 처리
+     * 1. 기존사용자 정보있으면 조회하고 연결
+     * 2. 기존사용자 중에 같은 이메일 있으면 조회하고 연결
+     * 3. 기존사용자 중에 같은 이메일 없으면 새로 생성
      */
-    OAuthToken authenticate(String authorizationCode, OAuthProvider provider);
+    User processOAuthUser(OAuthUser oauthUser);
     
     /**
-     * OAuth 사용자 정보 조회 - 액세스 토큰으로 사용자 정보 가져오기
+     * Spring Security OAuth2User를 도메인 OAuthUser로 변환
      */
-    OAuthUserInfo getUserInfo(String accessToken, OAuthProvider provider);
-    
-    /**
-     * 소셜 회원 연결 또는 신규 가입 - OAuth 사용자 정보로 기존 회원과 연결하거나 새로 생성
-     */
-    User linkOrSignupUser(OAuthUserInfo oauthUserInfo);
+    OAuthUser convertFromSpringOAuth2User(OAuth2User oauth2User, kt.aivle.auth.domain.model.OAuthProvider provider);
 } 
