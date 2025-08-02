@@ -99,18 +99,10 @@ public class OAuthService implements OAuthUseCase {
                     existingUser.getId(), oauthUser.getEmail(), oauthUser.getProvider());
                 
                 // 기존 회원에 OAuth 정보 연결
-                User linkedUser = User.builder()
-                    .provider(oauthUser.getProvider().name())
-                    .providerId(oauthUser.getName())
-                    .email(existingUser.getEmail())
-                    .name(existingUser.getName())
-                    .password(existingUser.getPassword())
-                    .phoneNumber(existingUser.getPhoneNumber())
-                    .loginFailCount(existingUser.getLoginFailCount())
-                    .locked(existingUser.isLocked())
-                    .build();
+                existingUser.setProvider(oauthUser.getProvider().name());
+                existingUser.setProviderId(oauthUser.getName());
                 
-                return userRepositoryPort.save(linkedUser);
+                return userRepositoryPort.save(existingUser);
             }
         }
         
