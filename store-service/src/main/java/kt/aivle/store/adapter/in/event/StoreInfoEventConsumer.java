@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import static kt.aivle.store.exception.StoreErrorCode.KFKA_ERROR;
+import static kt.aivle.store.exception.StoreErrorCode.KAFKA_ERROR;
 
 @Component
 @RequiredArgsConstructor
@@ -21,7 +21,7 @@ public class StoreInfoEventConsumer {
             StoreInfoRequestEvent event = objectMapper.readValue(message, StoreInfoRequestEvent.class);
             useCase.handleStoreInfoRequest(event);
         } catch (Exception e) {
-            throw new InfraException(KFKA_ERROR, e);
+            throw new InfraException(KAFKA_ERROR, e);
         }
     }
 }
