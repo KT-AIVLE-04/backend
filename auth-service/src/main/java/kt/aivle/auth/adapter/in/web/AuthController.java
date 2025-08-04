@@ -38,9 +38,18 @@ public class AuthController {
         return responseUtils.build(OK, response);
     }
 
+    @GetMapping("/{provider}/login")
+    public ResponseEntity<ApiResponse<Void>> oauthLogin(@PathVariable String provider) {
+        // OAuth 인증 플로우 시작을 위해 리다이렉트
+        String oauthUrl = "/api/auth/oauth2/authorization/" + provider;
+        return ResponseEntity.status(302)
+                .header("Location", oauthUrl)
+                .build();
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
-            @RequestHeader("Authorization") String accessToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
             @RequestHeader("X-Refresh-Token") String refreshToken
     ) {
 

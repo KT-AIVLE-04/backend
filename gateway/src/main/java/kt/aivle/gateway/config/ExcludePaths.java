@@ -13,6 +13,7 @@ public class ExcludePaths {
             "/api/auth/signup",
             "/api/auth/refresh",
             "/api/auth/logout",
+            "/api/auth/*/login",
             "/api/auth/oauth2/authorization/**",
             "/api/auth/oauth2/code/**",
 
