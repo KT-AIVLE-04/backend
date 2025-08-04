@@ -27,5 +27,8 @@ dependencies {
     implementation 'org.mapstruct:mapstruct'
     annotationProcessor 'org.mapstruct:mapstruct-processor'
 
+    // kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
