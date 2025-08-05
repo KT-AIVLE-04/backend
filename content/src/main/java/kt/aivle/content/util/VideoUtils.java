@@ -151,5 +151,28 @@ public class VideoUtils {
     }
 
     public String generateVideoThumbnail(String filePath) {
+        // 예시) 썸네일 이미지를 ffmpeg 등으로 추출한 뒤, 썸네일 경로를 반환
+        String videoPath="D:\\AIVLE_BPSNS";
+        String thumbnailPath = videoPath + "_thumbnail.jpg";
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "ffmpeg",
+                    "-i", videoPath,
+                    "-ss", "00:00:01",
+                    "-vframes", "1",
+                    "-q:v", "2",
+                    "-y",
+                    thumbnailPath
+            );
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                return thumbnailPath;
+            } else {
+                throw new RuntimeException("썸네일 생성 실패(exit=" + exitCode + ")");
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("썸네일 생성 과정에서 오류 발생: " + e.getMessage());
+        }
     }
 }

@@ -106,6 +106,31 @@ public class VideoProcessingService {
             throw new FileProcessingException("다중 해상도 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
+    public String generateVideoThumbnail(String videoPath) {
+        // 예시) 썸네일 이미지를 ffmpeg 등으로 추출한 뒤, 썸네일 경로를 반환
+        String thumbnailPath = videoPath + "_thumbnail.jpg";
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "ffmpeg",
+                    "-i", videoPath,
+                    "-ss", "00:00:01",
+                    "-vframes", "1",
+                    "-q:v", "2",
+                    "-y",
+                    thumbnailPath
+            );
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                return thumbnailPath;
+            } else {
+                throw new RuntimeException("썸네일 생성 실패(exit=" + exitCode + ")");
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("썸네일 생성 과정에서 오류 발생: " + e.getMessage());
+        }
+    }
+
 
     /**
      * 영상에서 특정 시간의 프레임 추출
@@ -367,4 +392,5 @@ public class VideoProcessingService {
             this.bitrate = bitrate;
         }
     }
+
 }

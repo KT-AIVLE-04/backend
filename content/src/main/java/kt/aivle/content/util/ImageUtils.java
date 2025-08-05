@@ -11,6 +11,7 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -105,4 +106,46 @@ public class ImageUtils {
             throw new FileProcessingException("이미지 메타데이터 추출에 실패했습니다: " + e.getMessage());
         }
     }
+
+    private Dimension calculateNewDimensions(int originalWidth, int originalHeight,
+                                             Integer targetWidth, Integer targetHeight) {
+        // 원본 비율
+        double aspectRatio = (double) originalWidth / originalHeight;
+
+        int newWidth = originalWidth;
+        int newHeight = originalHeight;
+
+        if (targetWidth != null && targetHeight != null) {
+            // 둘 다 지정되면 한계 내에서 비율 맞추기
+            double widthRatio = (double) targetWidth / originalWidth;
+            double heightRatio = (double) targetHeight / originalHeight;
+            double scale = Math.min(widthRatio, heightRatio);
+            newWidth = (int) (originalWidth * scale);
+            newHeight = (int) (originalHeight * scale);
+        } else if (targetWidth != null) {
+            newWidth = targetWidth;
+            newHeight = (int) (targetWidth / aspectRatio);
+        } else if (targetHeight != null) {
+            newHeight = targetHeight;
+            newWidth = (int) (targetHeight * aspectRatio);
+        }
+
+        return new Dimension(newWidth, newHeight);
+    }
+    private String getColorSpaceName(int colorSpaceType) {
+        switch (colorSpaceType) {
+            case ColorSpace.TYPE_RGB: return "RGB";
+            case ColorSpace.TYPE_GRAY: return "GRAY";
+            case ColorSpace.TYPE_CMYK: return "CMYK";
+            case ColorSpace.TYPE_YCbCr: return "YCbCr";
+            case ColorSpace.TYPE_HSV: return "HSV";
+            case ColorSpace.TYPE_HLS: return "HLS";
+            case ColorSpace.TYPE_XYZ: return "XYZ";
+            case ColorSpace.TYPE_Lab: return "Lab";
+            case ColorSpace.TYPE_Luv: return "Luv";
+            case ColorSpace.TYPE_Yxy: return "Yxy";
+            default: return "UNKNOWN";
+        }
+    }
+
 }
