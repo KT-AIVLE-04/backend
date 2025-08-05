@@ -1,0 +1,30 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+
+dependencies {
+    // 공통 모듈
+    implementation project(':common')
+
+    // Web/API
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+
+    // swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui'
+
+    // 요청 검증
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
