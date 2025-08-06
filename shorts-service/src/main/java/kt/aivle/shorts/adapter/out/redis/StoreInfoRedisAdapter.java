@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class StoreInfoRedisRepository implements StoreInfoQueryPort {
+public class StoreInfoRedisAdapter implements StoreInfoQueryPort {
 
     private final StringRedisTemplate redisTemplate;
     private final StoreInfoEventProducer producer;
