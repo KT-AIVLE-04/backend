@@ -1,3 +1,5 @@
+//불 필요할 시 파일 제거
+
 package kt.aivle.content.repository;
 
 import kt.aivle.content.entity.Image;
