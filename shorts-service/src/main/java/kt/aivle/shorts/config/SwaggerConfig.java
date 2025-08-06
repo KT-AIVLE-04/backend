@@ -1,8 +1,10 @@
 package kt.aivle.shorts.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -27,10 +29,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .addServersItem(new Server().url("/"))
                 .info(new Info().title("Shorts Service API").version("v0.0.1"))
-                .components(
-                        new io.swagger.v3.oas.models.Components()
-                                .addSecuritySchemes("bearerAuth", securityScheme)
-                )
+                .components(new Components().addSecuritySchemes("bearerAuth", securityScheme))
                 .security(List.of(securityRequirement));
     }
 
@@ -41,7 +40,7 @@ public class SwaggerConfig {
                     .forEach(pathItem ->
                             pathItem.readOperations()
                                     .forEach(op -> {
-                                        List<io.swagger.v3.oas.models.parameters.Parameter> params = op.getParameters();
+                                        List<Parameter> params = op.getParameters();
                                         if (params != null) {
                                             params.removeIf(p -> "X-USER-ID".equals(p.getName()));
                                         }
