@@ -3,7 +3,9 @@ plugins {
 }
 
 dependencies {
-    implementation project(':common')
+    implementation(project(':common')) {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
+    }
 
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.cloud:spring-cloud-gateway-server-webflux'
