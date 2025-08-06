@@ -10,6 +10,7 @@ import kt.aivle.store.domain.model.Store;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import static kt.aivle.store.exception.StoreErrorCode.NOT_AUTHORITY;
 import static kt.aivle.store.exception.StoreErrorCode.NOT_FOUND_STORE;
 
 @Service
@@ -24,6 +25,10 @@ public class StoreEventService implements StoreEventUseCase {
         Store store = storeRepositoryPort.findById(event.storeId())
                 .orElseThrow(() -> new BusinessException(NOT_FOUND_STORE));
 
+        if (!store.getUserId().equals(event.userId())) {
+            throw new BusinessException(NOT_AUTHORITY);
+        }
+
         StoreInfoResponseEvent responseEvent = StoreInfoResponseEvent.builder()
                 .storeId(store.getId())
                 .name(store.getName())
@@ -34,6 +39,7 @@ public class StoreEventService implements StoreEventUseCase {
                 .industry(store.getIndustry().name())
                 .requestId(event.requestId())
                 .build();
+
         eventProducer.send(responseEvent);
     }
 }
