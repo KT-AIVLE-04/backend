@@ -35,6 +35,8 @@ services:
     container_name: gateway
     depends_on:
       - auth-service
+      - store-service
+      - shorts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
@@ -62,6 +64,18 @@ services:
     container_name: store-service
     depends_on:
       - mysql
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
+  shorts-service:
+    build:
+      context: ./shorts-service
+      dockerfile: Dockerfile
+    container_name: shorts-service
+    depends_on:
+      - redis
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
