@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
+    // id 'com.ewerk.gradle.plugins.querydsl' version '1.0.10' // QueryDSL 플러그인 사용 시
 }
 
 group = 'kt.aivle'
@@ -56,8 +57,14 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'commons-io:commons-io:2.11.0'
 
-    // Image Processing (선택사항 - 고급 이미지 처리가 필요한 경우)
-    // implementation 'org.imgscalr:imgscalr-lib:4.2'
+    // AWS S3 (S3를 사용하는 경우)
+    implementation 'software.amazon.awssdk:s3:2.21.29'
+
+    // FFmpeg (고급 미디어 처리가 필요한 경우)
+    implementation 'net.bramp.ffmpeg:ffmpeg:0.7.0'
+
+    // Image Processing
+    implementation 'org.imgscalr:imgscalr-lib:4.2'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -68,7 +75,7 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
-// QueryDSL 설정
+// QueryDSL 설정 (수동 설정 방식)
 def querydslDir = "$buildDir/generated/querydsl"
 
 sourceSets {
