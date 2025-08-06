@@ -5,7 +5,9 @@ plugins {
 
 dependencies {
     // 공통 모듈
-    implementation project(':common')
+    implementation(project(':common')) {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
+    }
 
     // Web/API
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -25,6 +27,10 @@ dependencies {
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct'
+    annotationProcessor 'org.mapstruct:mapstruct-processor'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
