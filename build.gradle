@@ -10,6 +10,8 @@ ext {
     set('jjwtVersion', "0.11.5")
     set('springdocVersion', "2.8.9")
     set('lombokVersion', "1.18.38")
+    set('s3Version', "2.20.141")
+    set('nettyVersion', "2.20.141")
 }
 
 
@@ -54,6 +56,8 @@ subprojects {
             dependency "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
             dependency "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
             dependency "org.projectlombok:lombok:${lombokVersion}"
+            dependency "software.amazon.awssdk:s3:${s3Version}"
+            dependency "software.amazon.awssdk:netty-nio-client:${nettyVersion}"
         }
     }
 }

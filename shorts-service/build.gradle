@@ -32,5 +32,9 @@ dependencies {
     implementation 'org.mapstruct:mapstruct'
     annotationProcessor 'org.mapstruct:mapstruct-processor'
 
+    // aws
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:netty-nio-client'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
