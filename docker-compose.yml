@@ -28,6 +28,14 @@ services:
     networks:
       - backend
 
+  fastapi:
+    image: shee9812/backend_ai:latest
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+
   gateway:
     build:
       context: ./gateway
