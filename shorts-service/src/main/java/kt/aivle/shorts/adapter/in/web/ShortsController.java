@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 import static kt.aivle.common.code.CommonResponseCode.OK;
 
 @RestController
@@ -28,7 +26,7 @@ public class ShortsController {
     private final ScenarioCommandMapper scenarioCommandMapper;
 
     @PostMapping(value = "/scenario", consumes = "multipart/form-data")
-    public Mono<ResponseEntity<ApiResponse<List<ScenarioResponse>>>> createScenario(
+    public Mono<ResponseEntity<ApiResponse<ScenarioResponse>>> createScenario(
             @RequestHeader("X-USER-ID") Long userId,
             @RequestHeader("X-STORE-ID") Long storeId,
             @RequestPart("images") Flux<FilePart> images,

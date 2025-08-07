@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 public enum ShortsErrorCode implements DefaultCode {
 
     NOT_GET_STORE(HttpStatus.NOT_FOUND, false, "매장 정보를 불러오지 못했습니다."),
-    KAFKA_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "카프카 통신에 실패했습니다.");
+    KAFKA_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "카프카 통신에 실패했습니다."),
+    IMAGE_UPLOAD_ERROR(HttpStatus.BAD_REQUEST, false, "이미지 업로드에 실패했습니다. (지원 형식: JPEG, PNG)"),
+    AI_WEB_CLIENT_ERROR(HttpStatus.BAD_REQUEST, false, "AI 웹 클라이언트 통신에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean success;
