@@ -5,14 +5,14 @@ import kt.aivle.common.response.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
 
-import static kt.aivle.common.code.CommonResponseCode.BAD_REQUEST;
-import static kt.aivle.common.code.CommonResponseCode.INTERNAL_SERVER_ERROR;
+import static kt.aivle.common.code.CommonResponseCode.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -47,7 +47,10 @@ public class GlobalExceptionHandler {
                 .toList();
         return responseUtils.build(BAD_REQUEST, errors);
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.error("HTTP 메시지 읽기 예외 발생: {}", e.getMessage(), e);
+        return responseUtils.build(BAD_REQUEST_MESSAGE);
+    }
 }
-
-
-

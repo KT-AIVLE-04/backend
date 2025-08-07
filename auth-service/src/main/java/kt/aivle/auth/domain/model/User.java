@@ -1,13 +1,12 @@
 package kt.aivle.auth.domain.model;
 
+import static lombok.AccessLevel.PROTECTED;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import kt.aivle.common.entity.BaseEntity;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import static lombok.AccessLevel.PROTECTED;
 
 @Entity
 @Getter
@@ -52,5 +51,13 @@ public class User extends BaseEntity {
 
     public void unlock() {
         this.locked = false;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 }
