@@ -3,6 +3,7 @@ package kt.aivle.shorts.adapter.out.s3;
 import kt.aivle.common.exception.BusinessException;
 import kt.aivle.shorts.application.port.out.ImageStoragePort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.net.URLEncoder;
@@ -21,6 +23,7 @@ import java.util.UUID;
 
 import static kt.aivle.shorts.exception.ShortsErrorCode.IMAGE_UPLOAD_ERROR;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class S3ImageStorageAdapter implements ImageStoragePort {
@@ -34,7 +37,7 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
     private String region;
 
     @Override
-    public Mono<List<String>> uploadImages(List<FilePart> images) {
+    public Mono<List<UploadedImageInfo>> uploadImages(List<FilePart> images) {
         if (images == null || images.isEmpty()) {
             throw new BusinessException(IMAGE_UPLOAD_ERROR, "업로드할 이미지가 없습니다.");
         }
@@ -43,7 +46,7 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
                 .collectList();
     }
 
-    private Mono<String> uploadSingleImage(FilePart filePart) {
+    private Mono<UploadedImageInfo> uploadSingleImage(FilePart filePart) {
         String contentType = filePart.headers().getContentType() != null
                 ? filePart.headers().getContentType().toString()
                 : "";
@@ -52,6 +55,7 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
             return Mono.error(new BusinessException(IMAGE_UPLOAD_ERROR, "허용되지 않은 파일 타입: " + contentType));
         }
 
+        String originalName = filePart.filename();
         String key = "images/" + UUID.randomUUID() + "-" + URLEncoder.encode(filePart.filename(), StandardCharsets.UTF_8);
 
         PutObjectRequest request = PutObjectRequest.builder()
@@ -70,11 +74,27 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
                             s3AsyncClient.putObject(request, AsyncRequestBody.fromBytes(bytes))
                     );
                 })
-                .map(response -> makeFileUrl(key))
+                .map(response -> UploadedImageInfo.from(makeFileUrl(makeFileUrl(key)), key, originalName, "image"))
                 .onErrorMap(SdkException.class, e -> new BusinessException(IMAGE_UPLOAD_ERROR, e.getMessage()));
     }
 
     private String makeFileUrl(String key) {
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
+    }
+
+    @Override
+    public Mono<Void> deleteImages(List<UploadedImageInfo> images) {
+        return Flux.fromIterable(images)
+                .flatMap(img ->
+                        Mono.fromFuture(s3AsyncClient.deleteObject(
+                                DeleteObjectRequest.builder()
+                                        .bucket(bucketName)
+                                        .key(img.s3Key())
+                                        .build()
+                        )).onErrorResume(e -> {
+                            log.warn("S3 이미지 삭제 실패: " + img.s3Key(), e);
+                            return Mono.empty();
+                        })
+                ).then();
     }
 }
