@@ -59,6 +59,14 @@ services:
     networks:
       - backend
 
+  shorts-service:
+    image: ${DOCKER_USERNAME}/aivle-shorts:latest
+    container_name: shorts-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
   redis:
     image: redis:7.2
     container_name: redis

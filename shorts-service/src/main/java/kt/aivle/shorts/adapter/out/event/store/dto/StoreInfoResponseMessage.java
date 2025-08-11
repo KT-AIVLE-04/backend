@@ -1,9 +1,6 @@
-package kt.aivle.store.adapter.out.event;
+package kt.aivle.shorts.adapter.out.event.store.dto;
 
-import lombok.Builder;
-
-@Builder
-public record StoreInfoResponseEvent(
+public record StoreInfoResponseMessage(
         String requestId,
         Long storeId,
         String name,

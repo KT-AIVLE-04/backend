@@ -28,6 +28,14 @@ services:
     networks:
       - backend
 
+  fastapi:
+    image: shee9812/backend_ai:latest
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+
   gateway:
     build:
       context: ./gateway
@@ -35,6 +43,8 @@ services:
     container_name: gateway
     depends_on:
       - auth-service
+      - store-service
+      - shorts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
@@ -67,6 +77,16 @@ services:
     networks:
       - backend
 
+  shorts-service:
+    build:
+      context: ./shorts-service
+      dockerfile: Dockerfile
+    container_name: shorts-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
   mysql:
     image: mysql:8.0
     container_name: mysql
@@ -87,6 +107,15 @@ services:
   redis:
     image: redis:7.2
     container_name: redis
+    restart: always
+    networks:
+      - backend
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6378:6379"
     restart: always
     networks:
       - backend
