@@ -1,7 +1,7 @@
-package kt.aivle.shorts.application.port.in.command;
+package kt.aivle.shorts.application.port.out.ai.shorts.dto;
 
 
-public record CreateSceneCommand(
+public record GenerateSceneRequest(
         String sessionId,
         String title,
         String content,

@@ -3,11 +3,14 @@ package kt.aivle.shorts.adapter.in.web;
 import kt.aivle.common.response.ApiResponse;
 import kt.aivle.common.response.ResponseUtils;
 import kt.aivle.shorts.adapter.in.web.dto.request.CreateScenarioRequest;
+import kt.aivle.shorts.adapter.in.web.dto.request.CreateSceneRequest;
 import kt.aivle.shorts.adapter.in.web.dto.response.ScenarioResponse;
+import kt.aivle.shorts.adapter.in.web.dto.response.SceneResponse;
 import kt.aivle.shorts.adapter.in.web.mapper.CommandMapper;
 import kt.aivle.shorts.adapter.in.web.mapper.ResponseMapper;
 import kt.aivle.shorts.application.port.in.ShortsUseCase;
 import kt.aivle.shorts.application.port.in.command.CreateScenarioCommand;
+import kt.aivle.shorts.application.port.in.command.CreateSceneCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -40,11 +43,13 @@ public class ShortsController {
                 .map(dto -> responseUtils.build(OK, dto));
     }
 
-//    @PostMapping("/scene")
-//    public Mono<ResponseEntity<ApiResponse<SceneResponse>>> selectScene(@RequestBody SceneRequest request) {
-//        CreateSceneCommand command = commandMapper.toCreateSceneCommand(request.sessionId(), request.title(), request.content());
-//        return shortsUseCase.createScene(command).map(dto -> responseUtils.build(OK, dto));
-//    }
+    @PostMapping("/scene")
+    public Mono<ResponseEntity<ApiResponse<SceneResponse>>> selectScene(@RequestBody CreateSceneRequest request) {
+        CreateSceneCommand command = commandMapper.toCreateSceneCommand(request);
+        return shortsUseCase.createScene(command)
+                .map(responseMapper::toSceneResponse)
+                .map(dto -> responseUtils.build(OK, dto));
+    }
 
 //
 //    @PostMapping("/video")

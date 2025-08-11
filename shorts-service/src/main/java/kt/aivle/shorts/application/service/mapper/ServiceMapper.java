@@ -1,9 +1,13 @@
 package kt.aivle.shorts.application.service.mapper;
 
 import kt.aivle.shorts.application.port.in.command.CreateScenarioCommand;
+import kt.aivle.shorts.application.port.in.command.CreateSceneCommand;
 import kt.aivle.shorts.application.port.in.dto.ScenarioDTO;
-import kt.aivle.shorts.application.port.out.ai.shorts.GenerateScenarioRequest;
-import kt.aivle.shorts.application.port.out.ai.shorts.GenerateScenarioResponse;
+import kt.aivle.shorts.application.port.in.dto.SceneDTO;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioRequest;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioResponse;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneRequest;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneResponse;
 import kt.aivle.shorts.application.port.out.event.contents.CreateContentRequest;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoRequest;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoResponse;
@@ -15,7 +19,7 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface ServiceMapper {
 
-    StoreInfoRequest toStoreInfoResult(CreateScenarioCommand command, String correlationId);
+    StoreInfoRequest toStoreInfoRequest(CreateScenarioCommand command, String correlationId);
 
     ScenarioDTO toScenarioDTO(GenerateScenarioResponse response);
 
@@ -35,4 +39,8 @@ public interface ServiceMapper {
 
     @Mapping(target = "images", source = "items")
     CreateContentRequest toCreateContentRequestMessage(Long storeId, List<CreateContentRequest.ImageItem> items);
+
+    GenerateSceneRequest toGenerateSceneRequest(CreateSceneCommand command);
+
+    SceneDTO toSceneDTO(GenerateSceneResponse response);
 }

@@ -2,8 +2,12 @@ package kt.aivle.shorts.adapter.out.ai.shorts.mapper;
 
 import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiScenarioRequest;
 import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiScenarioResponse;
-import kt.aivle.shorts.application.port.out.ai.shorts.GenerateScenarioRequest;
-import kt.aivle.shorts.application.port.out.ai.shorts.GenerateScenarioResponse;
+import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiSceneRequest;
+import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiSceneResponse;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioRequest;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioResponse;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneRequest;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -18,7 +22,11 @@ public interface AiShortsMapper {
     @Mapping(target = "adType", source = "adType")
     @Mapping(target = "targetAudience", source = "target")
     @Mapping(target = "scenarioPrompt", source = "prompt")
-    CreateAiScenarioRequest toCreateScenarioRequest(GenerateScenarioRequest request);
+    CreateAiScenarioRequest toAiCreateScenarioRequest(GenerateScenarioRequest request);
 
-    GenerateScenarioResponse toAiScenarioResponse(CreateAiScenarioResponse response);
+    GenerateScenarioResponse toGenerateScenarioResponse(CreateAiScenarioResponse response);
+
+    CreateAiSceneRequest toAiCreateSceneRequest(GenerateSceneRequest request);
+
+    GenerateSceneResponse toGenerateSceneResponse(CreateAiSceneResponse response);
 }
