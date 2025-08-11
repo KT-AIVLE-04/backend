@@ -111,6 +111,15 @@ services:
     networks:
       - backend
 
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6378:6379"
+    restart: always
+    networks:
+      - backend
+
 volumes:
   mysql_data:
 
