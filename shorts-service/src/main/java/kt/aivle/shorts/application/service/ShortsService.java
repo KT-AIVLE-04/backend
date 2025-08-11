@@ -77,9 +77,6 @@ public class ShortsService implements ShortsUseCase {
             StoreInfoResponse store,
             List<UploadImageResponse> uploaded
     ) {
-        List<DeleteImageRequest> deleteRequests = uploaded.stream()
-                .map(img -> new DeleteImageRequest(img.s3Key()))
-                .toList();
 
         List<String> presignedUrls = uploaded.stream()
                 .map(UploadImageResponse::presignedUrl)
@@ -88,9 +85,13 @@ public class ShortsService implements ShortsUseCase {
         GenerateScenarioRequest outReq = mapper.toGenerateScenarioRequest(command, store, presignedUrls);
 
         return aiShortsPort.generateScenario(outReq)
-                .onErrorResume(aiErr ->
-                        mediaStoragePort.deleteImages(deleteRequests)
-                                .then(Mono.error(new BusinessException(AI_WEB_CLIENT_ERROR, aiErr.getMessage())))
+                .onErrorResume(aiErr -> {
+                            List<DeleteImageRequest> deleteRequests = uploaded.stream()
+                                    .map(img -> new DeleteImageRequest(img.s3Key()))
+                                    .toList();
+                            return mediaStoragePort.deleteImages(deleteRequests)
+                                    .then(Mono.error(new BusinessException(AI_WEB_CLIENT_ERROR, aiErr.getMessage())));
+                        }
                 )
                 .flatMap(outRes -> {
                     List<CreateContentRequest.ImageItem> items = uploaded.stream()
@@ -107,9 +108,13 @@ public class ShortsService implements ShortsUseCase {
 
                     return contentServicePort.createContent(contentsReq)
                             .thenReturn(outRes)
-                            .onErrorResume(evErr ->
-                                    mediaStoragePort.deleteImages(deleteRequests)
-                                            .then(Mono.error(new BusinessException(CONTENTS_EVENT_ERROR, evErr.getMessage())))
+                            .onErrorResume(evErr -> {
+                                        List<DeleteImageRequest> deleteRequests = uploaded.stream()
+                                                .map(img -> new DeleteImageRequest(img.s3Key()))
+                                                .toList();
+                                        return mediaStoragePort.deleteImages(deleteRequests)
+                                                .then(Mono.error(new BusinessException(CONTENTS_EVENT_ERROR, evErr.getMessage())));
+                                    }
                             );
                 });
     }
