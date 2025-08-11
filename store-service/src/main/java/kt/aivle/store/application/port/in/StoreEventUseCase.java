@@ -1,7 +1,8 @@
 package kt.aivle.store.application.port.in;
 
-import kt.aivle.store.adapter.in.event.StoreInfoRequestEvent;
+import kt.aivle.store.adapter.in.event.StoreInfoRequestMessage;
+import kt.aivle.store.adapter.in.event.StoreInfoResponseMessage;
 
 public interface StoreEventUseCase {
-    void handleStoreInfoRequest(StoreInfoRequestEvent event);
+    StoreInfoResponseMessage buildResponse(StoreInfoRequestMessage event);
 }
