@@ -28,7 +28,7 @@ public enum Industry {
         return Arrays.stream(values())
                 .filter(e -> e.value.equals(v))
                 .findFirst()
-                .orElseThrow(() -> new BusinessException(NOT_FOUND_INDUSTRY, "해당 업종을 찾을 수 없습니다. value: " + v));
+                .orElseThrow(() -> new BusinessException(NOT_FOUND_INDUSTRY));
     }
 
     @Override
