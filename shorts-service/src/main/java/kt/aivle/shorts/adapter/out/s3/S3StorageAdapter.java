@@ -4,7 +4,7 @@ import kt.aivle.common.exception.BusinessException;
 import kt.aivle.shorts.adapter.out.s3.dto.UploadedImageInfo;
 import kt.aivle.shorts.adapter.out.s3.mapper.S3ImageMapper;
 import kt.aivle.shorts.application.port.out.s3.DeleteImageRequest;
-import kt.aivle.shorts.application.port.out.s3.ImageStoragePort;
+import kt.aivle.shorts.application.port.out.s3.MediaStoragePort;
 import kt.aivle.shorts.application.port.out.s3.UploadImageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import static kt.aivle.shorts.exception.ShortsErrorCode.IMAGE_UPLOAD_ERROR;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class S3ImageStorageAdapter implements ImageStoragePort {
+public class S3StorageAdapter implements MediaStoragePort {
 
     private final S3AsyncClient s3AsyncClient;
     private final S3ImageMapper mapper;

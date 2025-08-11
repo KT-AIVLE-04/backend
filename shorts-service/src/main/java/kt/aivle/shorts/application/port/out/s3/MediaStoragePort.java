@@ -5,7 +5,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-public interface ImageStoragePort {
+public interface MediaStoragePort {
     Mono<List<UploadImageResponse>> uploadImages(List<FilePart> images);
 
     Mono<Void> deleteImages(List<DeleteImageRequest> requests);
