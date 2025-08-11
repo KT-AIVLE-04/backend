@@ -16,6 +16,7 @@ public class JpaConfig {
      * JPA Auditing을 위한 현재 사용자 제공
      * 실제 프로젝트에서는 SecurityContext에서 사용자 정보를 가져옴
      */
+    @org.springframework.context.annotation.Bean
     public AuditorAware<String> auditorProvider() {
         return new AuditorAware<String>() {
             @Override

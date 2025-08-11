@@ -41,11 +41,27 @@ public class VideoController {
         try {
             Video uploadedVideo = videoService.uploadVideo(file, title, userId);
 
+            // 응답 데이터 구성 - null 값 처리
+            Map<String, Object> responseData = new java.util.LinkedHashMap<>();
+            responseData.put("id", uploadedVideo.getId());
+            responseData.put("title", uploadedVideo.getTitle());
+            responseData.put("url", uploadedVideo.getS3Url());
+            responseData.put("thumbnailUrl", uploadedVideo.getThumbnailUrl() != null ? uploadedVideo.getThumbnailUrl() : "");
+            responseData.put("fileSize", uploadedVideo.getFileSize());
+            responseData.put("width", uploadedVideo.getWidth() != null ? uploadedVideo.getWidth() : 0);
+            responseData.put("height", uploadedVideo.getHeight() != null ? uploadedVideo.getHeight() : 0);
+            responseData.put("duration", uploadedVideo.getDurationSeconds() != null ? uploadedVideo.getDurationSeconds() : 0);
+            responseData.put("formattedDuration", uploadedVideo.getFormattedDuration());
+            responseData.put("isShort", uploadedVideo.getIsShort() != null ? uploadedVideo.getIsShort() : false);
+            responseData.put("codec", uploadedVideo.getCodec() != null ? uploadedVideo.getCodec() : "");
+            responseData.put("bitrate", uploadedVideo.getBitrate() != null ? uploadedVideo.getBitrate() : 0);
+            responseData.put("frameRate", uploadedVideo.getFrameRate() != null ? uploadedVideo.getFrameRate() : 0.0);
+            responseData.put("createdAt", uploadedVideo.getCreatedAt());
+
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "message", "영상이 성공적으로 업로드되었습니다.",
-                    "data", Map.of(
-                    )
+                    "data", responseData
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(

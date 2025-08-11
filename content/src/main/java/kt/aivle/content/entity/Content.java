@@ -23,7 +23,7 @@ public abstract class Content extends BaseEntity {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "content_type", length = 100)
+    @Column(name = "content_type", length = 100, insertable = false, updatable = false)
     private String contentType;
 
     @Enumerated(EnumType.STRING)

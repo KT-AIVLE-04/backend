@@ -45,7 +45,7 @@ public class S3Service {
                     s3Key,
                     file.getInputStream(),
                     metadata
-            ).withCannedAcl(CannedAccessControlList.PublicRead);
+            );
 
             amazonS3.putObject(putRequest);
 
@@ -76,7 +76,7 @@ public class S3Service {
                     s3Key,
                     inputStream,
                     metadata
-            ).withCannedAcl(CannedAccessControlList.PublicRead);
+            );
 
             amazonS3.putObject(putRequest);
 
