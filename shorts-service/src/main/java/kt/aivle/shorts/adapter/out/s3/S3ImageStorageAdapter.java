@@ -1,7 +1,11 @@
 package kt.aivle.shorts.adapter.out.s3;
 
 import kt.aivle.common.exception.BusinessException;
-import kt.aivle.shorts.application.port.out.ImageStoragePort;
+import kt.aivle.shorts.adapter.out.s3.dto.UploadedImageInfo;
+import kt.aivle.shorts.adapter.out.s3.mapper.S3ImageMapper;
+import kt.aivle.shorts.application.port.out.s3.DeleteImageRequest;
+import kt.aivle.shorts.application.port.out.s3.ImageStoragePort;
+import kt.aivle.shorts.application.port.out.s3.UploadImageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +33,7 @@ import static kt.aivle.shorts.exception.ShortsErrorCode.IMAGE_UPLOAD_ERROR;
 public class S3ImageStorageAdapter implements ImageStoragePort {
 
     private final S3AsyncClient s3AsyncClient;
+    private final S3ImageMapper mapper;
 
     private final String bucketName = "aivle-contents";
     private final List<String> allowedTypes = List.of("image/jpeg", "image/png");
@@ -37,12 +42,13 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
     private String region;
 
     @Override
-    public Mono<List<UploadedImageInfo>> uploadImages(List<FilePart> images) {
+    public Mono<List<UploadImageResponse>> uploadImages(List<FilePart> images) {
         if (images == null || images.isEmpty()) {
             throw new BusinessException(IMAGE_UPLOAD_ERROR, "업로드할 이미지가 없습니다.");
         }
         return Flux.fromIterable(images)
                 .flatMap(this::uploadSingleImage, 5)
+                .map(mapper::toUploadImageResponse)
                 .collectList();
     }
 
@@ -83,8 +89,9 @@ public class S3ImageStorageAdapter implements ImageStoragePort {
     }
 
     @Override
-    public Mono<Void> deleteImages(List<UploadedImageInfo> images) {
-        return Flux.fromIterable(images)
+    public Mono<Void> deleteImages(List<DeleteImageRequest> requests) {
+        return Flux.fromIterable(requests)
+                .map(mapper::toDeleteS3ImageRequest)
                 .flatMap(img ->
                         Mono.fromFuture(s3AsyncClient.deleteObject(
                                 DeleteObjectRequest.builder()

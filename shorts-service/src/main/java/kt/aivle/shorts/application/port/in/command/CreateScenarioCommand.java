@@ -12,7 +12,7 @@ public record CreateScenarioCommand(
         String prompt,
         String platform,
         String target,
-        String promotionType,
+        String adType,
         List<String> brandConcepts,
         Flux<FilePart> images
 ) {
