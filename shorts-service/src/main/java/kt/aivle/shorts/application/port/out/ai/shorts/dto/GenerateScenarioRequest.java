@@ -1,4 +1,4 @@
-package kt.aivle.shorts.application.port.out.ai.shorts;
+package kt.aivle.shorts.application.port.out.ai.shorts.dto;
 
 import java.util.List;
 
