@@ -18,10 +18,14 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +37,7 @@ import static kt.aivle.shorts.exception.ShortsErrorCode.IMAGE_UPLOAD_ERROR;
 public class S3StorageAdapter implements MediaStoragePort {
 
     private final S3AsyncClient s3AsyncClient;
+    private final S3Presigner s3Presigner;
     private final S3ImageMapper mapper;
 
     private final String bucketName = "aivle-contents";
@@ -40,6 +45,7 @@ public class S3StorageAdapter implements MediaStoragePort {
 
     @Value("${cloud.aws.region.static}")
     private String region;
+
 
     @Override
     public Mono<List<UploadImageResponse>> uploadImages(List<FilePart> images) {
@@ -80,8 +86,32 @@ public class S3StorageAdapter implements MediaStoragePort {
                             s3AsyncClient.putObject(request, AsyncRequestBody.fromBytes(bytes))
                     );
                 })
-                .map(response -> UploadedImageInfo.from(makeFileUrl(makeFileUrl(key)), key, originalName, "image"))
+                .map(resp -> {
+                    String url = makeFileUrl(key);
+                    String presignedUrl = presignGetUrl(key, Duration.ofMinutes(15));
+                    return UploadedImageInfo.from(
+                            url,
+                            presignedUrl,
+                            key,
+                            originalName,
+                            contentType
+                    );
+                })
                 .onErrorMap(SdkException.class, e -> new BusinessException(IMAGE_UPLOAD_ERROR, e.getMessage()));
+    }
+
+    private String presignGetUrl(String key, Duration ttl) {
+        GetObjectRequest getReq = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignReq = GetObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .getObjectRequest(getReq)
+                .build();
+
+        return s3Presigner.presignGetObject(presignReq).url().toString();
     }
 
     private String makeFileUrl(String key) {
