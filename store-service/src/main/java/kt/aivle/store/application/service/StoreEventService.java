@@ -34,7 +34,7 @@ public class StoreEventService implements StoreEventUseCase {
                 .phoneNumber(store.getPhoneNumber())
                 .latitude(store.getLatitude())
                 .longitude(store.getLongitude())
-                .industry(store.getIndustry().name())
+                .industry(store.getIndustry())
                 .requestId(req.requestId())
                 .build();
     }

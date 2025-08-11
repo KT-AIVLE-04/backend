@@ -22,7 +22,6 @@ public class Store extends BaseEntity {
     private Double latitude;
     private Double longitude;
 
-    @Enumerated(EnumType.STRING)
     private Industry industry;
 
     @Builder

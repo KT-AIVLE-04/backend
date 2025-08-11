@@ -1,5 +1,6 @@
 package kt.aivle.store.adapter.in.event;
 
+import kt.aivle.store.domain.model.Industry;
 import lombok.Builder;
 
 @Builder
@@ -10,7 +11,7 @@ public record StoreInfoResponseMessage(
         String phoneNumber,
         Double latitude,
         Double longitude,
-        String industry,
+        Industry industry,
         String requestId) {
 }
 
