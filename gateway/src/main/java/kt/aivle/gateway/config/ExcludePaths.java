@@ -13,6 +13,9 @@ public class ExcludePaths {
             "/api/auth/signup",
             "/api/auth/refresh",
             "/api/auth/logout",
+            "/api/auth/*/login",
+            "/api/auth/oauth2/authorization/**",
+            "/api/auth/oauth2/code/**",
 
             // swagger
             "/swagger-ui.html",
@@ -20,7 +23,9 @@ public class ExcludePaths {
             "/swagger-resources/**",
             "/webjars/**",
             "/v3/api-docs/**",
-            "/api/auth/v3/api-docs/**"
+            "/api/auth/v3/api-docs/**",
+            "/api/stores/v3/api-docs/**",
+            "/api/shorts/v3/api-docs/**"
     );
 
     public static boolean isPatternMatch(String path) {

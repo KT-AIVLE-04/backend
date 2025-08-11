@@ -1,8 +1,9 @@
 package kt.aivle.auth.application.port.out;
 
-import kt.aivle.auth.domain.model.User;
-
 import java.util.Optional;
+
+import kt.aivle.auth.domain.model.OAuthProvider;
+import kt.aivle.auth.domain.model.User;
 
 public interface UserRepositoryPort {
     boolean existsByEmail(String email);
@@ -13,5 +14,5 @@ public interface UserRepositoryPort {
 
     Optional<User> findByEmail(String email);
 
-
+    Optional<User> findByProviderAndProviderId(OAuthProvider provider, String providerId);
 }

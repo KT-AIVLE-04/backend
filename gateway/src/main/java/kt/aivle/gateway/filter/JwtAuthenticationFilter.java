@@ -2,20 +2,21 @@ package kt.aivle.gateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import kt.aivle.common.jwt.JwtUtils;
+import kt.aivle.common.exception.BusinessException;
 import kt.aivle.gateway.config.ExcludePaths;
-import kt.aivle.gateway.exception.GatewayErrorCode;
+import kt.aivle.gateway.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
 @Component
 @RequiredArgsConstructor
@@ -38,8 +39,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // 1. Authorization 헤더 확인
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, GatewayErrorCode.MISSING_AUTH_HEADER.name());
+            throw new BusinessException(INVALID_TOKEN);
         }
+
         String token = authHeader.substring(7);
 
         // 2. 토큰 검증
@@ -47,9 +49,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         try {
             claims = jwtUtils.validateToken(token);
         } catch (ExpiredJwtException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, GatewayErrorCode.EXPIRED_TOKEN.name());
+            throw new BusinessException(EXPIRED_TOKEN);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, GatewayErrorCode.INVALID_TOKEN.name());
+            throw new BusinessException(INTERNAL_ERROR, e);
         }
 
         // 3. jti 추출
@@ -57,7 +59,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         try {
             jti = jwtUtils.getJti(claims);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, GatewayErrorCode.INVALID_TOKEN.name());
+            throw new BusinessException(INVALID_TOKEN, e);
         }
         String key = BLACKLIST_PREFIX + jti;
 
@@ -65,9 +67,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return redisTemplate.hasKey(key)
                 .flatMap(isBlacklisted -> {
                     if (Boolean.TRUE.equals(isBlacklisted)) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, GatewayErrorCode.BLACKLISTED_TOKEN.name()));
+                        return Mono.error(new BusinessException(BLACKLISTED_TOKEN));
                     }
-                    return chain.filter(exchange);
+
+                    String userId = claims.getSubject();
+
+                    ServerHttpRequest mutatedRequest = exchange.getRequest()
+                            .mutate()
+                            .header("X-USER-ID", userId)
+                            .build();
+
+                    ServerWebExchange mutatedExchange = exchange.mutate()
+                            .request(mutatedRequest)
+                            .build();
+
+                    return chain.filter(mutatedExchange);
                 });
     }
 
