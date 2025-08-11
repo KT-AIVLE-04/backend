@@ -8,203 +8,71 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ImageRepository extends JpaRepository<Image, Long> {
 
-    // === 기본 조회 메서드 ===
+    // 사용자별 이미지 조회 (페이징, 최신순)
+    Page<Image> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
 
-    /**
-     * 삭제되지 않은 이미지 조회 (ID로)
-     */
-    @Query("SELECT i FROM Image i WHERE i.id = :id AND i.deletedAt IS NULL")
-    Optional<Image> findByIdAndNotDeleted(@Param("id") Long id);
+    // 사용자별 이미지 개수
+    long countByUserId(String userId);
 
-    /**
-     * 사용자별 이미지 목록 조회 (삭제되지 않은 것만, 페이지네이션)
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndNotDeleted(@Param("userId") Long userId, Pageable pageable);
+    // 특정 해상도 범위의 이미지 조회
+    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.width >= :minWidth AND i.height >= :minHeight ORDER BY i.createdAt DESC")
+    Page<Image> findByUserIdAndMinResolution(@Param("userId") String userId,
+                                             @Param("minWidth") Integer minWidth,
+                                             @Param("minHeight") Integer minHeight,
+                                             Pageable pageable);
 
-    /**
-     * 전체 이미지 목록 조회 (삭제되지 않은 것만, 페이지네이션)
-     */
-    @Query("SELECT i FROM Image i WHERE i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findAllNotDeleted(Pageable pageable);
+    // 가로/세로 비율별 이미지 조회
+    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND " +
+            "CASE WHEN :aspectRatio = 'landscape' THEN i.width > i.height " +
+            "     WHEN :aspectRatio = 'portrait' THEN i.width < i.height " +
+            "     WHEN :aspectRatio = 'square' THEN i.width = i.height " +
+            "     ELSE TRUE END " +
+            "ORDER BY i.createdAt DESC")
+    Page<Image> findByUserIdAndAspectRatio(@Param("userId") String userId,
+                                           @Param("aspectRatio") String aspectRatio,
+                                           Pageable pageable);
 
-    // === 포맷별 조회 ===
+    // 큰 이미지 조회 (파일 크기 기준)
+    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.fileSize > :sizeThreshold ORDER BY i.fileSize DESC")
+    List<Image> findLargeImagesByUserId(@Param("userId") String userId, @Param("sizeThreshold") Long sizeThreshold);
 
-    /**
-     * 이미지 포맷별 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.imageFormat = :format AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndImageFormatAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("format") Image.ImageFormat format,
-            Pageable pageable);
+    // 썸네일이 없는 이미지 조회 (썸네일 생성 배치용)
+    @Query("SELECT i FROM Image i WHERE i.thumbnailUrl IS NULL OR i.thumbnailUrl = ''")
+    List<Image> findImagesWithoutThumbnail();
 
-    // === 처리 상태별 조회 ===
+    // 이미지 해상도별 통계
+    @Query("SELECT " +
+            "CASE WHEN i.width >= 3840 THEN '4K+' " +
+            "     WHEN i.width >= 1920 THEN 'FHD' " +
+            "     WHEN i.width >= 1280 THEN 'HD' " +
+            "     ELSE 'SD' END as resolution, " +
+            "COUNT(i) as count " +
+            "FROM Image i WHERE i.userId = :userId " +
+            "GROUP BY CASE WHEN i.width >= 3840 THEN '4K+' " +
+            "              WHEN i.width >= 1920 THEN 'FHD' " +
+            "              WHEN i.width >= 1280 THEN 'HD' " +
+            "              ELSE 'SD' END")
+    List<Object[]> getResolutionStats(@Param("userId") String userId);
 
-    /**
-     * 처리 상태별 이미지 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.processingStatus = :status AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndProcessingStatusAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("status") Image.ProcessingStatus status,
-            Pageable pageable);
+    // 최근 업로드된 이미지 (미리보기용)
+    @Query("SELECT i FROM Image i WHERE i.userId = :userId ORDER BY i.createdAt DESC")
+    List<Image> findRecentImagesByUserId(@Param("userId") String userId, Pageable pageable);
 
-    /**
-     * 처리 완료된 이미지만 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.processingStatus = 'COMPLETED' AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findCompletedByUserIdAndNotDeleted(@Param("userId") Long userId, Pageable pageable);
+    // S3 키로 이미지 찾기
+    Optional<Image> findByS3Key(String s3Key);
 
-    // === 검색 기능 ===
+    // 썸네일 S3 키로 이미지 찾기
+    Optional<Image> findByThumbnailS3Key(String thumbnailS3Key);
 
-    /**
-     * 제목으로 이미지 검색
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.title LIKE %:title% AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndTitleContainingAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("title") String title,
-            Pageable pageable);
-
-    /**
-     * 키워드로 이미지 검색 (FULLTEXT 검색)
-     */
-    @Query(value = "SELECT * FROM images WHERE user_id = :userId AND MATCH(keywords) AGAINST(:keyword IN NATURAL LANGUAGE MODE) AND deleted_at IS NULL ORDER BY created_at DESC",
-            countQuery = "SELECT COUNT(*) FROM images WHERE user_id = :userId AND MATCH(keywords) AGAINST(:keyword IN NATURAL LANGUAGE MODE) AND deleted_at IS NULL",
-            nativeQuery = true)
-    Page<Image> searchByKeywordsFullText(@Param("userId") Long userId, @Param("keyword") String keyword, Pageable pageable);
-
-    /**
-     * 키워드로 이미지 검색 (LIKE 검색 - FULLTEXT 미지원시 대체)
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.keywords LIKE %:keyword% AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndKeywordsContainingAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("keyword") String keyword,
-            Pageable pageable);
-
-    /**
-     * 제목 또는 키워드로 통합 검색
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND (i.title LIKE %:keyword% OR i.keywords LIKE %:keyword%) AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> searchByKeywordAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("keyword") String keyword,
-            Pageable pageable);
-
-    // === 크기 및 해상도별 조회 ===
-
-    /**
-     * 특정 해상도 이상의 이미지 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.width >= :minWidth AND i.height >= :minHeight AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndMinResolutionAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("minWidth") Integer minWidth,
-            @Param("minHeight") Integer minHeight,
-            Pageable pageable);
-
-    /**
-     * 파일 크기 범위로 이미지 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.fileSize BETWEEN :minSize AND :maxSize AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndFileSizeBetweenAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("minSize") Long minSize,
-            @Param("maxSize") Long maxSize,
-            Pageable pageable);
-
-    // === 기간별 조회 ===
-
-    /**
-     * 생성 기간으로 이미지 조회
-     */
-    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.createdAt BETWEEN :startDate AND :endDate AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
-    Page<Image> findByUserIdAndCreatedAtBetweenAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
-            Pageable pageable);
-
-    // === 통계 및 카운트 ===
-
-    /**
-     * 사용자별 전체 이미지 개수 (삭제되지 않은 것만)
-     */
-    @Query("SELECT COUNT(i) FROM Image i WHERE i.userId = :userId AND i.deletedAt IS NULL")
-    long countByUserIdAndNotDeleted(@Param("userId") Long userId);
-
-    /**
-     * 사용자별 포맷별 이미지 개수
-     */
-    @Query("SELECT COUNT(i) FROM Image i WHERE i.userId = :userId AND i.imageFormat = :format AND i.deletedAt IS NULL")
-    long countByUserIdAndImageFormatAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("format") Image.ImageFormat format);
-
-    /**
-     * 사용자별 처리 상태별 이미지 개수
-     */
-    @Query("SELECT COUNT(i) FROM Image i WHERE i.userId = :userId AND i.processingStatus = :status AND i.deletedAt IS NULL")
-    long countByUserIdAndProcessingStatusAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("status") Image.ProcessingStatus status);
-
-    /**
-     * 사용자별 총 파일 크기
-     */
-    @Query("SELECT COALESCE(SUM(i.fileSize), 0) FROM Image i WHERE i.userId = :userId AND i.deletedAt IS NULL")
-    long getTotalFileSizeByUserId(@Param("userId") Long userId);
-
-    /**
-     * 사용자별 평균 이미지 크기
-     */
-    @Query("SELECT AVG(i.fileSize) FROM Image i WHERE i.userId = :userId AND i.deletedAt IS NULL")
-    Double getAverageFileSizeByUserId(@Param("userId") Long userId);
-
-    // === 파일 관리 ===
-
-    /**
-     * S3 파일 경로로 이미지 조회 (중복 체크용)
-     */
-    @Query("SELECT i FROM Image i WHERE i.filePath = :filePath AND i.deletedAt IS NULL")
-    Optional<Image> findByFilePathAndNotDeleted(@Param("filePath") String filePath);
-
-    /**
-     * 처리 중인 이미지들 조회 (배치 작업용)
-     */
-    @Query("SELECT i FROM Image i WHERE i.processingStatus IN ('UPLOADING', 'PROCESSING') AND i.deletedAt IS NULL")
-    List<Image> findProcessingImages();
-
-    /**
-     * 오래된 처리 중 이미지들 조회 (오류 처리용)
-     */
-    @Query("SELECT i FROM Image i WHERE i.processingStatus IN ('UPLOADING', 'PROCESSING') AND i.updatedAt < :cutoffTime AND i.deletedAt IS NULL")
-    List<Image> findStuckProcessingImages(@Param("cutoffTime") LocalDateTime cutoffTime);
-
-    // === 고급 검색 ===
-
-    /**
-     * 여러 키워드로 이미지 검색 (AND 조건)
-     */
-    @Query(value = "SELECT * FROM images WHERE user_id = :userId AND " +
-            "(:keyword1 IS NULL OR keywords LIKE CONCAT('%', :keyword1, '%')) AND " +
-            "(:keyword2 IS NULL OR keywords LIKE CONCAT('%', :keyword2, '%')) AND " +
-            "(:keyword3 IS NULL OR keywords LIKE CONCAT('%', :keyword3, '%')) AND " +
-            "deleted_at IS NULL ORDER BY created_at DESC",
-            nativeQuery = true)
-    Page<Image> searchByMultipleKeywords(
-            @Param("userId") Long userId,
-            @Param("keyword1") String keyword1,
-            @Param("keyword2") String keyword2,
-            @Param("keyword3") String keyword3,
-            Pageable pageable);
+    // 원본 파일명으로 검색
+    @Query("SELECT i FROM Image i WHERE i.userId = :userId AND i.originalFilename LIKE %:filename% ORDER BY i.createdAt DESC")
+    Page<Image> findByUserIdAndOriginalFilenameContaining(@Param("userId") String userId,
+                                                          @Param("filename") String filename,
+                                                          Pageable pageable);
 }

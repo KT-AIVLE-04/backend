@@ -1,78 +1,185 @@
 package kt.aivle.content.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "videos")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Video extends MediaFile {
+@DiscriminatorValue("VIDEO")
+public class Video extends Content {
 
-    @Column(name = "scenario", columnDefinition = "TEXT")
-    private String scenario;
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
 
-    @Column(name = "duration")
-    private Integer duration; // 영상 길이 (초 단위)
+    @Column(name = "width")
+    private Integer width;
 
-    @Column(name = "resolution_width")
-    private Integer resolutionWidth;
+    @Column(name = "height")
+    private Integer height;
 
-    @Column(name = "resolution_height")
-    private Integer resolutionHeight;
+    @Column(name = "thumbnail_url", length = 500)
+    private String thumbnailUrl;
+
+    @Column(name = "thumbnail_s3_key", length = 500)
+    private String thumbnailS3Key;
+
+    @Column(name = "bitrate")
+    private Integer bitrate;
 
     @Column(name = "frame_rate")
     private Double frameRate;
 
-    @Column(name = "bitrate")
-    private Long bitrate;
+    @Column(name = "codec", length = 50)
+    private String codec;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "video_type", nullable = false)
-    private VideoType videoType;
+    @Column(name = "is_short")
+    private Boolean isShort = false; // 숏츠 여부
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "processing_status")
-    private ProcessingStatus processingStatus;
+    // 기본 생성자
+    public Video() {
+        super();
+    }
 
-    @Column(name = "preview_start_time")
-    private Integer previewStartTime; // 미리보기 시작 시간 (초)
+    // 생성자
+    public Video(String title, String originalFilename, String s3Url, String s3Key,
+                 Long fileSize, String contentType, String userId,
+                 Integer durationSeconds, Integer width, Integer height,
+                 String thumbnailUrl, String thumbnailS3Key, Boolean isShort) {
+        super(title, originalFilename, s3Url, s3Key, fileSize, contentType, ContentType.VIDEO, userId);
+        this.durationSeconds = durationSeconds;
+        this.width = width;
+        this.height = height;
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailS3Key = thumbnailS3Key;
+        this.isShort = isShort != null ? isShort : false;
+    }
 
-    @Column(name = "is_shorts")
-    private Boolean isShorts = false; // 숏츠 여부
+    // 팩토리 메소드
+    public static Video createVideo(String title, String originalFilename, String s3Url, String s3Key,
+                                    Long fileSize, String contentType, String userId) {
+        return new Video(title, originalFilename, s3Url, s3Key, fileSize, contentType, userId,
+                null, null, null, null, null, false);
+    }
 
-    public enum VideoType {
-        NORMAL("일반 영상"),
-        SHORTS("숏츠");
+    // 썸네일 정보 업데이트
+    public void updateThumbnail(String thumbnailUrl, String thumbnailS3Key) {
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailS3Key = thumbnailS3Key;
+    }
 
-        private final String description;
+    // 영상 메타데이터 업데이트
+    public void updateMetadata(Integer durationSeconds, Integer width, Integer height,
+                               Integer bitrate, Double frameRate, String codec) {
+        this.durationSeconds = durationSeconds;
+        this.width = width;
+        this.height = height;
+        this.bitrate = bitrate;
+        this.frameRate = frameRate;
+        this.codec = codec;
+        // 60초 이하면 숏츠로 분류
+        this.isShort = durationSeconds != null && durationSeconds <= 60;
+    }
 
-        VideoType(String description) {
-            this.description = description;
-        }
+    // Getters and Setters
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
 
-        public String getDescription() {
-            return description;
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+        // 시간이 설정될 때 숏츠 여부 자동 판단
+        if (durationSeconds != null) {
+            this.isShort = durationSeconds <= 60;
         }
     }
 
-    public enum ProcessingStatus {
-        UPLOADING("업로드 중"),
-        PROCESSING("처리 중"),
-        COMPLETED("완료"),
-        FAILED("실패");
+    public Integer getWidth() {
+        return width;
+    }
 
-        private final String description;
+    public void setWidth(Integer width) {
+        this.width = width;
+    }
 
-        ProcessingStatus(String description) {
-            this.description = description;
+    public Integer getHeight() {
+        return height;
+    }
+
+    public void setHeight(Integer height) {
+        this.height = height;
+    }
+
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    public String getThumbnailS3Key() {
+        return thumbnailS3Key;
+    }
+
+    public void setThumbnailS3Key(String thumbnailS3Key) {
+        this.thumbnailS3Key = thumbnailS3Key;
+    }
+
+    public Integer getBitrate() {
+        return bitrate;
+    }
+
+    public void setBitrate(Integer bitrate) {
+        this.bitrate = bitrate;
+    }
+
+    public Double getFrameRate() {
+        return frameRate;
+    }
+
+    public void setFrameRate(Double frameRate) {
+        this.frameRate = frameRate;
+    }
+
+    public String getCodec() {
+        return codec;
+    }
+
+    public void setCodec(String codec) {
+        this.codec = codec;
+    }
+
+    public Boolean getIsShort() {
+        return isShort;
+    }
+
+    public void setIsShort(Boolean isShort) {
+        this.isShort = isShort;
+    }
+
+    // 유틸리티 메소드들
+
+    // 영상 길이를 MM:SS 형태로 반환
+    public String getFormattedDuration() {
+        if (durationSeconds == null) return "00:00";
+
+        int minutes = durationSeconds / 60;
+        int seconds = durationSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    // 영상 비율 계산
+    public Double getAspectRatio() {
+        if (width != null && height != null && height > 0) {
+            return (double) width / height;
         }
+        return null;
+    }
 
-        public String getDescription() {
-            return description;
+    // 해상도 문자열 반환
+    public String getResolution() {
+        if (width != null && height != null) {
+            return width + "x" + height;
         }
+        return null;
     }
 }

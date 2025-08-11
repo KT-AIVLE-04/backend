@@ -1,19 +1,11 @@
 package kt.aivle.content.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "images")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Image extends MediaFile {
-
-    @Column(name = "keywords", length = 500)
-    private String keywords; // 이미지 생성 키워드
+@DiscriminatorValue("IMAGE")
+public class Image extends Content {
 
     @Column(name = "width")
     private Integer width;
@@ -21,73 +13,85 @@ public class Image extends MediaFile {
     @Column(name = "height")
     private Integer height;
 
-    @Column(name = "color_depth")
-    private Integer colorDepth; // 색상 깊이 (비트)
+    @Column(name = "thumbnail_url", length = 500)
+    private String thumbnailUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "image_format", nullable = false)
-    private ImageFormat imageFormat;
+    @Column(name = "thumbnail_s3_key", length = 500)
+    private String thumbnailS3Key;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "processing_status")
-    private ProcessingStatus processingStatus;
-
-    @Column(name = "compressed_url", length = 500)
-    private String compressedUrl; // 압축된 이미지 URL
-
-    @Column(name = "alt_text", length = 255)
-    private String altText; // 접근성을 위한 대체 텍스트
-
-    public enum ImageFormat {
-        JPEG("image/jpeg", "jpg"),
-        PNG("image/png", "png"),
-        WEBP("image/webp", "webp"),
-        GIF("image/gif", "gif");
-
-        private final String mimeType;
-        private final String extension;
-
-        ImageFormat(String mimeType, String extension) {
-            this.mimeType = mimeType;
-            this.extension = extension;
-        }
-
-        public String getMimeType() {
-            return mimeType;
-        }
-
-        public String getExtension() {
-            return extension;
-        }
+    // 기본 생성자
+    public Image() {
+        super();
     }
 
-    public enum ProcessingStatus {
-        UPLOADING("업로드 중"),
-        PROCESSING("처리 중"),
-        COMPLETED("완료"),
-        FAILED("실패");
+    // 생성자
+    public Image(String title, String originalFilename, String s3Url, String s3Key,
+                 Long fileSize, String contentType, String userId,
+                 Integer width, Integer height, String thumbnailUrl, String thumbnailS3Key) {
+        super(title, originalFilename, s3Url, s3Key, fileSize, contentType, ContentType.IMAGE, userId);
+        this.width = width;
+        this.height = height;
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailS3Key = thumbnailS3Key;
+    }
 
-        private final String description;
+    // 팩토리 메소드
+    public static Image createImage(String title, String originalFilename, String s3Url, String s3Key,
+                                    Long fileSize, String contentType, String userId) {
+        return new Image(title, originalFilename, s3Url, s3Key, fileSize, contentType, userId,
+                null, null, null, null);
+    }
 
-        ProcessingStatus(String description) {
-            this.description = description;
-        }
+    // 썸네일 정보 업데이트
+    public void updateThumbnail(String thumbnailUrl, String thumbnailS3Key) {
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailS3Key = thumbnailS3Key;
+    }
 
-        public String getDescription() {
-            return description;
-        }
+    // 이미지 크기 업데이트
+    public void updateDimensions(Integer width, Integer height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    // Getters and Setters
+    public Integer getWidth() {
+        return width;
+    }
+
+    public void setWidth(Integer width) {
+        this.width = width;
+    }
+
+    public Integer getHeight() {
+        return height;
+    }
+
+    public void setHeight(Integer height) {
+        this.height = height;
+    }
+
+    public String getThumbnailUrl() {
+        return thumbnailUrl != null ? thumbnailUrl : getS3Url(); // 썸네일이 없으면 원본 이미지 반환
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    public String getThumbnailS3Key() {
+        return thumbnailS3Key;
+    }
+
+    public void setThumbnailS3Key(String thumbnailS3Key) {
+        this.thumbnailS3Key = thumbnailS3Key;
     }
 
     // 이미지 비율 계산
-    public double getAspectRatio() {
-        if (height == null || height == 0) {
-            return 0.0;
+    public Double getAspectRatio() {
+        if (width != null && height != null && height > 0) {
+            return (double) width / height;
         }
-        return (double) width / height;
-    }
-
-    // 이미지 크기 문자열 반환
-    public String getDimensionString() {
-        return width + " × " + height;
+        return null;
     }
 }

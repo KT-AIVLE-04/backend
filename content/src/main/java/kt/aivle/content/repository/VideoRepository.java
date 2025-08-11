@@ -8,155 +8,106 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface VideoRepository extends JpaRepository<Video, Long> {
 
-    // === 기본 조회 메서드 ===
+    // 사용자별 영상 조회 (페이징, 최신순)
+    Page<Video> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
 
-    /**
-     * 삭제되지 않은 영상 조회 (ID로)
-     */
-    @Query("SELECT v FROM Video v WHERE v.id = :id AND v.deletedAt IS NULL")
-    Optional<Video> findByIdAndNotDeleted(@Param("id") Long id);
+    // 사용자별 영상 개수
+    long countByUserId(String userId);
 
-    /**
-     * 사용자별 영상 목록 조회 (삭제되지 않은 것만, 페이지네이션)
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndNotDeleted(@Param("userId") Long userId, Pageable pageable);
+    // 숏츠 영상만 조회
+    Page<Video> findByUserIdAndIsShortTrueOrderByCreatedAtDesc(String userId, Pageable pageable);
 
-    /**
-     * 전체 영상 목록 조회 (삭제되지 않은 것만, 페이지네이션)
-     */
-    @Query("SELECT v FROM Video v WHERE v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findAllNotDeleted(Pageable pageable);
+    // 일반 영상만 조회 (숏츠 제외)
+    Page<Video> findByUserIdAndIsShortFalseOrderByCreatedAtDesc(String userId, Pageable pageable);
 
-    // === 타입별 조회 ===
+    // 숏츠 개수
+    long countByUserIdAndIsShortTrue(String userId);
 
-    /**
-     * 영상 타입별 조회 (일반 영상/숏츠)
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.videoType = :videoType AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndVideoTypeAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("videoType") Video.VideoType videoType,
-            Pageable pageable);
+    // 영상 길이별 조회
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.durationSeconds BETWEEN :minDuration AND :maxDuration ORDER BY v.createdAt DESC")
+    Page<Video> findByUserIdAndDurationRange(@Param("userId") String userId,
+                                             @Param("minDuration") Integer minDuration,
+                                             @Param("maxDuration") Integer maxDuration,
+                                             Pageable pageable);
 
-    /**
-     * 숏츠 영상만 조회
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.isShorts = true AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findShortsByUserIdAndNotDeleted(@Param("userId") Long userId, Pageable pageable);
+    // 특정 해상도 이상의 영상 조회
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.width >= :minWidth AND v.height >= :minHeight ORDER BY v.createdAt DESC")
+    Page<Video> findByUserIdAndMinResolution(@Param("userId") String userId,
+                                             @Param("minWidth") Integer minWidth,
+                                             @Param("minHeight") Integer minHeight,
+                                             Pageable pageable);
 
-    // === 처리 상태별 조회 ===
+    // 코덱별 영상 조회
+    Page<Video> findByUserIdAndCodecOrderByCreatedAtDesc(String userId, String codec, Pageable pageable);
 
-    /**
-     * 처리 상태별 영상 조회
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.processingStatus = :status AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndProcessingStatusAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("status") Video.ProcessingStatus status,
-            Pageable pageable);
+    // 긴 영상 조회 (파일 크기 기준)
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.fileSize > :sizeThreshold ORDER BY v.fileSize DESC")
+    List<Video> findLargeVideosByUserId(@Param("userId") String userId, @Param("sizeThreshold") Long sizeThreshold);
 
-    /**
-     * 처리 완료된 영상만 조회
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.processingStatus = 'COMPLETED' AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findCompletedByUserIdAndNotDeleted(@Param("userId") Long userId, Pageable pageable);
+    // 썸네일이 없는 영상 조회 (썸네일 생성 배치용)
+    @Query("SELECT v FROM Video v WHERE v.thumbnailUrl IS NULL OR v.thumbnailUrl = ''")
+    List<Video> findVideosWithoutThumbnail();
 
-    // === 검색 기능 ===
+    // 영상 해상도별 통계
+    @Query("SELECT " +
+            "CASE WHEN v.width >= 3840 THEN '4K' " +
+            "     WHEN v.width >= 1920 THEN '1080p' " +
+            "     WHEN v.width >= 1280 THEN '720p' " +
+            "     WHEN v.width >= 854 THEN '480p' " +
+            "     ELSE '360p' END as resolution, " +
+            "COUNT(v) as count " +
+            "FROM Video v WHERE v.userId = :userId " +
+            "GROUP BY CASE WHEN v.width >= 3840 THEN '4K' " +
+            "              WHEN v.width >= 1920 THEN '1080p' " +
+            "              WHEN v.width >= 1280 THEN '720p' " +
+            "              WHEN v.width >= 854 THEN '480p' " +
+            "              ELSE '360p' END")
+    List<Object[]> getResolutionStats(@Param("userId") String userId);
 
-    /**
-     * 제목으로 영상 검색
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.title LIKE %:title% AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndTitleContainingAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("title") String title,
-            Pageable pageable);
+    // 영상 길이별 통계
+    @Query("SELECT " +
+            "CASE WHEN v.durationSeconds <= 60 THEN 'Shorts' " +
+            "     WHEN v.durationSeconds <= 300 THEN 'Short' " +
+            "     WHEN v.durationSeconds <= 1800 THEN 'Medium' " +
+            "     ELSE 'Long' END as duration_category, " +
+            "COUNT(v) as count " +
+            "FROM Video v WHERE v.userId = :userId " +
+            "GROUP BY CASE WHEN v.durationSeconds <= 60 THEN 'Shorts' " +
+            "              WHEN v.durationSeconds <= 300 THEN 'Short' " +
+            "              WHEN v.durationSeconds <= 1800 THEN 'Medium' " +
+            "              ELSE 'Long' END")
+    List<Object[]> getDurationStats(@Param("userId") String userId);
 
-    /**
-     * 시나리오 내용으로 영상 검색
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.scenario LIKE %:keyword% AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndScenarioContainingAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("keyword") String keyword,
-            Pageable pageable);
+    // 총 영상 재생 시간 (사용자별)
+    @Query("SELECT COALESCE(SUM(v.durationSeconds), 0) FROM Video v WHERE v.userId = :userId")
+    Long getTotalDurationByUserId(@Param("userId") String userId);
 
-    /**
-     * 제목 또는 시나리오로 통합 검색
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND (v.title LIKE %:keyword% OR v.scenario LIKE %:keyword%) AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> searchByKeywordAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("keyword") String keyword,
-            Pageable pageable);
+    // 최근 업로드된 영상 (미리보기용)
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId ORDER BY v.createdAt DESC")
+    List<Video> findRecentVideosByUserId(@Param("userId") String userId, Pageable pageable);
 
-    // === 기간별 조회 ===
+    // S3 키로 영상 찾기
+    Optional<Video> findByS3Key(String s3Key);
 
-    /**
-     * 생성 기간으로 영상 조회
-     */
-    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.createdAt BETWEEN :startDate AND :endDate AND v.deletedAt IS NULL ORDER BY v.createdAt DESC")
-    Page<Video> findByUserIdAndCreatedAtBetweenAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
-            Pageable pageable);
+    // 썸네일 S3 키로 영상 찾기
+    Optional<Video> findByThumbnailS3Key(String thumbnailS3Key);
 
-    // === 통계 및 카운트 ===
+    // 원본 파일명으로 검색
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.originalFilename LIKE %:filename% ORDER BY v.createdAt DESC")
+    Page<Video> findByUserIdAndOriginalFilenameContaining(@Param("userId") String userId,
+                                                          @Param("filename") String filename,
+                                                          Pageable pageable);
 
-    /**
-     * 사용자별 전체 영상 개수 (삭제되지 않은 것만)
-     */
-    @Query("SELECT COUNT(v) FROM Video v WHERE v.userId = :userId AND v.deletedAt IS NULL")
-    long countByUserIdAndNotDeleted(@Param("userId") Long userId);
-
-    /**
-     * 사용자별 타입별 영상 개수
-     */
-    @Query("SELECT COUNT(v) FROM Video v WHERE v.userId = :userId AND v.videoType = :videoType AND v.deletedAt IS NULL")
-    long countByUserIdAndVideoTypeAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("videoType") Video.VideoType videoType);
-
-    /**
-     * 사용자별 처리 상태별 영상 개수
-     */
-    @Query("SELECT COUNT(v) FROM Video v WHERE v.userId = :userId AND v.processingStatus = :status AND v.deletedAt IS NULL")
-    long countByUserIdAndProcessingStatusAndNotDeleted(
-            @Param("userId") Long userId,
-            @Param("status") Video.ProcessingStatus status);
-
-    /**
-     * 사용자별 총 파일 크기
-     */
-    @Query("SELECT COALESCE(SUM(v.fileSize), 0) FROM Video v WHERE v.userId = :userId AND v.deletedAt IS NULL")
-    long getTotalFileSizeByUserId(@Param("userId") Long userId);
-
-    // === 파일 관리 ===
-
-    /**
-     * S3 파일 경로로 영상 조회 (중복 체크용)
-     */
-    @Query("SELECT v FROM Video v WHERE v.filePath = :filePath AND v.deletedAt IS NULL")
-    Optional<Video> findByFilePathAndNotDeleted(@Param("filePath") String filePath);
-
-    /**
-     * 처리 중인 영상들 조회 (배치 작업용)
-     */
-    @Query("SELECT v FROM Video v WHERE v.processingStatus IN ('UPLOADING', 'PROCESSING') AND v.deletedAt IS NULL")
-    List<Video> findProcessingVideos();
-
-    /**
-     * 오래된 처리 중 영상들 조회 (오류 처리용)
-     */
-    @Query("SELECT v FROM Video v WHERE v.processingStatus IN ('UPLOADING', 'PROCESSING') AND v.updatedAt < :cutoffTime AND v.deletedAt IS NULL")
-    List<Video> findStuckProcessingVideos(@Param("cutoffTime") LocalDateTime cutoffTime);
+    // 특정 비트레이트 범위의 영상 조회
+    @Query("SELECT v FROM Video v WHERE v.userId = :userId AND v.bitrate BETWEEN :minBitrate AND :maxBitrate ORDER BY v.createdAt DESC")
+    Page<Video> findByUserIdAndBitrateRange(@Param("userId") String userId,
+                                            @Param("minBitrate") Integer minBitrate,
+                                            @Param("maxBitrate") Integer maxBitrate,
+                                            Pageable pageable);
 }

@@ -31,10 +31,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'mysql:mysql-connector-java:8.0.28' // 또는 최신 버전
 
     // Database
-    runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'mysql:mysql-connector-java'
     runtimeOnly 'com.h2database:h2' // 개발용
+
 
     // QueryDSL
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
@@ -57,8 +60,14 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'commons-io:commons-io:2.11.0'
 
-    // AWS S3 (S3를 사용하는 경우)
+    // AWS S3
     implementation 'software.amazon.awssdk:s3:2.21.29'
+
+    // AWS S3 SDK
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.470'
+
+    // 또는 Spring Cloud AWS 사용 (더 간편)
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
     // FFmpeg (고급 미디어 처리가 필요한 경우)
     implementation 'net.bramp.ffmpeg:ffmpeg:0.7.0'
