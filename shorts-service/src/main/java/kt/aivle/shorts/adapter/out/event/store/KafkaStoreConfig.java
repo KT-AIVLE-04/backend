@@ -44,7 +44,7 @@ public class KafkaStoreConfig {
     @Bean
     public ConcurrentMessageListenerContainer<String, StoreInfoResponseMessage> repliesContainer(
             ConsumerFactory<String, StoreInfoResponseMessage> storeInfoConsumerFactory,
-            @Value("${topic.store.reply:store-info.reply}") String replyTopic
+            @Value("${topic.store.reply}") String replyTopic
     ) {
         ConcurrentKafkaListenerContainerFactory<String, StoreInfoResponseMessage> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
