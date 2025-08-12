@@ -1,6 +1,7 @@
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.3
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -11,6 +12,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.4.3
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -28,6 +30,7 @@ services:
 
   gateway:
     image: ${DOCKER_USERNAME}/aivle-gateway:latest
+    container_name: gateway
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     ports:
@@ -37,6 +40,7 @@ services:
 
   auth-service:
     image: ${DOCKER_USERNAME}/aivle-auth:latest
+    container_name: auth-service
     depends_on:
       - redis
     environment:
@@ -46,6 +50,7 @@ services:
 
   store-service:
     image: ${DOCKER_USERNAME}/aivle-store:latest
+    container_name: store-service
     depends_on:
         - kafka
     environment:
@@ -55,6 +60,7 @@ services:
 
   shorts-service:
     image: ${DOCKER_USERNAME}/aivle-shorts:latest
+    container_name: shorts-service
     depends_on:
       - kafka
     environment:

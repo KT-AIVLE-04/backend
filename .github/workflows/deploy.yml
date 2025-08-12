@@ -67,7 +67,6 @@ jobs:
               - 'build.gradle*'
               - 'gradle/**'
               - 'common/**'
-              - '.github/workflows/deploy.yml'  # 임시: CI 변경으로도 트리거
             gateway:
               - 'gateway/**'
             auth:
