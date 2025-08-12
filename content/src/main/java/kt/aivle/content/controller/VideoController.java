@@ -28,7 +28,7 @@ public class VideoController {
     }
 
     /**
-     * 영상 업로드
+     * 영상 업로드 (썸네일 포함)
      * POST /api/videos/upload
      * Content-Type: multipart/form-data
      */
@@ -36,10 +36,11 @@ public class VideoController {
     public ResponseEntity<Map<String, Object>> uploadVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam("userId") String userId,
-            @RequestParam(value = "title", required = false) String title) {
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnailFile) {
 
         try {
-            Video uploadedVideo = videoService.uploadVideo(file, title, userId);
+            Video uploadedVideo = videoService.uploadVideo(file, title, userId, thumbnailFile);
 
             // 응답 데이터 구성 - null 값 처리
             Map<String, Object> responseData = new java.util.LinkedHashMap<>();
