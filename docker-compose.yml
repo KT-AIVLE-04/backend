@@ -28,6 +28,39 @@ services:
     networks:
       - backend
 
+  redis:
+    image: redis:7.2
+    container_name: redis
+    restart: always
+    networks:
+      - backend
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6378:6379"
+    restart: always
+    networks:
+      - backend
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: userstore
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Seoul
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - backend
+
   fastapi:
     image: shee9812/backend_ai:latest
     container_name: fastapi
@@ -84,39 +117,6 @@ services:
     container_name: shorts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - backend
-
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: userstore
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      TZ: Asia/Seoul
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - backend
-
-  redis:
-    image: redis:7.2
-    container_name: redis
-    restart: always
-    networks:
-      - backend
-
-  redis-stack:
-    image: redis/redis-stack:latest
-    container_name: redis-stack
-    ports:
-      - "6378:6379"
-    restart: always
     networks:
       - backend
 
