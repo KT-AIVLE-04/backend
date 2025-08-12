@@ -238,5 +238,5 @@ jobs:
             echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> "$tmp_env"
             mv "$tmp_env" .env
             docker compose pull ${{ matrix.compose }}
-            docker compose up -d ${{ matrix.compose }}
+            docker compose up -d --no-deps ${{ matrix.compose }}
             docker image prune -f || true
