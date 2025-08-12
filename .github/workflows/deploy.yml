@@ -25,28 +25,36 @@ jobs:
       auth:    ${{ steps.filter.outputs.auth }}
       store:   ${{ steps.filter.outputs.store }}
       shorts:  ${{ steps.filter.outputs.shorts }}
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 첫 배포 예외처리
-      - name: Compute base SHA (handle first push)
+      # 첫 배포/수동 실행 예외처리
+      - name: Compute base SHA (handle first push / dispatch)
         id: base
         shell: bash
         run: |
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            ROOT=$(git rev-list --max-parents=0 HEAD)
-            echo "base=$ROOT" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              ROOT=$(git rev-list --max-parents=0 HEAD)
+              echo "base=$ROOT" >> $GITHUB_OUTPUT
+            else
+              echo "base=$BEFORE" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "base=$BEFORE" >> $GITHUB_OUTPUT
+            # workflow_dispatch: 직전 커밋과 비교(없으면 루트)
+            if git rev-parse HEAD^ >/dev/null 2>&1; then
+              echo "base=$(git rev-parse HEAD^)" >> $GITHUB_OUTPUT
+            else
+              echo "base=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Detect changed paths
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v3.0.2
         with:
           base: ${{ steps.base.outputs.base }}
           ref:  ${{ github.sha }}
@@ -59,7 +67,7 @@ jobs:
               - 'build.gradle*'
               - 'gradle/**'
               - 'common/**'
-              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy.yml'  # 임시: CI 변경으로도 트리거
             gateway:
               - 'gateway/**'
             auth:
@@ -75,69 +83,82 @@ jobs:
     outputs:
       matrix: ${{ steps.mk.outputs.matrix }}
       compose_changed: ${{ steps.mk.outputs.compose_changed }}
+      has_targets: ${{ steps.mk.outputs.has_targets }}
     steps:
       - name: Build service matrix from filters
         id: mk
         shell: bash
         run: |
-          # inputs
-          compose='${{ needs.filter.outputs.compose }}'
-          common='${{ needs.filter.outputs.common }}'
-          g='${{ needs.filter.outputs.gateway }}'
-          a='${{ needs.filter.outputs.auth }}'
-          s='${{ needs.filter.outputs.store }}'
-          sh='${{ needs.filter.outputs.shorts }}'
+          changed_compose='${{ needs.filter.outputs.compose }}'
+          changed_common='${{ needs.filter.outputs.common }}'
+          changed_gateway='${{ needs.filter.outputs.gateway }}'
+          changed_auth='${{ needs.filter.outputs.auth }}'
+          changed_store='${{ needs.filter.outputs.store }}'
+          changed_shorts='${{ needs.filter.outputs.shorts }}'
 
-          # helper: to boolean
           tb() { [ "$1" = "true" ] && echo true || echo false; }
 
-          changed_gateway=$(tb "$g")
-          changed_auth=$(tb "$a")
-          changed_store=$(tb "$s")
-          changed_shorts=$(tb "$sh")
-          common_changed=$(tb "$common")
-          compose_changed=$(tb "$compose")
+          CHANGED_COMPOSE=$(tb "$changed_compose")
+          CHANGED_COMMON=$(tb "$changed_common")
+          CHANGED_GATEWAY=$(tb "$changed_gateway")
+          CHANGED_AUTH=$(tb "$changed_auth")
+          CHANGED_STORE=$(tb "$changed_store")
+          CHANGED_SHORTS=$(tb "$changed_shorts")
 
           add() {
-            local service="$1" module="$2" image="$3" compose_name="$4" changed="$5"
-            ITEMS+="{\"service\":\"$service\",\"module\":\"$module\",\"image\":\"$image\",\"compose\":\"$compose_name\",\"changed\":$changed},"
+            local service="$1" module="$2" image="$3" compose_name="$4" build="$5"
+            ITEMS+="{\"service\":\"$service\",\"module\":\"$module\",\"image\":\"$image\",\"compose\":\"$compose_name\",\"build\":$build},"
           }
 
           ITEMS=""
 
-          # 서비스별로: (서비스 변경 or 공용 변경) 이면 'changed=true'
-          # compose만 변경되어도 재배포는 필요하므로 행렬에는 포함시키되 changed=false로 둠(빌드는 스킵, 배포만).
+          # build = 서비스 자체 변경 OR 공용 변경
           include_svc() {
             local svc="$1" module="$2" image="$3" compose="$4" svc_changed="$5"
-            local changed=$([ "$svc_changed" = true ] || [ "$common_changed" = true ] && echo true || echo false)
-
-            if [ "$changed" = true ] || [ "$compose_changed" = true ]; then
-              add "$svc" "$module" "$image" "$compose" "$changed"
+            local build=$([ "$svc_changed" = true ] || [ "$CHANGED_COMMON" = true ] && echo true || echo false)
+            # 포함 조건: build == true  OR  CHANGED_COMPOSE == true (compose만 바뀌어도 재배포 필요)
+            if [ "$build" = true ] || [ "$CHANGED_COMPOSE" = true ]; then
+              add "$svc" "$module" "$image" "$compose" "$build"
             fi
           }
 
-          include_svc "gateway"       "gateway"        "aivle-gateway" "gateway"        "$changed_gateway"
-          include_svc "auth-service"  "auth-service"   "aivle-auth"    "auth-service"   "$changed_auth"
-          include_svc "store-service" "store-service"  "aivle-store"   "store-service"  "$changed_store"
-          include_svc "shorts-service" "shorts-service" "aivle-shorts"  "shorts-service" "$changed_shorts"
+          include_svc "gateway"        "gateway"        "aivle-gateway"  "gateway"        "$CHANGED_GATEWAY"
+          include_svc "auth-service"   "auth-service"   "aivle-auth"     "auth-service"   "$CHANGED_AUTH"
+          include_svc "store-service"  "store-service"  "aivle-store"    "store-service"  "$CHANGED_STORE"
+          include_svc "shorts-service" "shorts-service" "aivle-shorts"   "shorts-service" "$CHANGED_SHORTS"
 
-          # trim trailing comma
           ITEMS="[${ITEMS%,}]"
 
-          # matrix must be an object with include array
           echo "matrix={\"include\":$ITEMS}" >> $GITHUB_OUTPUT
-          echo "compose_changed=$compose_changed" >> $GITHUB_OUTPUT
+          echo "compose_changed=$CHANGED_COMPOSE" >> $GITHUB_OUTPUT
+          if [ "$ITEMS" != "[]" ]; then
+            echo "has_targets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_targets=false" >> $GITHUB_OUTPUT
+          fi
 
   upload-compose:
     needs: plan
-    if: ${{ needs.plan.outputs.compose_changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: No compose changes
+        if: ${{ needs.plan.outputs.compose_changed != 'true' }}
+        run: echo "compose not changed; skipping upload"
+
       - uses: actions/checkout@v4
+        if: ${{ needs.plan.outputs.compose_changed == 'true' }}
+
+      - name: Validate compose (syntax check)
+        if: ${{ needs.plan.outputs.compose_changed == 'true' }}
+        run: docker compose -f docker-compose.prod.yml config -q
+
       - name: Prepare prod compose
+        if: ${{ needs.plan.outputs.compose_changed == 'true' }}
         run: cp docker-compose.prod.yml docker-compose.yml
+
       - name: Upload docker-compose.yml to server
-        uses: appleboy/scp-action@master
+        if: ${{ needs.plan.outputs.compose_changed == 'true' }}
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AWS_SECRET_HOST }}
           username: ubuntu
@@ -145,16 +166,14 @@ jobs:
           source: "docker-compose.yml"
           target: "/home/ubuntu/deploy/"
 
-  build-and-deploy:
+  deploy:
     needs: [ plan, upload-compose ]
-    # matrix: 변경된 서비스들 + compose 변경시 재배포 대상
-    if: ${{ fromJSON(needs.plan.outputs.matrix).include != null && (fromJSON(needs.plan.outputs.matrix).include[0]) != '' }}
+    if: ${{ needs.plan.outputs.has_targets == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
-      # 모든 시크릿을 환경변수로 주입해두고, bash에서 선택적으로 씀
       APP_YML_GATEWAY: ${{ secrets.APPLICATION_YML_GATEWAY }}
       APP_YML_AUTH:    ${{ secrets.APPLICATION_YML_AUTH }}
       APP_YML_STORE:   ${{ secrets.APPLICATION_YML_STORE }}
@@ -186,15 +205,16 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build JAR (only if sources changed)
-        if: ${{ matrix.changed == true }}
+      # build=true일 때만 빌드
+      - name: Build JAR
+        if: ${{ matrix.build == true }}
         run: ./gradlew :${{ matrix.module }}:clean :${{ matrix.module }}:build
 
       - name: Docker login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Docker build & push (only if sources changed)
-        if: ${{ matrix.changed == true }}
+      - name: Docker build & push
+        if: ${{ matrix.build == true }}
         env:
           IMG: ${{ env.DOCKER_USERNAME }}/${{ matrix.image }}
           SHA: ${{ github.sha }}
@@ -203,8 +223,9 @@ jobs:
           docker push "$IMG:latest"
           docker push "$IMG:${SHA}"
 
+      # 항상 재배포 (compose만 바뀐 경우도 여기서 처리)
       - name: Deploy ${{ matrix.service }} to server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.AWS_SECRET_HOST }}
           username: ubuntu
@@ -212,13 +233,10 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/deploy/
-            # .env 업데이트 (DOCKER_USERNAME만 관리. compose는 :latest를 사용한다고 가정)
             tmp_env=$(mktemp)
             grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
             echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> "$tmp_env"
             mv "$tmp_env" .env
-
-            # 대상 서비스만 풀 & 재기동
             docker compose pull ${{ matrix.compose }}
             docker compose up -d ${{ matrix.compose }}
             docker image prune -f || true
