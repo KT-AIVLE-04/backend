@@ -1,28 +1,65 @@
-name: MSA CI/CD with paths-filter
+name: MSA CI/CD (paths-filter + matrix)
 
 on:
   push:
     branches: [ "release" ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-release
+  cancel-in-progress: true
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
       compose: ${{ steps.filter.outputs.compose }}
+      common:  ${{ steps.filter.outputs.common }}
       gateway: ${{ steps.filter.outputs.gateway }}
-      auth: ${{ steps.filter.outputs.auth }}
-      store: ${{ steps.filter.outputs.store }}
-      shorts: ${{ steps.filter.outputs.shorts }}
+      auth:    ${{ steps.filter.outputs.auth }}
+      store:   ${{ steps.filter.outputs.store }}
+      shorts:  ${{ steps.filter.outputs.shorts }}
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check changed paths
-        id: filter
-        uses: dorny/paths-filter@v3.0.2
         with:
+          fetch-depth: 0
+
+      # 첫 배포 예외처리
+      - name: Compute base SHA (handle first push)
+        id: base
+        shell: bash
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            ROOT=$(git rev-list --max-parents=0 HEAD)
+            echo "base=$ROOT" >> $GITHUB_OUTPUT
+          else
+            echo "base=$BEFORE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ steps.base.outputs.base }}
+          ref:  ${{ github.sha }}
+          list-files: none
           filters: |
             compose:
               - 'docker-compose.prod.yml'
+            common:
+              - 'settings.gradle*'
+              - 'build.gradle*'
+              - 'gradle/**'
+              - 'common/**'
+              - '.github/workflows/deploy.yml'
             gateway:
               - 'gateway/**'
             auth:
@@ -32,15 +69,73 @@ jobs:
             shorts:
               - 'shorts-service/**'
 
-  upload-compose:
+  plan:
     needs: filter
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+      compose_changed: ${{ steps.mk.outputs.compose_changed }}
+    steps:
+      - name: Build service matrix from filters
+        id: mk
+        shell: bash
+        run: |
+          # inputs
+          compose='${{ needs.filter.outputs.compose }}'
+          common='${{ needs.filter.outputs.common }}'
+          g='${{ needs.filter.outputs.gateway }}'
+          a='${{ needs.filter.outputs.auth }}'
+          s='${{ needs.filter.outputs.store }}'
+          sh='${{ needs.filter.outputs.shorts }}'
+
+          # helper: to boolean
+          tb() { [ "$1" = "true" ] && echo true || echo false; }
+
+          changed_gateway=$(tb "$g")
+          changed_auth=$(tb "$a")
+          changed_store=$(tb "$s")
+          changed_shorts=$(tb "$sh")
+          common_changed=$(tb "$common")
+          compose_changed=$(tb "$compose")
+
+          add() {
+            local service="$1" module="$2" image="$3" compose_name="$4" changed="$5"
+            ITEMS+="{\"service\":\"$service\",\"module\":\"$module\",\"image\":\"$image\",\"compose\":\"$compose_name\",\"changed\":$changed},"
+          }
+
+          ITEMS=""
+
+          # 서비스별로: (서비스 변경 or 공용 변경) 이면 'changed=true'
+          # compose만 변경되어도 재배포는 필요하므로 행렬에는 포함시키되 changed=false로 둠(빌드는 스킵, 배포만).
+          include_svc() {
+            local svc="$1" module="$2" image="$3" compose="$4" svc_changed="$5"
+            local changed=$([ "$svc_changed" = true ] || [ "$common_changed" = true ] && echo true || echo false)
+
+            if [ "$changed" = true ] || [ "$compose_changed" = true ]; then
+              add "$svc" "$module" "$image" "$compose" "$changed"
+            fi
+          }
+
+          include_svc "gateway"       "gateway"        "aivle-gateway" "gateway"        "$changed_gateway"
+          include_svc "auth-service"  "auth-service"   "aivle-auth"    "auth-service"   "$changed_auth"
+          include_svc "store-service" "store-service"  "aivle-store"   "store-service"  "$changed_store"
+          include_svc "shorts-service" "shorts-service" "aivle-shorts"  "shorts-service" "$changed_shorts"
+
+          # trim trailing comma
+          ITEMS="[${ITEMS%,}]"
+
+          # matrix must be an object with include array
+          echo "matrix={\"include\":$ITEMS}" >> $GITHUB_OUTPUT
+          echo "compose_changed=$compose_changed" >> $GITHUB_OUTPUT
+
+  upload-compose:
+    needs: plan
+    if: ${{ needs.plan.outputs.compose_changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Prepare prod compose
         run: cp docker-compose.prod.yml docker-compose.yml
-
       - name: Upload docker-compose.yml to server
         uses: appleboy/scp-action@master
         with:
@@ -50,10 +145,20 @@ jobs:
           source: "docker-compose.yml"
           target: "/home/ubuntu/deploy/"
 
-  build-and-deploy-gateway:
-    needs: [ filter, upload-compose ]
-    if: ${{ needs.filter.outputs.gateway == 'true' || needs.filter.outputs.compose == 'true' }}
+  build-and-deploy:
+    needs: [ plan, upload-compose ]
+    # matrix: 변경된 서비스들 + compose 변경시 재배포 대상
+    if: ${{ fromJSON(needs.plan.outputs.matrix).include != null && (fromJSON(needs.plan.outputs.matrix).include[0]) != '' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      # 모든 시크릿을 환경변수로 주입해두고, bash에서 선택적으로 씀
+      APP_YML_GATEWAY: ${{ secrets.APPLICATION_YML_GATEWAY }}
+      APP_YML_AUTH:    ${{ secrets.APPLICATION_YML_AUTH }}
+      APP_YML_STORE:   ${{ secrets.APPLICATION_YML_STORE }}
+      APP_YML_SHORTS:  ${{ secrets.APPLICATION_YML_SHORTS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -62,186 +167,58 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
-      - name: Create application.yml for gateway
-        run: |
-          mkdir -p ./gateway/src/main/resources
-          cat <<EOF > ./gateway/src/main/resources/application.yml
-          ${{ secrets.APPLICATION_YML_GATEWAY }}
-          EOF
+      - name: Create application.yml for ${{ matrix.service }}
         shell: bash
+        run: |
+          mkdir -p ./${{ matrix.module }}/src/main/resources
+          case "${{ matrix.module }}" in
+            gateway)        APP_YML="$APP_YML_GATEWAY" ;;
+            auth-service)   APP_YML="$APP_YML_AUTH" ;;
+            store-service)  APP_YML="$APP_YML_STORE" ;;
+            shorts-service) APP_YML="$APP_YML_SHORTS" ;;
+          esac
+          cat <<EOF > ./${{ matrix.module }}/src/main/resources/application.yml
+          ${APP_YML}
+          EOF
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build gateway JAR
-        run: ./gradlew :gateway:clean :gateway:build
+      - name: Build JAR (only if sources changed)
+        if: ${{ matrix.changed == true }}
+        run: ./gradlew :${{ matrix.module }}:clean :${{ matrix.module }}:build
 
-      - name: Docker build & push (gateway)
+      - name: Docker login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Docker build & push (only if sources changed)
+        if: ${{ matrix.changed == true }}
+        env:
+          IMG: ${{ env.DOCKER_USERNAME }}/${{ matrix.image }}
+          SHA: ${{ github.sha }}
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest ./gateway
-          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-gateway:latest
+          docker build -t "$IMG:latest" -t "$IMG:${SHA}" ./${{ matrix.module }}
+          docker push "$IMG:latest"
+          docker push "$IMG:${SHA}"
 
-      - name: Deploy gateway to server
+      - name: Deploy ${{ matrix.service }} to server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_SECRET_HOST }}
           username: ubuntu
           key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/deploy/
+            # .env 업데이트 (DOCKER_USERNAME만 관리. compose는 :latest를 사용한다고 가정)
             tmp_env=$(mktemp)
             grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
+            echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> "$tmp_env"
             mv "$tmp_env" .env
-            docker compose pull gateway
-            docker compose up -d gateway
-            docker image prune -f || true
 
-  build-and-deploy-auth-service:
-    needs: [ filter, upload-compose ]
-    if: ${{ needs.filter.outputs.auth == 'true' || needs.filter.outputs.compose == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Create application.yml for auth-service
-        run: |
-          mkdir -p ./auth-service/src/main/resources
-          cat <<EOF > ./auth-service/src/main/resources/application.yml
-          ${{ secrets.APPLICATION_YML_AUTH }}
-          EOF
-        shell: bash
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build auth-service JAR
-        run: ./gradlew :auth-service:clean :auth-service:build
-
-      - name: Docker build & push (auth-service)
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-auth:latest ./auth-service
-          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-auth:latest
-
-      - name: Deploy auth-service to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_SECRET_HOST }}
-          username: ubuntu
-          key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          script: |
-            cd /home/ubuntu/deploy/
-            tmp_env=$(mktemp)
-            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
-            mv "$tmp_env" .env
-            docker compose pull auth-service
-            docker compose up -d auth-service
-            docker image prune -f || true
-
-  build-and-deploy-store-service:
-    needs: [ filter, upload-compose ]
-    if: ${{ needs.filter.outputs.store == 'true' || needs.filter.outputs.compose == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Create application.yml for store-service
-        run: |
-          mkdir -p ./store-service/src/main/resources
-          cat <<EOF > ./store-service/src/main/resources/application.yml
-          ${{ secrets.APPLICATION_YML_STORE }}
-          EOF
-        shell: bash
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build store-service JAR
-        run: ./gradlew :store-service:clean :store-service:build
-
-      - name: Docker build & push (store-service)
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-store:latest ./store-service
-          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-store:latest
-
-      - name: Deploy store-service to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_SECRET_HOST }}
-          username: ubuntu
-          key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          script: |
-            cd /home/ubuntu/deploy/
-            tmp_env=$(mktemp)
-            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
-            mv "$tmp_env" .env
-            docker compose pull store-service
-            docker compose up -d store-service
-            docker image prune -f || true
-
-  build-and-deploy-shorts-service:
-    needs: [ filter, upload-compose ]
-    if: ${{ needs.filter.outputs.shorts == 'true' || needs.filter.outputs.compose == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Create application.yml for shorts-service
-        run: |
-          mkdir -p ./shorts-service/src/main/resources
-          cat <<EOF > ./shorts-service/src/main/resources/application.yml
-          ${{ secrets.APPLICATION_YML_SHORTS }}
-          EOF
-        shell: bash
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build shorts-service JAR
-        run: ./gradlew :shorts-service:clean :shorts-service:build
-
-      - name: Docker build & push (shorts-service)
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/aivle-shorts:latest ./shorts-service
-          docker push ${{ secrets.DOCKER_USERNAME }}/aivle-shorts:latest
-
-      - name: Deploy shorts-service to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_SECRET_HOST }}
-          username: ubuntu
-          key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          script: |
-            cd /home/ubuntu/deploy/
-            tmp_env=$(mktemp)
-            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$tmp_env"
-            mv "$tmp_env" .env
-            docker compose pull shorts-service
-            docker compose up -d shorts-service
+            # 대상 서비스만 풀 & 재기동
+            docker compose pull ${{ matrix.compose }}
+            docker compose up -d ${{ matrix.compose }}
             docker image prune -f || true
