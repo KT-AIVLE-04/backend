@@ -223,7 +223,7 @@ jobs:
           docker push "$IMG:latest"
           docker push "$IMG:${SHA}"
 
-      # 항상 재배포 (compose만 바뀐 경우도 여기서 처리)
+      # 재배포 (compose만 바뀐 경우도 여기서 처리)
       - name: Deploy ${{ matrix.service }} to server
         uses: appleboy/ssh-action@v0.1.7
         with:
