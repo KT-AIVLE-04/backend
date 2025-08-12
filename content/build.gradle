@@ -104,10 +104,10 @@ tasks.named('test') {
 }
 
 // JAR 빌드 설정
-jar {
-    enabled = false
-    archiveClassifier = ''
-}
+//jar {
+//    enabled = false
+//    archiveClassifier = ''
+//}
 
 bootJar {
     archiveFileName = 'content-management-system.jar'

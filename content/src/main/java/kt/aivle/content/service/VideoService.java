@@ -53,7 +53,7 @@ public class VideoService {
             // 영상 저장
             Video savedVideo = videoRepository.save(video);
 
-            // 영상 메타데이터 추출 및 썸네일 생성 (비동기로 처리할 수도 있음)
+            // 영상 메타데이터 추출 및 썸네일 생성
             try {
                 processVideoMetadata(savedVideo);
             } catch (Exception e) {
@@ -250,7 +250,7 @@ public class VideoService {
     // === Private Helper Methods ===
 
     /**
-     * 영상 메타데이터 처리
+     * 영상 메타데이터 처리 --> 임의로 처리된 값을 사용하고 아직 구현하지 않음 !!(필요성 못 느낌)
      */
     private void processVideoMetadata(Video video) {
         try {
