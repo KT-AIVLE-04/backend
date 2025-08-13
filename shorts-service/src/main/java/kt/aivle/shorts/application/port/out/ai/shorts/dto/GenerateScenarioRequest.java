@@ -9,7 +9,6 @@ public record GenerateScenarioRequest(
         String adType,
         String target,
         String prompt,
-        List<String> imageUrls,
         List<String> brandConcepts
 ) {
 }

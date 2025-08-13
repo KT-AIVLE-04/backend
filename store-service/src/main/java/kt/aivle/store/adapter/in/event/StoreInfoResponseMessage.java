@@ -11,8 +11,6 @@ public record StoreInfoResponseMessage(
         String phoneNumber,
         Double latitude,
         Double longitude,
-        Industry industry,
-        String requestId) {
+        Industry industry
+) {
 }
-
-

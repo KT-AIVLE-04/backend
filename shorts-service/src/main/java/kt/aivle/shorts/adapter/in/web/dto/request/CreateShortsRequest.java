@@ -3,7 +3,7 @@ package kt.aivle.shorts.adapter.in.web.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record CreateSceneRequest(
+public record CreateShortsRequest(
         @NotBlank(message = "세션 ID를 입력해주세요.")
         String sessionId,
 

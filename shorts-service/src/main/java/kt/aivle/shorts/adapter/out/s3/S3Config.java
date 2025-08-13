@@ -1,4 +1,4 @@
-package kt.aivle.shorts.config;
+package kt.aivle.shorts.adapter.out.s3;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

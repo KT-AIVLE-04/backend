@@ -8,7 +8,6 @@ public record CreateAiScenarioRequest(
         @JsonProperty("store_name") String storeName,
         @JsonProperty("business_type") String businessType,
         @JsonProperty("brand_concept") List<String> brandConcept,
-        @JsonProperty("image_list") List<String> imageList,
         @JsonProperty("platform") String platform,
         @JsonProperty("ad_type") String adType,
         @JsonProperty("target_audience") String targetAudience,

@@ -1,11 +1,13 @@
 package kt.aivle.shorts.application.port.out.ai.shorts.dto;
 
 
-public record GenerateSceneRequest(
+import java.util.List;
+
+public record GenerateShortsRequest(
         String sessionId,
         String title,
         String content,
-        Integer adDuration
+        Integer adDuration,
+        List<String> imageUrls
 ) {
 }
-

@@ -5,5 +5,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface ContentServiceMapper {
-    CreateContentRequestMessage toMessage(CreateContentRequest request);
+    CreateContentRequestMessage toCreateContentRequestMessage(CreateContentRequest request);
 }
