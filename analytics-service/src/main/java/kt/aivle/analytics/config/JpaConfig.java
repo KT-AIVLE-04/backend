@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
 @EnableJpaAuditing
-@EnableJpaRepositories(basePackages = "kt.aivle.analytics.domain.repository")
+@EnableJpaRepositories(basePackages = "kt.aivle.analytics.adapter.out.persistence")
 public class JpaConfig {
 }
