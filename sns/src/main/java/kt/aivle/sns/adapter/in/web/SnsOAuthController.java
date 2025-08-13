@@ -18,13 +18,17 @@ public class SnsOAuthController {
 
     // 각 SNS 연동 버튼 누르면 호출
     @GetMapping("/{snsType}/url")
-    public String getAuthUrl(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId) {
-        return delegator.getAuthUrl(snsType, userId);
+    public String getAuthUrl(@PathVariable SnsType snsType,
+                             @RequestHeader("X-USER-ID") Long userId,
+                             @RequestParam Long storeId) {
+        return delegator.getAuthUrl(snsType, userId, storeId);
     }
 
     @GetMapping("/{snsType}/callback")
-    public String callback(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId, @RequestParam String code) throws Exception {
-        delegator.handleCallback(snsType, userId, code);
+    public String callback(@PathVariable SnsType snsType,
+                           @RequestParam String code,
+                           @RequestParam String state) throws Exception {
+        delegator.handleCallback(snsType, state, code);
 
         return "계정 연동 완료";
     }

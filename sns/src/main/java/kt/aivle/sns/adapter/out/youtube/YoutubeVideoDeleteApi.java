@@ -17,10 +17,11 @@ public class YoutubeVideoDeleteApi {
     private final JpaPostRepository jpaPostRepository;
 
     public void deleteVideo(Long userId,
+                            Long storeId,
                             String postId) {
 
         try {
-            YouTube youTube = youtubeClientFactory.youtube(userId);
+            YouTube youTube = youtubeClientFactory.youtube(userId, storeId);
 
             // 삭제 요청 api 생성
             YouTube.Videos.Delete videoDelete = youTube.videos()

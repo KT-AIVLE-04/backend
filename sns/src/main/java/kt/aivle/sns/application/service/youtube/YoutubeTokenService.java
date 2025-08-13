@@ -12,6 +12,7 @@ public class YoutubeTokenService {
     private final SnsTokenRepositoryPort snsTokenRepositoryPort;
 
     public void saveToken(Long userId,
+                          Long storeId,
                           String accessToken,
                           String refreshToken,
                           Long expiresInSeconds) {
@@ -22,6 +23,7 @@ public class YoutubeTokenService {
                     existing = SnsToken.builder()
                             .id(existing.getId())
                             .userId(userId)
+                            .storeId(storeId)
                             .snsType(SnsType.youtube)
                             .accessToken(accessToken)
                             .refreshToken(refreshToken)
@@ -31,6 +33,7 @@ public class YoutubeTokenService {
                 })
                 .orElse(SnsToken.builder()
                         .userId(userId)
+                        .storeId(storeId)
                         .snsType(SnsType.youtube)
                         .accessToken(accessToken)
                         .refreshToken(refreshToken)
@@ -40,8 +43,8 @@ public class YoutubeTokenService {
         snsTokenRepositoryPort.save(token);
     }
 
-    public SnsToken getTokenOrThrow(Long userId) {
-        return snsTokenRepositoryPort.findByUserIdAndSnsType(userId, SnsType.youtube)
+    public SnsToken getTokenOrThrow(Long userId, Long storeId) {
+        return snsTokenRepositoryPort.findByUserIdAndStoreIdAndSnsType(userId, storeId, SnsType.youtube)
                 .orElseThrow(() -> new IllegalStateException("연동된 Youtube 토큰이 없습니다."));
     }
 }

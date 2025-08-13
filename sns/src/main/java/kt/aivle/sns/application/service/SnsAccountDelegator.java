@@ -21,15 +21,15 @@ public class SnsAccountDelegator {
         }
     }
 
-    public void getAccountInfo(SnsType type, Long userId) {
-        snsAccountServiceMap.get(type).getSnsAccountInfo(userId);
+    public void getAccountInfo(SnsType type, Long userId, Long storeId) {
+        snsAccountServiceMap.get(type).getSnsAccountInfo(userId, storeId);
     }
 
     public void updateAccount(SnsType type, Long userId, SnsAccountUpdateRequest request) {
         snsAccountServiceMap.get(type).updateSnsAccount(userId, request);
     }
 
-    public void getPostList(SnsType type, Long userId) {
-        snsAccountServiceMap.get(type).getPostList(userId);
+    public void getPostList(SnsType type, Long userId, Long storeId) {
+        snsAccountServiceMap.get(type).getPostList(userId, storeId);
     }
 }

@@ -33,4 +33,9 @@ public class SnsTokenPersistenceAdapter implements SnsTokenRepositoryPort {
     public Optional<SnsToken> findByUserIdAndSnsType(Long userId, SnsType snsType) {
         return snsTokenRepository.findByUserIdAndSnsType(userId, snsType);
     }
+
+    @Override
+    public Optional<SnsToken> findByUserIdAndStoreIdAndSnsType(Long userId, Long storeId, SnsType snsType) {
+        return snsTokenRepository.findByUserIdAndStoreIdAndSnsType(userId, storeId, snsType);
+    }
 }

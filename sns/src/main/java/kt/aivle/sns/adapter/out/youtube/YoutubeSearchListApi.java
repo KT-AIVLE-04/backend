@@ -14,11 +14,11 @@ public class YoutubeSearchListApi {
 
     private final YoutubeClientFactory youtubeClientFactory;
 
-    public void getYoutubeMyVideoList(Long userId) {
+    public void getYoutubeMyVideoList(Long userId, Long storeId) {
 
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeClientFactory.youtube(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
 
             YouTube.Search.List request = youtube.search()
                     .list("id,snippet");

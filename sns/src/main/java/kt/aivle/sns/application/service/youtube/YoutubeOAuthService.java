@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import kt.aivle.sns.application.port.in.SnsOAuthUseCase;
+import kt.aivle.sns.application.service.oauth.OAuthStateService;
 import kt.aivle.sns.config.YoutubeOAuthProperties;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
@@ -31,13 +32,15 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
 
     private final YoutubeTokenService youtubeTokenService;
 
+    private final OAuthStateService stateService;
+
     @Override
     public SnsType supportSnsType() {
         return SnsType.youtube;
     }
 
     @Override
-    public String getAuthUrl(Long userId) {
+    public String getAuthUrl(Long userId, Long storeId) {
         try {
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
@@ -49,8 +52,10 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
                     SCOPES
             ).setAccessType("offline").build();
 
+            String state = stateService.issue(userId, storeId);
             return flow.newAuthorizationUrl()
                     .setRedirectUri(properties.getRedirectUri())
+                    .setState(state)
                     .set("prompt", "consent")   // refresh token 새로 발급 받게
                     .build();
         } catch (Exception e) {
@@ -59,8 +64,12 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
     }
 
     @Override
-    public void handleCallback(Long userId, String code) throws Exception {
+    public void handleCallback(String state, String code) throws Exception {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+
+        var ids = stateService.consume(state);
+        Long userId = ids.getFirst();
+        Long storeId = ids.getSecond();
 
         TokenResponse tokens =  new GoogleAuthorizationCodeTokenRequest(
                 httpTransport,
@@ -73,7 +82,7 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
         ).execute();
 
         youtubeTokenService.saveToken(
-                userId,
+                userId,storeId,
                 tokens.getAccessToken(),
                 tokens.getRefreshToken(),
                 tokens.getExpiresInSeconds());

@@ -4,6 +4,7 @@ import kt.aivle.sns.domain.model.SnsType;
 
 public class PostUploadRequest {
     private SnsType snsType;
+    private Long storeId;
     private String title;
     private String description;
     private String contentPath;
@@ -57,5 +58,9 @@ public class PostUploadRequest {
 
     public Object getDetail() {
         return detail;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }

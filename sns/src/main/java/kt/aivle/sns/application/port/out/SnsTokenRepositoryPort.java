@@ -13,4 +13,6 @@ public interface SnsTokenRepositoryPort {
     Optional<SnsToken> findByUserId(Long userId);
 
     Optional<SnsToken> findByUserIdAndSnsType(Long userId, SnsType snsType);
+
+    Optional<SnsToken> findByUserIdAndStoreIdAndSnsType(Long userId, Long storeId, SnsType snsType);
 }

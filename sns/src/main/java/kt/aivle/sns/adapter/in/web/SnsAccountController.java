@@ -15,20 +15,26 @@ public class SnsAccountController {
     private final SnsAccountDelegator snsAccountDelegator;
 
     @GetMapping("/{snsType}")
-    public ResponseEntity<?> getAccountInfo(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId) {
-        snsAccountDelegator.getAccountInfo(snsType, userId);
+    public ResponseEntity<?> getAccountInfo(@PathVariable SnsType snsType,
+                                            @RequestHeader("X-USER-ID") Long userId,
+                                            @RequestParam Long storeId) {
+        snsAccountDelegator.getAccountInfo(snsType, userId, storeId);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{snsType}")
-    public ResponseEntity<?> updateAccount(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId, @RequestBody SnsAccountUpdateRequest request) {
+    public ResponseEntity<?> updateAccount(@PathVariable SnsType snsType,
+                                           @RequestHeader("X-USER-ID") Long userId,
+                                           @RequestBody SnsAccountUpdateRequest request) {
         snsAccountDelegator.updateAccount(snsType, userId, request);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{snsType}/list")
-    public ResponseEntity<?> getPostList(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId) {
-        snsAccountDelegator.getPostList(snsType, userId);
+    public ResponseEntity<?> getPostList(@PathVariable SnsType snsType,
+                                         @RequestHeader("X-USER-ID") Long userId,
+                                         @RequestParam Long storeId) {
+        snsAccountDelegator.getPostList(snsType, userId, storeId);
         return ResponseEntity.ok().build();
     }
 }

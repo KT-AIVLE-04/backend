@@ -2,6 +2,7 @@ package kt.aivle.sns.adapter.in.web.dto;
 
 public class PostDeleteRequest {
     private String postId;
+    private Long storeId;
 
     public PostDeleteRequest() {};
 
@@ -11,5 +12,9 @@ public class PostDeleteRequest {
 
     public void setPostId(String postId) {
         this.postId = postId;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }

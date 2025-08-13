@@ -24,6 +24,7 @@ public class YoutubeVideoUpdateApi {
     private final JpaPostRepository jpaPostRepository;
 
     public void updateVideo(Long userId,
+                            Long storeId,
                             String postId,
                             String title,
                             String description,
@@ -32,7 +33,7 @@ public class YoutubeVideoUpdateApi {
 
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeClientFactory.youtube(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
 
             // 1. 동영상 메타데이터 생성
             Video videoMetadata = new Video();

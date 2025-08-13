@@ -34,6 +34,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
         try {
             youtubeVideoInsertApi.uploadVideo(
                     userId,
+                    request.getStoreId(),
                     request.getContentPath(),
                     request.getTitle(),
                     request.getDescription(),
@@ -55,6 +56,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
         try {
             youtubeVideoUpdateApi.updateVideo(
                     userId,
+                    request.getStoreId(),
                     request.getPostId(),
                     request.getTitle(),
                     request.getDescription(),
@@ -72,6 +74,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
         try {
             youtubeVideoDeleteApi.deleteVideo(
                     userId,
+                    request.getStoreId(),
                     request.getPostId()
             );
         } catch (Exception e) {

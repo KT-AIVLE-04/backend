@@ -23,9 +23,9 @@ public class YoutubeChannelService implements SnsAccountUseCase {
     }
 
     @Override
-    public void getSnsAccountInfo(Long userId) {
+    public void getSnsAccountInfo(Long userId, Long storeId) {
 
-        youtubeChannelListApi.getYoutubeChannelInfo(userId);
+        youtubeChannelListApi.getYoutubeChannelInfo(userId, storeId);
 
     }
 
@@ -34,6 +34,7 @@ public class YoutubeChannelService implements SnsAccountUseCase {
 
         youtubeChannelUpdateApi.updateAccount(
                 userId,
+                request.getStoreId(),
                 request.getSnsAccountId(),
                 request.getSnsAccountDescription(),
                 request.getKeywords()
@@ -41,7 +42,7 @@ public class YoutubeChannelService implements SnsAccountUseCase {
     }
 
     @Override
-    public void getPostList(Long userId) {
-        youtubeSearchListApi.getYoutubeMyVideoList(userId);
+    public void getPostList(Long userId, Long storeId) {
+        youtubeSearchListApi.getYoutubeMyVideoList(userId, storeId);
     }
 }

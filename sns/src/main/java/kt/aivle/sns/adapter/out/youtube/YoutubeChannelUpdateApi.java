@@ -24,13 +24,14 @@ public class YoutubeChannelUpdateApi {
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
 
     public void updateAccount(Long userId,
+                              Long storeId,
                               String accountId,
                               String description,
                               String[] keywords) {
 
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeClientFactory.youtube(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
 
             // Define the Channel object, which will be uploaded as the request body.
             Channel channel = new Channel();

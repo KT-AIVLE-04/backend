@@ -20,12 +20,12 @@ public class YoutubeChannelListApi {
 
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
 
-    public void getYoutubeChannelInfo(Long userId) {
+    public void getYoutubeChannelInfo(Long userId, Long storeId) {
 
         try {
 
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeClientFactory.youtube(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
 
             // 업데이트 요청 api 생성 및 실행
             YouTube.Channels.List request = youtube.channels()

@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@Table(uniqueConstraints = @UniqueConstraint(columnNames={"user_id","store_id","sns_type"}))
 public class SnsToken {
 
     @Id
@@ -16,6 +17,8 @@ public class SnsToken {
     private  Long id;
 
     private Long userId;
+
+    private Long storeId;
 
     @Enumerated(EnumType.STRING)
     private SnsType snsType;

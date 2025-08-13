@@ -4,6 +4,7 @@ import kt.aivle.sns.domain.model.SnsType;
 
 public class PostUpdateRequest {
     private String postId; // 게시글 ID
+    private Long storeId;
     private SnsType snsType;
     private String title;
     private String description;
@@ -58,5 +59,9 @@ public class PostUpdateRequest {
 
     public void setDetail(Object detail) {
         this.detail = detail;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }

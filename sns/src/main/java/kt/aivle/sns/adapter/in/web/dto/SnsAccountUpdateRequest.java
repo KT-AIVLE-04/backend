@@ -4,6 +4,7 @@ import kt.aivle.sns.domain.model.SnsType;
 
 public class SnsAccountUpdateRequest {
 
+    private Long storeId;
     private SnsType snsType; // sns 타입
     private String snsAccountId; // 유튜브 채널 id
 
@@ -42,5 +43,9 @@ public class SnsAccountUpdateRequest {
 
     public void setKeywords(String[] keywords) {
         this.keywords = keywords;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }

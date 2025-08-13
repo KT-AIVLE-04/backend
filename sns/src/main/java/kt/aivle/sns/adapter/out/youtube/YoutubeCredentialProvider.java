@@ -22,12 +22,12 @@ public class YoutubeCredentialProvider {
     private final YoutubeTokenService tokenService;
     private final YoutubeOAuthProperties properties;
 
-    public Credential getCredential(Long userId) throws IOException, GeneralSecurityException {
+    public Credential getCredential(Long userId, Long storeId) throws IOException, GeneralSecurityException {
 
-        SnsToken token = tokenService.getTokenOrThrow(userId);
+        SnsToken token = tokenService.getTokenOrThrow(userId, storeId);
 
         if (token.getExpiresAt() != null && token.getExpiresAt() <= System.currentTimeMillis() + 60_000) {
-            token = refresh(userId, token);
+            token = refresh(userId, storeId, token);
         }
 
         return new GoogleCredential.Builder()
@@ -40,7 +40,7 @@ public class YoutubeCredentialProvider {
                 .setExpirationTimeMilliseconds(token.getExpiresAt());
     }
 
-    private SnsToken refresh(Long userId, SnsToken token) {
+    private SnsToken refresh(Long userId, Long storeId, SnsToken token) {
         if (token.getRefreshToken() == null || token.getRefreshToken().isBlank()) {
             throw new IllegalStateException("Refresh token이 없어 access token을 갱신할 수 없습니다.");
         }
@@ -53,8 +53,8 @@ public class YoutubeCredentialProvider {
 
             var newAccess = resp.getAccessToken();
             var expiresIn = resp.getExpiresInSeconds() == null ? 3600 : resp.getExpiresInSeconds();
-            tokenService.saveToken(userId, newAccess, null, expiresIn);
-            return tokenService.getTokenOrThrow(userId);
+            tokenService.saveToken(userId, storeId, newAccess, null, expiresIn);
+            return tokenService.getTokenOrThrow(userId, storeId);
         } catch (Exception e) {
             throw new RuntimeException("YouTube access token 갱신 실패", e);
         }
