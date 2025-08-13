@@ -19,6 +19,8 @@ public class SnsAccount {
 
     private Long userId;  // 사용자 id
 
+    private Long storeId;
+
     @Enumerated(EnumType.STRING)
     private SnsType snsType;    // sns 타입
 

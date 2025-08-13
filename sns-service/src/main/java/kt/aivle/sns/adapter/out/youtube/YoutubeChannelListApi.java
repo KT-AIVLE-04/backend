@@ -2,6 +2,7 @@ package kt.aivle.sns.adapter.out.youtube;
 
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
+import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
 import kt.aivle.sns.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.sns.domain.model.SnsAccount;
 import kt.aivle.sns.domain.model.SnsType;
@@ -20,7 +21,7 @@ public class YoutubeChannelListApi {
 
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
 
-    public void getYoutubeChannelInfo(Long userId, Long storeId) {
+    public SnsAccountResponse getYoutubeChannelInfo(Long userId, Long storeId) {
 
         try {
 
@@ -44,6 +45,7 @@ public class YoutubeChannelListApi {
                         existing = SnsAccount.builder()
                                 .id(existing.getId())
                                 .userId(userId)
+                                .storeId(storeId)
                                 .snsType(SnsType.youtube)
                                 .snsAccountId(channel.getId()) // 유튜브 채널 id
                                 .snsAccountName(snippet.getTitle()) // 채널명
@@ -58,6 +60,7 @@ public class YoutubeChannelListApi {
                     })
                     .orElse(SnsAccount.builder()
                             .userId(userId)
+                            .storeId(storeId)
                             .snsType(SnsType.youtube)
                             .snsAccountId(channel.getId()) // 유튜브 채널 id
                             .snsAccountName(snippet.getTitle()) // 채널명
@@ -70,6 +73,8 @@ public class YoutubeChannelListApi {
                             .build());
 
             snsAccountRepositoryPort.save(account);
+
+            return SnsAccountResponse.from(account);
 
         } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException("채널정보 불러오기 실패", e);

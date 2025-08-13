@@ -1,5 +1,6 @@
 package kt.aivle.sns.application.service;
 
+import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
 import kt.aivle.sns.application.port.in.SnsAccountUseCase;
 import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
@@ -21,8 +22,8 @@ public class SnsAccountDelegator {
         }
     }
 
-    public void getAccountInfo(SnsType type, Long userId, Long storeId) {
-        snsAccountServiceMap.get(type).getSnsAccountInfo(userId, storeId);
+    public SnsAccountResponse getAccountInfo(SnsType type, Long userId, Long storeId) {
+        return snsAccountServiceMap.get(type).getSnsAccountInfo(userId, storeId);
     }
 
     public void updateAccount(SnsType type, Long userId, SnsAccountUpdateRequest request) {

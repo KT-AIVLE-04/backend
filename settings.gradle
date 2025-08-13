@@ -3,5 +3,5 @@ include 'common'
 include 'auth-service'
 include 'gateway'
 include 'store-service'
-include 'sns'
+include 'sns-service'
 

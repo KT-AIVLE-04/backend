@@ -1,5 +1,6 @@
 package kt.aivle.sns.application.service.youtube;
 
+import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
 import kt.aivle.sns.adapter.out.youtube.YoutubeChannelListApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeChannelUpdateApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeSearchListApi;
@@ -23,9 +24,9 @@ public class YoutubeChannelService implements SnsAccountUseCase {
     }
 
     @Override
-    public void getSnsAccountInfo(Long userId, Long storeId) {
+    public SnsAccountResponse getSnsAccountInfo(Long userId, Long storeId) {
 
-        youtubeChannelListApi.getYoutubeChannelInfo(userId, storeId);
+        return youtubeChannelListApi.getYoutubeChannelInfo(userId, storeId);
 
     }
 
