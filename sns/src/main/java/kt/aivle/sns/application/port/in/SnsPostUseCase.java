@@ -1,9 +1,9 @@
 package kt.aivle.sns.application.port.in;
 
-import kt.aivle.sns.domain.model.PostDeleteRequest;
-import kt.aivle.sns.domain.model.PostUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostDeleteRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
-import kt.aivle.sns.domain.model.PostUploadRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUploadRequest;
 
 public interface SnsPostUseCase {
     SnsType supportSnsType();
@@ -11,15 +11,15 @@ public interface SnsPostUseCase {
     /**
      * post upload
      */
-    void upload(String userId, PostUploadRequest request);
+    void upload(Long userId, PostUploadRequest request);
 
     /**
      * post update
      */
-    void update(String userId, PostUpdateRequest request);
+    void update(Long userId, PostUpdateRequest request);
 
     /**
      * post delete
      */
-    void delete(String userId, PostDeleteRequest request);
+    void delete(Long userId, PostDeleteRequest request);
 }

@@ -1,10 +1,10 @@
 package kt.aivle.sns.adapter.in.web;
 
 import kt.aivle.sns.application.service.SnsPostDelegator;
-import kt.aivle.sns.domain.model.PostDeleteRequest;
-import kt.aivle.sns.domain.model.PostUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostDeleteRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
-import kt.aivle.sns.domain.model.PostUploadRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUploadRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,25 +16,21 @@ public class SnsPostController {
 
     private final SnsPostDelegator snsPostDelegator;
 
-    //AuthenticatonPrincipal?
-    //SecurityContext?
-    private final String TEST_USER_ID = "test-user"; // 테스트용 userId
-
     @PostMapping("/{snsType}/upload")
-    public ResponseEntity<?> uploadVideo(@PathVariable SnsType snsType, @RequestBody PostUploadRequest request) {
-        snsPostDelegator.upload(snsType, TEST_USER_ID, request);
+    public ResponseEntity<?> uploadVideo(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId, @RequestBody PostUploadRequest request) {
+        snsPostDelegator.upload(snsType, userId, request);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{snsType}/update")
-    public ResponseEntity<?> updateVideo(@PathVariable SnsType snsType, @RequestBody PostUpdateRequest request) {
-        snsPostDelegator.update(snsType, TEST_USER_ID, request);
+    public ResponseEntity<?> updateVideo(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId, @RequestBody PostUpdateRequest request) {
+        snsPostDelegator.update(snsType, userId, request);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{snsType}/delete")
-    public ResponseEntity<?> deleteVideo(@PathVariable SnsType snsType, @RequestBody PostDeleteRequest request) {
-        snsPostDelegator.delete(snsType, TEST_USER_ID, request);
+    public ResponseEntity<?> deleteVideo(@PathVariable SnsType snsType, @RequestHeader("X-USER-ID") Long userId, @RequestBody PostDeleteRequest request) {
+        snsPostDelegator.delete(snsType, userId, request);
         return ResponseEntity.ok().build();
     }
 }

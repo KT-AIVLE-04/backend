@@ -1,4 +1,4 @@
-package kt.aivle.sns.domain.model;
+package kt.aivle.sns.adapter.in.web.dto;
 
 import com.google.api.services.youtubeAnalytics.v2.model.QueryResponse;
 

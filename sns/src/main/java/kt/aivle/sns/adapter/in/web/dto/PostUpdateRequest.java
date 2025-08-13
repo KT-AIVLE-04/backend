@@ -1,4 +1,6 @@
-package kt.aivle.sns.domain.model;
+package kt.aivle.sns.adapter.in.web.dto;
+
+import kt.aivle.sns.domain.model.SnsType;
 
 public class PostUpdateRequest {
     private String postId; // 게시글 ID

@@ -2,9 +2,9 @@ package kt.aivle.sns.application.service.youtube;
 
 import kt.aivle.sns.adapter.out.youtube.YoutubeAnalyticsApi;
 import kt.aivle.sns.application.port.in.SnsAnalyticsUseCase;
-import kt.aivle.sns.domain.model.SnsAnalyticsRequest;
+import kt.aivle.sns.adapter.in.web.dto.SnsAnalyticsRequest;
 import kt.aivle.sns.domain.model.SnsType;
-import kt.aivle.sns.domain.model.YoutubeAnalyticsResponse;
+import kt.aivle.sns.adapter.in.web.dto.YoutubeAnalyticsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +20,7 @@ public class YoutubeAnalyticsService implements SnsAnalyticsUseCase {
     }
 
     @Override
-    public YoutubeAnalyticsResponse getAnalytics(String userId, SnsAnalyticsRequest request) {
+    public YoutubeAnalyticsResponse getAnalytics(Long userId, SnsAnalyticsRequest request) {
         return youtubeAnalyticsApi.getYoutubeAnalytics(userId, request);
     }
 

@@ -4,8 +4,7 @@ import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Channel;
 import com.google.api.services.youtube.model.ChannelBrandingSettings;
 import com.google.api.services.youtube.model.ChannelSettings;
-import kt.aivle.sns.application.port.out.SnsAccountRepository;
-import kt.aivle.sns.config.YoutubeConfig;
+import kt.aivle.sns.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.sns.domain.model.SnsAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,18 +19,18 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class YoutubeChannelUpdateApi {
 
-    private final YoutubeConfig youtubeConfig;
+    private final YoutubeClientFactory youtubeClientFactory;
 
-    private final SnsAccountRepository snsAccountRepository;
+    private final SnsAccountRepositoryPort snsAccountRepositoryPort;
 
-    public void updateAccount(String userId,
+    public void updateAccount(Long userId,
                               String accountId,
                               String description,
                               String[] keywords) {
 
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeConfig.createYoutubeClient(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId);
 
             // Define the Channel object, which will be uploaded as the request body.
             Channel channel = new Channel();
@@ -54,13 +53,13 @@ public class YoutubeChannelUpdateApi {
             Channel response = request.execute();
             System.out.println("업데이트된 Channel ID: " + response.getId()); // 유튜브 채널 id
 
-            Optional<SnsAccount> optionalSnsAccount = snsAccountRepository.findBySnsAccountId(accountId);
+            Optional<SnsAccount> optionalSnsAccount = snsAccountRepositoryPort.findBySnsAccountId(accountId);
             if(optionalSnsAccount.isPresent()) {
                 SnsAccount snsAccount = optionalSnsAccount.get();
                 snsAccount.setSnsAccountDescription(description);
                 snsAccount.setKeywords(new ArrayList<>(Arrays.asList(keywords)));
 
-                snsAccountRepository.save(snsAccount);
+                snsAccountRepositoryPort.save(snsAccount);
             }else {
                 System.err.println("해당 videoId를 가진 게시물을 찾을 수 없습니다: " + accountId);
             }

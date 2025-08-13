@@ -8,20 +8,10 @@ public interface SnsOAuthUseCase {
     /**
      * 인증 URL 생성
      */
-    String getAuthUrl(String userId);
+    String getAuthUrl(Long userId);
 
     /**
      * callback code 처리 및 토큰 저장
      */
-    void handleCallback(String userId, String code) throws Exception;
-
-    /**
-     * access token 조회
-     */
-    String getAccessToken(String userId);
-
-    /**
-     * refresh token 조회
-     */
-    String getRefreshToken(String userId);
+    void handleCallback(Long userId, String code) throws Exception;
 }

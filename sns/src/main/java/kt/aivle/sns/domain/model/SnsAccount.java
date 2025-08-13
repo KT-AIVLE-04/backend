@@ -17,7 +17,7 @@ public class SnsAccount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userId;  // 사용자 id
+    private Long userId;  // 사용자 id
 
     @Enumerated(EnumType.STRING)
     private SnsType snsType;    // sns 타입
@@ -39,7 +39,7 @@ public class SnsAccount {
     @ElementCollection
     @CollectionTable(name = "account_keywords", joinColumns = @JoinColumn(name = "sns_account_id"))
     @Column(name = "keyword")
-    private List<String> keywords;  // 채널 키워드 (사용자에게만 보임 알고리즘을 위한 키워드)
+    private List<String> keywords;  // (유튜브에선 사용자에게만 보임 알고리즘을 위한 키워드)
 
 
 }

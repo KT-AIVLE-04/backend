@@ -1,9 +1,9 @@
 package kt.aivle.sns.application.service;
 
 import kt.aivle.sns.application.port.in.SnsAnalyticsUseCase;
-import kt.aivle.sns.domain.model.SnsAnalyticsRequest;
+import kt.aivle.sns.adapter.in.web.dto.SnsAnalyticsRequest;
 import kt.aivle.sns.domain.model.SnsType;
-import kt.aivle.sns.domain.model.YoutubeAnalyticsResponse;
+import kt.aivle.sns.adapter.in.web.dto.YoutubeAnalyticsResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;
@@ -22,7 +22,7 @@ public class SnsAnalyticsDelegator {
         }
     }
 
-    public YoutubeAnalyticsResponse getAnalytics(SnsType type, String userId, SnsAnalyticsRequest request) {
+    public YoutubeAnalyticsResponse getAnalytics(SnsType type, Long userId, SnsAnalyticsRequest request) {
         return snsAnalyticsServiceMap.get(type).getAnalytics(userId, request);
     }
 }

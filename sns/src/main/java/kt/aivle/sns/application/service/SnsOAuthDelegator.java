@@ -20,19 +20,11 @@ public class SnsOAuthDelegator {
         }
     }
 
-    public String getAuthUrl(SnsType type, String userId) {
+    public String getAuthUrl(SnsType type, Long userId) {
         return serviceMap.get(type).getAuthUrl(userId);
     }
 
-    public void handleCallback(SnsType type, String userId, String code) throws Exception {
+    public void handleCallback(SnsType type, Long userId, String code) throws Exception {
         serviceMap.get(type).handleCallback(userId, code);
-    }
-
-    public String getAccessToken(SnsType type, String userId) {
-        return serviceMap.get(type).getAccessToken(userId);
-    }
-
-    public String getRefreshToken(SnsType type, String userId) {
-        return serviceMap.get(type).getRefreshToken(userId);
     }
 }

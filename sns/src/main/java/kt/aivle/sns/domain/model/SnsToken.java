@@ -15,7 +15,7 @@ public class SnsToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
 
-    private String userId;
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     private SnsType snsType;

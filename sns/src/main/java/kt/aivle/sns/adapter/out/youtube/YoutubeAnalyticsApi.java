@@ -1,11 +1,9 @@
 package kt.aivle.sns.adapter.out.youtube;
 
-import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtubeAnalytics.v2.YouTubeAnalytics;
 import com.google.api.services.youtubeAnalytics.v2.model.QueryResponse;
-import kt.aivle.sns.config.YoutubeConfig;
-import kt.aivle.sns.domain.model.SnsAnalyticsRequest;
-import kt.aivle.sns.domain.model.YoutubeAnalyticsResponse;
+import kt.aivle.sns.adapter.in.web.dto.SnsAnalyticsRequest;
+import kt.aivle.sns.adapter.in.web.dto.YoutubeAnalyticsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +14,14 @@ import java.security.GeneralSecurityException;
 @RequiredArgsConstructor
 public class YoutubeAnalyticsApi {
 
-    private final YoutubeConfig youtubeConfig;
+    private final YoutubeClientFactory youtubeClientFactory;
 
-    public YoutubeAnalyticsResponse getYoutubeAnalytics(String userId, SnsAnalyticsRequest apirequest) {
+    public YoutubeAnalyticsResponse getYoutubeAnalytics(Long userId, SnsAnalyticsRequest apirequest) {
 
         try {
 
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTubeAnalytics youtubeAnalytics = youtubeConfig.createYoutubeAnalyticsClient(userId);
+            YouTubeAnalytics youtubeAnalytics = youtubeClientFactory.analytics(userId);
 
             // Define and execute the API request
             YouTubeAnalytics.Reports.Query request = youtubeAnalytics.reports()

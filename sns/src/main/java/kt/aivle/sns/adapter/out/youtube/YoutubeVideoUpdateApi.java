@@ -1,13 +1,10 @@
 package kt.aivle.sns.adapter.out.youtube;
 
-import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 import com.google.api.services.youtube.model.VideoStatus;
-import kt.aivle.sns.application.port.out.PostRepository;
-import kt.aivle.sns.config.YoutubeConfig;
+import kt.aivle.sns.adapter.out.persistence.JpaPostRepository;
 import kt.aivle.sns.domain.model.PostEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,11 +19,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class YoutubeVideoUpdateApi {
 
-    private final YoutubeConfig youtubeConfig;
+    private final YoutubeClientFactory youtubeClientFactory;
 
-    private final PostRepository postRepository;
+    private final JpaPostRepository jpaPostRepository;
 
-    public void updateVideo(String userId,
+    public void updateVideo(Long userId,
                             String postId,
                             String title,
                             String description,
@@ -35,7 +32,7 @@ public class YoutubeVideoUpdateApi {
 
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeConfig.createYoutubeClient(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId);
 
             // 1. 동영상 메타데이터 생성
             Video videoMetadata = new Video();
@@ -65,7 +62,7 @@ public class YoutubeVideoUpdateApi {
 
             // 5. 게시물(DB)Post 저장
             String videoId = updatedVideo.getId();
-            Optional<PostEntity> optionalPost = postRepository.findByPostId(videoId);
+            Optional<PostEntity> optionalPost = jpaPostRepository.findByPostId(videoId);
             if(optionalPost.isPresent()) {
                 PostEntity post = optionalPost.get();
                 post.setTitle(title);
@@ -73,7 +70,7 @@ public class YoutubeVideoUpdateApi {
                 post.setTags(new ArrayList<>(Arrays.asList(tags)));
                 post.setCategoryId(categoryId);
 
-                postRepository.save(post);
+                jpaPostRepository.save(post);
             } else {
                 System.err.println("해당 videoId를 가진 게시물을 찾을 수 없습니다: " + videoId);
             }

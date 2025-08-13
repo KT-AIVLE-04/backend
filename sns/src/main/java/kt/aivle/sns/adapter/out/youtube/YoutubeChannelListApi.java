@@ -2,8 +2,7 @@ package kt.aivle.sns.adapter.out.youtube;
 
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
-import kt.aivle.sns.application.port.out.SnsAccountRepository;
-import kt.aivle.sns.config.YoutubeConfig;
+import kt.aivle.sns.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.sns.domain.model.SnsAccount;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
@@ -17,16 +16,16 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class YoutubeChannelListApi {
 
-    private final YoutubeConfig youtubeConfig;
+    private final YoutubeClientFactory youtubeClientFactory;
 
-    private final SnsAccountRepository snsAccountRepository;
+    private final SnsAccountRepositoryPort snsAccountRepositoryPort;
 
-    public void getYoutubeChannelInfo(String userId) {
+    public void getYoutubeChannelInfo(Long userId) {
 
         try {
 
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeConfig.createYoutubeClient(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId);
 
             // 업데이트 요청 api 생성 및 실행
             YouTube.Channels.List request = youtube.channels()
@@ -40,7 +39,7 @@ public class YoutubeChannelListApi {
 
 
             // SnsAccount Info 저장
-            SnsAccount account = snsAccountRepository.findByUserIdAndSnsType(userId, SnsType.youtube)
+            SnsAccount account = snsAccountRepositoryPort.findByUserIdAndSnsType(userId, SnsType.youtube)
                     .map(existing -> {
                         existing = SnsAccount.builder()
                                 .id(existing.getId())
@@ -70,7 +69,7 @@ public class YoutubeChannelListApi {
                             .keywords(Arrays.asList(settings.getKeywords()))
                             .build());
 
-            snsAccountRepository.save(account);
+            snsAccountRepositoryPort.save(account);
 
         } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException("채널정보 불러오기 실패", e);

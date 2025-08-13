@@ -1,6 +1,7 @@
 package kt.aivle.sns.application.service.youtube;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kt.aivle.sns.adapter.in.web.dto.*;
 import kt.aivle.sns.adapter.out.youtube.YoutubeVideoDeleteApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeVideoInsertApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeVideoUpdateApi;
@@ -25,7 +26,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
     }
 
     @Override
-    public void upload(String userId, PostUploadRequest request) {
+    public void upload(Long userId, PostUploadRequest request) {
 
 //        System.out.println("ObjectMapper: " + objectMapper);
         YoutubeUploadDetail detail = objectMapper.convertValue(request.getDetail(), YoutubeUploadDetail.class);
@@ -47,7 +48,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
     }
 
     @Override
-    public void update(String userId, PostUpdateRequest request) {
+    public void update(Long userId, PostUpdateRequest request) {
 
         YoutubeUpdateDetail detail = objectMapper.convertValue(request.getDetail(), YoutubeUpdateDetail.class);
 
@@ -66,7 +67,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
     }
 
     @Override
-    public void delete(String userId, PostDeleteRequest request) {
+    public void delete(Long userId, PostDeleteRequest request) {
 
         try {
             youtubeVideoDeleteApi.deleteVideo(

@@ -6,7 +6,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeToken
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import kt.aivle.sns.adapter.out.youtube.SnsTokenStore;
 import kt.aivle.sns.application.port.in.SnsOAuthUseCase;
 import kt.aivle.sns.config.YoutubeOAuthProperties;
 import kt.aivle.sns.domain.model.SnsType;
@@ -30,7 +29,7 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
 
     private static final GsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
-    private final SnsTokenStore tokenStore;
+    private final YoutubeTokenService youtubeTokenService;
 
     @Override
     public SnsType supportSnsType() {
@@ -38,7 +37,7 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
     }
 
     @Override
-    public String getAuthUrl(String userId) {
+    public String getAuthUrl(Long userId) {
         try {
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
@@ -60,7 +59,7 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
     }
 
     @Override
-    public void handleCallback(String userId, String code) throws Exception {
+    public void handleCallback(Long userId, String code) throws Exception {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
         TokenResponse tokens =  new GoogleAuthorizationCodeTokenRequest(
@@ -73,20 +72,10 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
                 properties.getRedirectUri()
         ).execute();
 
-        tokenStore.saveToken(
+        youtubeTokenService.saveToken(
                 userId,
                 tokens.getAccessToken(),
                 tokens.getRefreshToken(),
                 tokens.getExpiresInSeconds());
-    }
-
-    @Override
-    public String getAccessToken(String userId) {
-        return tokenStore.getAccessToken(userId);
-    }
-
-    @Override
-    public String getRefreshToken(String userId) {
-        return tokenStore.getRefreshToken(userId);
     }
 }

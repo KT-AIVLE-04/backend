@@ -1,8 +1,7 @@
 package kt.aivle.sns.application.service;
 
 import kt.aivle.sns.application.port.in.SnsAccountUseCase;
-import kt.aivle.sns.domain.model.SnsAccount;
-import kt.aivle.sns.domain.model.SnsAccountUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
 import org.springframework.stereotype.Service;
 
@@ -22,15 +21,15 @@ public class SnsAccountDelegator {
         }
     }
 
-    public void getAccountInfo(SnsType type, String userId) {
+    public void getAccountInfo(SnsType type, Long userId) {
         snsAccountServiceMap.get(type).getSnsAccountInfo(userId);
     }
 
-    public void updateAccount(SnsType type, String userId, SnsAccountUpdateRequest request) {
+    public void updateAccount(SnsType type, Long userId, SnsAccountUpdateRequest request) {
         snsAccountServiceMap.get(type).updateSnsAccount(userId, request);
     }
 
-    public void getPostList(SnsType type, String userId) {
+    public void getPostList(SnsType type, Long userId) {
         snsAccountServiceMap.get(type).getPostList(userId);
     }
 }

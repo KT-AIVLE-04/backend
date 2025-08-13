@@ -1,10 +1,10 @@
 package kt.aivle.sns.application.service;
 
 import kt.aivle.sns.application.port.in.SnsPostUseCase;
-import kt.aivle.sns.domain.model.PostDeleteRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostDeleteRequest;
 import kt.aivle.sns.domain.model.SnsType;
-import kt.aivle.sns.domain.model.PostUpdateRequest;
-import kt.aivle.sns.domain.model.PostUploadRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.PostUploadRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;
@@ -23,15 +23,15 @@ public class SnsPostDelegator {
         }
     }
 
-    public void upload(SnsType type, String userId, PostUploadRequest request) {
+    public void upload(SnsType type, Long userId, PostUploadRequest request) {
         snsPostServiceMap.get(type).upload(userId, request);
     }
 
-    public void update(SnsType type, String userId, PostUpdateRequest request) {
+    public void update(SnsType type, Long userId, PostUpdateRequest request) {
         snsPostServiceMap.get(type).update(userId, request);
     }
 
-    public void delete(SnsType type, String userId, PostDeleteRequest request) {
+    public void delete(SnsType type, Long userId, PostDeleteRequest request) {
         snsPostServiceMap.get(type).delete(userId, request);
     }
 }

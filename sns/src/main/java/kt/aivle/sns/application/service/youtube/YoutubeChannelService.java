@@ -4,8 +4,7 @@ import kt.aivle.sns.adapter.out.youtube.YoutubeChannelListApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeChannelUpdateApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeSearchListApi;
 import kt.aivle.sns.application.port.in.SnsAccountUseCase;
-import kt.aivle.sns.domain.model.SnsAccount;
-import kt.aivle.sns.domain.model.SnsAccountUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,14 +23,14 @@ public class YoutubeChannelService implements SnsAccountUseCase {
     }
 
     @Override
-    public void getSnsAccountInfo(String userId) {
+    public void getSnsAccountInfo(Long userId) {
 
         youtubeChannelListApi.getYoutubeChannelInfo(userId);
 
     }
 
     @Override
-    public void updateSnsAccount(String userId, SnsAccountUpdateRequest request) {
+    public void updateSnsAccount(Long userId, SnsAccountUpdateRequest request) {
 
         youtubeChannelUpdateApi.updateAccount(
                 userId,
@@ -42,7 +41,7 @@ public class YoutubeChannelService implements SnsAccountUseCase {
     }
 
     @Override
-    public void getPostList(String userId) {
+    public void getPostList(Long userId) {
         youtubeSearchListApi.getYoutubeMyVideoList(userId);
     }
 }

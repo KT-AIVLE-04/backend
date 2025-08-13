@@ -8,8 +8,7 @@ import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 import com.google.api.services.youtube.model.VideoStatus;
-import kt.aivle.sns.application.port.out.PostRepository;
-import kt.aivle.sns.config.YoutubeConfig;
+import kt.aivle.sns.adapter.out.persistence.JpaPostRepository;
 import kt.aivle.sns.domain.model.PostEntity;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +24,11 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class YoutubeVideoInsertApi {
 
-    private final YoutubeConfig youtubeConfig;
+    private final YoutubeClientFactory youtubeClientFactory;
 
-    private final PostRepository postRepository;
+    private final JpaPostRepository jpaPostRepository;
 
-    public void uploadVideo(String userId,
+    public void uploadVideo(Long userId,
                             String contentPath,
                             String title,
                             String description,
@@ -39,7 +38,7 @@ public class YoutubeVideoInsertApi {
                             OffsetDateTime publishAt) {
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
-            YouTube youtube = youtubeConfig.createYoutubeClient(userId);
+            YouTube youtube = youtubeClientFactory.youtube(userId);
 
             // 1. 동영상 메타데이터 생성
             Video videoMetadata = new Video();
@@ -106,7 +105,7 @@ public class YoutubeVideoInsertApi {
 
             // 6. Post 저장
             String videoId = uploadedVideo.getId();
-            PostEntity post = postRepository.findByPostId(videoId)
+            PostEntity post = jpaPostRepository.findByPostId(videoId)
                     .map(existing -> {
                         existing = PostEntity.builder()
                                 .id(existing.getId())
@@ -135,7 +134,7 @@ public class YoutubeVideoInsertApi {
                             .notifySubscribers(notifySubscribers)
                             .publishAt(publishAt)
                             .build());
-            postRepository.save(post);
+            jpaPostRepository.save(post);
 
         } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException("YouTube 업로드 실패", e);
