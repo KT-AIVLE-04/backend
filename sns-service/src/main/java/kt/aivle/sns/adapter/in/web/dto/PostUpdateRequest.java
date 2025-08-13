@@ -1,11 +1,8 @@
 package kt.aivle.sns.adapter.in.web.dto;
 
-import kt.aivle.sns.domain.model.SnsType;
-
 public class PostUpdateRequest {
     private String postId; // 게시글 ID
     private Long storeId;
-    private SnsType snsType;
     private String title;
     private String description;
     private String[] tags;
@@ -19,14 +16,6 @@ public class PostUpdateRequest {
 
     public void setPostId(String postId) {
         this.postId = postId;
-    }
-
-    public SnsType getSnsType() {
-        return snsType;
-    }
-
-    public void setSnsType(SnsType snsType) {
-        this.snsType = snsType;
     }
 
     public String getTitle() {

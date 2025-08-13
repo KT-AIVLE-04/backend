@@ -1,9 +1,6 @@
 package kt.aivle.sns.adapter.in.web.dto;
 
-import kt.aivle.sns.domain.model.SnsType;
-
 public class PostUploadRequest {
-    private SnsType snsType;
     private Long storeId;
     private String title;
     private String description;
@@ -12,10 +9,6 @@ public class PostUploadRequest {
     private Object detail; // SNS별 세부정보
 
     public PostUploadRequest() {}
-
-    public void setSnsType(SnsType snsType) {
-        this.snsType = snsType;
-    }
 
     public void setTitle(String title) {
         this.title = title;
@@ -34,10 +27,6 @@ public class PostUploadRequest {
 
     public void setDetail(Object detail) {
         this.detail = detail;
-    }
-
-    public SnsType getSnsType() {
-        return snsType;
     }
 
     public String getTitle() {

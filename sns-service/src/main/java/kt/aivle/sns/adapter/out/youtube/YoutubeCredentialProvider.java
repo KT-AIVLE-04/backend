@@ -8,7 +8,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import kt.aivle.sns.application.service.youtube.YoutubeTokenService;
 import kt.aivle.sns.config.YoutubeOAuthProperties;
 import kt.aivle.sns.domain.model.SnsToken;
-import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

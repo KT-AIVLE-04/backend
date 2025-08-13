@@ -3,7 +3,6 @@ package kt.aivle.sns.adapter.out.youtube;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.youtube.YouTube;
-import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
 
 import com.google.api.services.youtubeAnalytics.v2.YouTubeAnalytics;
