@@ -3,10 +3,8 @@ package kt.aivle.shorts.application.port.out.s3;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 public interface MediaStoragePort {
-    Mono<List<UploadImageResponse>> uploadImages(List<FilePart> images);
+    Mono<UploadedObjectResponse> uploadTempImage(FilePart image);
 
-    Mono<Void> deleteImages(List<DeleteImageRequest> requests);
+    Mono<UploadedObjectResponse> uploadVideoFromUrl(String sourceUrl);
 }
