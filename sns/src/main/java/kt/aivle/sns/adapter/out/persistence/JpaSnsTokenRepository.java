@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface SnsTokenRepository extends JpaRepository<SnsToken, Long> {
-    Optional<SnsToken> findByUserId(String userId);
+public interface JpaSnsTokenRepository extends JpaRepository<SnsToken, Long> {
+    Optional<SnsToken> findByUserId(Long userId);
 
-    Optional<SnsToken> findByUserIdAndSnsType(String userId, SnsType snsType);
+    Optional<SnsToken> findByUserIdAndSnsType(Long userId, SnsType snsType);
 }

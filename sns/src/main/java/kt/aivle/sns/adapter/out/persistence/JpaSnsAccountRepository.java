@@ -1,4 +1,4 @@
-package kt.aivle.sns.application.port.out;
+package kt.aivle.sns.adapter.out.persistence;
 
 import kt.aivle.sns.domain.model.SnsAccount;
 import kt.aivle.sns.domain.model.SnsType;
@@ -6,9 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface SnsAccountRepository extends JpaRepository<SnsAccount, Long> {
+public interface JpaSnsAccountRepository extends JpaRepository<SnsAccount, Long> {
 
-    Optional<SnsAccount> findByUserIdAndSnsType(String userId, SnsType snsType);
+    Optional<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType);
 
     Optional<SnsAccount> findBySnsAccountId(String snsAccountId);
 }
