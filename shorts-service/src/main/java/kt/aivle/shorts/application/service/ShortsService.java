@@ -18,7 +18,6 @@ import kt.aivle.shorts.application.port.out.s3.UploadedObjectResponse;
 import kt.aivle.shorts.application.service.mapper.toDtoMapper;
 import kt.aivle.shorts.application.service.mapper.toRequestMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -28,7 +27,6 @@ import java.util.List;
 
 import static kt.aivle.shorts.exception.ShortsErrorCode.*;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShortsService implements ShortsUseCase {
@@ -68,7 +66,6 @@ public class ShortsService implements ShortsUseCase {
         return mediaStoragePort.uploadVideoFromUrl(command.videoUrl())
                 .flatMap(uploaded -> {
                     CreateContentRequest request = toRequestMapper.toCreateContentRequest(command.userId(), command.storeId(), uploaded);
-                    log.warn("Saving shorts with request: {}", request);
                     return contentServicePort.createContent(request)
                             .onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
                 });
