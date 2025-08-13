@@ -2,12 +2,12 @@ package kt.aivle.shorts.adapter.out.ai.shorts.mapper;
 
 import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiScenarioRequest;
 import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiScenarioResponse;
-import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiSceneRequest;
-import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiSceneResponse;
+import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiShortsRequest;
+import kt.aivle.shorts.adapter.out.ai.shorts.dto.CreateAiShortsResponse;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioRequest;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioResponse;
-import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneRequest;
-import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateSceneResponse;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateShortsRequest;
+import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateShortsResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -17,7 +17,6 @@ public interface AiShortsMapper {
     @Mapping(target = "storeName", source = "storeName")
     @Mapping(target = "businessType", source = "businessType")
     @Mapping(target = "brandConcept", source = "brandConcepts")
-    @Mapping(target = "imageList", source = "imageUrls")
     @Mapping(target = "platform", source = "platform")
     @Mapping(target = "adType", source = "adType")
     @Mapping(target = "targetAudience", source = "target")
@@ -26,7 +25,7 @@ public interface AiShortsMapper {
 
     GenerateScenarioResponse toGenerateScenarioResponse(CreateAiScenarioResponse response);
 
-    CreateAiSceneRequest toAiCreateSceneRequest(GenerateSceneRequest request);
+    CreateAiShortsRequest toAiCreateShortsRequest(GenerateShortsRequest request);
 
-    GenerateSceneResponse toGenerateSceneResponse(CreateAiSceneResponse response);
+    GenerateShortsResponse toGenerateShortsResponse(CreateAiShortsResponse response);
 }

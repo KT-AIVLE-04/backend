@@ -2,7 +2,6 @@ package kt.aivle.shorts.adapter.out.event.store;
 
 import kt.aivle.shorts.adapter.out.event.store.dto.StoreInfoRequestMessage;
 import kt.aivle.shorts.adapter.out.event.store.dto.StoreInfoResponseMessage;
-import kt.aivle.shorts.adapter.out.event.store.mapper.StoreServiceMapper;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoRequest;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoResponse;
 import kt.aivle.shorts.application.port.out.event.store.StoreServicePort;
@@ -29,10 +28,9 @@ public class StoreServiceAdapter implements StoreServicePort {
 
     @Override
     public Mono<StoreInfoResponse> getStoreInfo(StoreInfoRequest req) {
-        StoreInfoRequestMessage msg = mapper.toMessage(req);
-
+        StoreInfoRequestMessage msg = mapper.toStoreInfoRequestMessage(req);
         ProducerRecord<String, StoreInfoRequestMessage> record =
-                new ProducerRecord<>(requestTopic, msg.requestId(), msg);
+                new ProducerRecord<>(requestTopic, String.valueOf(msg.storeId()), msg);
 
         CompletableFuture<ConsumerRecord<String, StoreInfoResponseMessage>> future =
                 replyingKafkaTemplate.sendAndReceive(record);
@@ -40,6 +38,6 @@ public class StoreServiceAdapter implements StoreServicePort {
         return Mono.fromFuture(future)
                 .timeout(Duration.ofSeconds(10))
                 .map(ConsumerRecord::value)
-                .map(mapper::toResponse);
+                .map(mapper::toStoreInfoResponse);
     }
 }
