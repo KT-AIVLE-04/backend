@@ -1,17 +1,13 @@
 package kt.aivle.snspost.application.port.in;
 
-import kt.aivle.snspost.adapter.in.web.dto.request.GenerateHashtagRequest;
-import kt.aivle.snspost.adapter.in.web.dto.request.GeneratePostRequest;
-import kt.aivle.snspost.adapter.in.web.dto.response.FullPostResponse;
+import kt.aivle.snspost.adapter.in.web.dto.request.HashtagRequest;
+import kt.aivle.snspost.adapter.in.web.dto.request.SNSPostRequest;
 import kt.aivle.snspost.adapter.in.web.dto.response.HashtagResponse;
-import kt.aivle.snspost.adapter.in.web.dto.response.PostResponse;
-import reactor.core.publisher.Mono;
+import kt.aivle.snspost.adapter.in.web.dto.response.SNSPostResponse;
 
 public interface SnsPostUseCase {
 
-    Mono<PostResponse> generatePost(GeneratePostRequest request, Long userId, Long storeId);
+    SNSPostResponse generatePost(SNSPostRequest request);
 
-    Mono<HashtagResponse> generateHashtags(GenerateHashtagRequest request);
-
-    Mono<FullPostResponse> generateFullPost(GeneratePostRequest request, Long userId, Long storeId);
+    HashtagResponse generateHashtags(HashtagRequest request);
 } 

@@ -92,6 +92,16 @@ services:
     networks:
       - backend
 
+  sns-post-service:
+    image: ${DOCKER_USERNAME}/aivle-sns-post:latest
+    container_name: sns-post-service
+    depends_on:
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
