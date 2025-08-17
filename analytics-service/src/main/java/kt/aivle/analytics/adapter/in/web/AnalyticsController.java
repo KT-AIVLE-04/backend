@@ -4,30 +4,18 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import kt.aivle.analytics.adapter.in.web.dto.AnalysisRequest;
-import kt.aivle.analytics.adapter.in.web.dto.AnalysisResultResponse;
-import kt.aivle.analytics.adapter.in.web.dto.AnalyticsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.DashboardStatisticsRequest;
-import kt.aivle.analytics.adapter.in.web.dto.PostMetricsRequest;
-import kt.aivle.analytics.adapter.in.web.dto.PostMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.mapper.AnalyticsCommandMapper;
-import kt.aivle.analytics.application.port.in.AnalyticsUseCase;
-import kt.aivle.analytics.application.port.in.command.AnalyzeOptimalTimeCommand;
-import kt.aivle.analytics.application.port.in.command.AnalyzeSentimentCommand;
-import kt.aivle.analytics.application.port.in.command.AnalyzeTrendsCommand;
-import kt.aivle.analytics.application.port.in.command.CollectMetricsCommand;
-import kt.aivle.analytics.application.port.in.command.GenerateReportCommand;
-import kt.aivle.analytics.application.port.in.command.GetDashboardStatisticsCommand;
-import kt.aivle.analytics.application.port.in.command.GetPostMetricsCommand;
-import kt.aivle.analytics.application.port.in.command.GetTopContentCommand;
-import kt.aivle.analytics.application.port.in.command.RefreshTokenCommand;
+import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryRequest;
+import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryRequest;
+import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryRequest;
+import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryResponse;
+import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -37,106 +25,35 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AnalyticsController {
     
-    private final AnalyticsUseCase analyticsUseCase;
-    private final AnalyticsCommandMapper analyticsCommandMapper;
+    private final AnalyticsQueryUseCase analyticsQueryUseCase;
     
-    @PostMapping("/collect-metrics")
-    public ResponseEntity<ApiResponse<Void>> collectMetrics(
+    @GetMapping("/post-metrics")
+    public ResponseEntity<ApiResponse<List<PostMetricsQueryResponse>>> getPostMetrics(
             @RequestHeader("X-USER-ID") String userId,
-            @RequestParam String snsType) {
+            @RequestBody PostMetricsQueryRequest request) {
         
-        // TODO: 실제로는 post-service에서 게시글 정보를 받아와야 함
-        // 현재는 임시로 빈 리스트로 처리
-        CollectMetricsCommand command = analyticsCommandMapper.toCollectMetricsCommand(snsType, userId, List.of());
-        analyticsUseCase.collectMetrics(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, null));
-    }
-    
-    @GetMapping("/dashboard")
-    public ResponseEntity<ApiResponse<AnalyticsResponse>> getDashboardStatistics(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestBody DashboardStatisticsRequest request) {
-        
-        GetDashboardStatisticsCommand command = analyticsCommandMapper.toGetDashboardStatisticsCommand(request, userId);
-        AnalyticsResponse response = analyticsUseCase.getDashboardStatistics(command);
+        List<PostMetricsQueryResponse> response = analyticsQueryUseCase.getPostMetrics(userId, request);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @GetMapping("/video-metrics")
-    public ResponseEntity<ApiResponse<List<PostMetricsResponse>>> getVideoMetrics(
+    @GetMapping("/account-metrics")
+    public ResponseEntity<ApiResponse<List<AccountMetricsQueryResponse>>> getAccountMetrics(
             @RequestHeader("X-USER-ID") String userId,
-            @RequestBody PostMetricsRequest request) {
+            @RequestBody AccountMetricsQueryRequest request) {
         
-        GetPostMetricsCommand command = analyticsCommandMapper.toGetPostMetricsCommand(request, userId);
-        List<PostMetricsResponse> response = analyticsUseCase.getPostMetrics(command);
+        List<AccountMetricsQueryResponse> response = analyticsQueryUseCase.getAccountMetrics(userId, request);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @GetMapping("/top-content")
-    public ResponseEntity<ApiResponse<List<PostMetricsResponse>>> getTopPerformingContent(
+    @GetMapping("/post-comments")
+    public ResponseEntity<ApiResponse<List<PostCommentsQueryResponse>>> getPostComments(
             @RequestHeader("X-USER-ID") String userId,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestBody PostCommentsQueryRequest request) {
         
-        GetTopContentCommand command = new GetTopContentCommand(userId, limit);
-        List<PostMetricsResponse> response = analyticsUseCase.getTopPerformingContent(command);
+        List<PostCommentsQueryResponse> response = analyticsQueryUseCase.getPostComments(userId, request);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @PostMapping("/analyze-sentiment")
-    public ResponseEntity<ApiResponse<AnalysisResultResponse>> analyzeSentiment(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestParam String videoId) {
-        
-        AnalyzeSentimentCommand command = analyticsCommandMapper.toAnalyzeSentimentCommand(videoId, userId);
-        AnalysisResultResponse response = analyticsUseCase.analyzeSentiment(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @PostMapping("/analyze-trends")
-    public ResponseEntity<ApiResponse<AnalysisResultResponse>> analyzeTrends(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestBody AnalysisRequest request) {
-        
-        AnalyzeTrendsCommand command = analyticsCommandMapper.toAnalyzeTrendsCommand(request, userId);
-        AnalysisResultResponse response = analyticsUseCase.analyzeTrends(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @PostMapping("/analyze-optimal-time")
-    public ResponseEntity<ApiResponse<AnalysisResultResponse>> analyzeOptimalPostingTime(
-            @RequestHeader("X-USER-ID") String userId) {
-        
-        AnalyzeOptimalTimeCommand command = new AnalyzeOptimalTimeCommand(userId);
-        AnalysisResultResponse response = analyticsUseCase.analyzeOptimalPostingTime(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @PostMapping("/generate-report")
-    public ResponseEntity<ApiResponse<AnalysisResultResponse>> generateReport(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestBody AnalysisRequest request) {
-        
-        GenerateReportCommand command = analyticsCommandMapper.toGenerateReportCommand(request, userId);
-        AnalysisResultResponse response = analyticsUseCase.generateReport(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<Void>> refreshToken(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestParam String snsType) {
-        
-        RefreshTokenCommand command = analyticsCommandMapper.toRefreshTokenCommand(snsType, userId);
-        analyticsUseCase.refreshToken(command);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, null));
     }
 }

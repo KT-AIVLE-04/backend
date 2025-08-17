@@ -1,78 +1,50 @@
 package kt.aivle.analytics.domain.entity;
 
-import java.time.LocalDate;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import kt.aivle.analytics.domain.model.SnsType;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "post_metric")
+@Table(name = "POST_METRIC")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class PostMetric extends BaseEntity {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "social_post_id", nullable = false)
-    private Long socialPostId;
+    @Column(name = "post_id", nullable = false)
+    private Long postId;
     
-    @Column(name = "user_id", nullable = false)
-    private String userId;
+    @Column(name = "likes")
+    private String likes;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sns_type", nullable = false)
-    private SnsType snsType;
+    @Column(name = "dislikes")
+    private Long dislikes;
     
-    @Column(name = "metric_date", nullable = false)
-    private LocalDate metricDate;
+    @Column(name = "comments")
+    private Long comments;
     
-    @Column(name = "view_count")
-    private Long viewCount;
+    @Column(name = "shares")
+    private Long shares;
     
-    @Column(name = "like_count")
-    private Long likeCount;
+    @Column(name = "views")
+    private Long views;
     
-    @Column(name = "comment_count")
-    private Long commentCount;
+    @Column(name = "crawled_at", nullable = false)
+    private LocalDateTime crawledAt;
     
-    @Column(name = "share_count")
-    private Long shareCount;
-    
-    @Column(name = "subscriber_count")
-    private Long subscriberCount;
-    
-    @Column(name = "engagement_rate")
-    private Double engagementRate;
-    
-    public void updateMetrics(Long viewCount, Long likeCount, Long commentCount, Long shareCount) {
-        this.viewCount = viewCount;
-        this.likeCount = likeCount;
-        this.commentCount = commentCount;
-        this.shareCount = shareCount;
-        this.engagementRate = calculateEngagementRate();
-    }
-    
-    private Double calculateEngagementRate() {
-        if (viewCount == null || viewCount == 0) return 0.0;
-        long totalEngagement = (likeCount != null ? likeCount : 0) + 
-                             (commentCount != null ? commentCount : 0) + 
-                             (shareCount != null ? shareCount : 0);
-        return (double) totalEngagement / viewCount * 100;
+    public PostMetric(Long postId, String likes, Long dislikes, Long comments, Long shares, Long views, LocalDateTime crawledAt) {
+        this.postId = postId;
+        this.likes = likes;
+        this.dislikes = dislikes;
+        this.comments = comments;
+        this.shares = shares;
+        this.views = views;
+        this.crawledAt = crawledAt;
     }
 }

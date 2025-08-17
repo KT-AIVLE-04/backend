@@ -1,9 +1,11 @@
 package kt.aivle.analytics.application.port.in;
 
-import kt.aivle.analytics.adapter.in.event.dto.SocialPostResponseEvent;
-import kt.aivle.analytics.adapter.out.event.SnsTokenResponseEvent;
+import kt.aivle.analytics.adapter.in.event.dto.PostEvent;
+import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 
 public interface AnalyticsEventUseCase {
-    void handleSnsTokenResponse(SnsTokenResponseEvent event);
-    void handleSocialPostResponse(SocialPostResponseEvent event);
+    void handlePostCreated(PostEvent event);
+    void handlePostDeleted(PostEvent event);
+    void handleSnsAccountConnected(SnsAccountEvent event);
+    void handleSnsAccountDisconnected(SnsAccountEvent event);
 }

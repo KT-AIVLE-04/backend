@@ -1,18 +1,14 @@
 package kt.aivle.analytics.application.service;
 
-import java.time.LocalDate;
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.event.dto.SocialPostResponseEvent;
-import kt.aivle.analytics.adapter.out.event.SnsTokenEventProducer;
-import kt.aivle.analytics.adapter.out.event.SnsTokenResponseEvent;
-import kt.aivle.analytics.adapter.out.event.SocialPostEventProducer;
+import kt.aivle.analytics.adapter.in.event.dto.PostEvent;
+import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.application.port.in.AnalyticsUseCase;
-import kt.aivle.analytics.application.port.in.command.CollectMetricsCommand;
-import kt.aivle.analytics.domain.model.SnsType;
+import kt.aivle.analytics.application.port.out.PostRepositoryPort;
+import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
+import kt.aivle.analytics.domain.entity.Post;
+import kt.aivle.analytics.domain.entity.SnsAccount;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,61 +17,72 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AnalyticsEventService implements AnalyticsEventUseCase {
 
-    private final SnsTokenEventProducer snsTokenEventProducer;
-    private final SocialPostEventProducer socialPostEventProducer;
-    private final AnalyticsUseCase analyticsUseCase;
-
+    private final PostRepositoryPort postRepositoryPort;
+    private final SnsAccountRepositoryPort snsAccountRepositoryPort;
+    
     @Override
-    public void handleSnsTokenResponse(SnsTokenResponseEvent event) {
+    public void handlePostCreated(PostEvent event) {
         try {
-            log.info("Processing SNS token response for userId: {}, snsType: {}, isExpired: {}", 
-                    event.userId(), event.snsType(), event.isExpired());
+            log.info("Processing post created event: postId={}, accountId={}, snsPostId={}", 
+                    event.getPostId(), event.getAccountId(), event.getSnsPostId());
             
-            // 토큰 응답을 받았으므로 이제 YouTube API 호출 가능
-            // TODO: 토큰을 저장하고 메트릭 수집 로직에서 사용
-            // TODO: 토큰이 만료된 경우 갱신 요청
+            Post post = new Post(event.getAccountId(), event.getSnsPostId());
+            postRepositoryPort.save(post);
+            
+            log.info("Post saved successfully: postId={}", event.getPostId());
             
         } catch (Exception e) {
-            log.error("Failed to process SNS token response: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to process SNS token response", e);
+            log.error("Failed to process post created event: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to process post created event", e);
         }
     }
     
     @Override
-    public void handleSocialPostResponse(SocialPostResponseEvent event) {
+    public void handlePostDeleted(PostEvent event) {
         try {
-            log.info("Processing social post response for userId: {}, postsCount: {}", 
-                    event.getUserId(), event.getPosts().size());
+            log.info("Processing post deleted event: postId={}, accountId={}, snsPostId={}", 
+                    event.getPostId(), event.getAccountId(), event.getSnsPostId());
             
-            // 받은 게시글 정보를 기반으로 메트릭 수집 시작
-            CollectMetricsCommand command = CollectMetricsCommand.builder()
-                .userId(event.getUserId())
-                .snsType(SnsType.valueOf(event.getSnsType().toUpperCase()))
-                .socialPosts(event.getPosts())
-                .build();
+            postRepositoryPort.deleteBySnsPostId(event.getSnsPostId());
             
-            analyticsUseCase.collectMetrics(command);
+            log.info("Post deleted successfully: postId={}", event.getPostId());
             
         } catch (Exception e) {
-            log.error("Failed to process social post response: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to process social post response", e);
+            log.error("Failed to process post deleted event: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to process post deleted event", e);
         }
     }
     
-    public void requestSocialPosts(String userId, SnsType snsType, LocalDate startDate, LocalDate endDate) {
-        String requestId = UUID.randomUUID().toString();
-        
-        kt.aivle.analytics.adapter.out.event.dto.SocialPostRequestEvent event = 
-            kt.aivle.analytics.adapter.out.event.dto.SocialPostRequestEvent.builder()
-                .requestId(requestId)
-                .userId(userId)
-                .snsType(snsType.name().toLowerCase())
-                .startDate(startDate.toString())
-                .endDate(endDate.toString())
-                .build();
-        
-        socialPostEventProducer.requestSocialPosts(event);
-        log.info("Requested social posts for userId: {}, snsType: {}, dateRange: {} to {}", 
-                userId, snsType, startDate, endDate);
+    @Override
+    public void handleSnsAccountConnected(SnsAccountEvent event) {
+        try {
+            log.info("Processing SNS account connected event: accountId={}, userId={}, snsAccountId={}, type={}", 
+                    event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
+            
+            SnsAccount snsAccount = new SnsAccount(event.getUserId(), event.getSnsAccountId(), event.getType());
+            snsAccountRepositoryPort.save(snsAccount);
+            
+            log.info("SNS account saved successfully: accountId={}", event.getAccountId());
+            
+        } catch (Exception e) {
+            log.error("Failed to process SNS account connected event: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to process SNS account connected event", e);
+        }
+    }
+    
+    @Override
+    public void handleSnsAccountDisconnected(SnsAccountEvent event) {
+        try {
+            log.info("Processing SNS account disconnected event: accountId={}, userId={}, snsAccountId={}, type={}", 
+                    event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
+            
+            snsAccountRepositoryPort.deleteBySnsAccountId(event.getSnsAccountId());
+            
+            log.info("SNS account deleted successfully: accountId={}", event.getAccountId());
+            
+        } catch (Exception e) {
+            log.error("Failed to process SNS account disconnected event: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to process SNS account disconnected event", e);
+        }
     }
 }

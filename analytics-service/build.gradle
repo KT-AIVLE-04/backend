@@ -37,5 +37,12 @@ dependencies {
     // JSON 처리
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     
+    // Spring Batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.boot:spring-boot-starter-quartz'
+    
+    // 배치 모니터링
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
