@@ -2,12 +2,12 @@ package kt.aivle.shorts.application.service.mapper;
 
 import kt.aivle.shorts.application.port.in.command.CreateScenarioCommand;
 import kt.aivle.shorts.application.port.in.command.CreateShortsCommand;
+import kt.aivle.shorts.application.port.in.command.SaveShortsCommand;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioRequest;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateShortsRequest;
 import kt.aivle.shorts.application.port.out.event.contents.CreateContentRequest;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoRequest;
 import kt.aivle.shorts.application.port.out.event.store.StoreInfoResponse;
-import kt.aivle.shorts.application.port.out.s3.UploadedObjectResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -31,5 +31,6 @@ public interface toRequestMapper {
 
     GenerateShortsRequest toGenerateShortsRequest(CreateShortsCommand command, List<String> imageUrls);
 
-    CreateContentRequest toCreateContentRequest(Long userId, Long storeId, UploadedObjectResponse response);
+    @Mapping(target = "url", source = "command.videoUrl")
+    CreateContentRequest toCreateContentRequest(SaveShortsCommand command);
 }

@@ -5,6 +5,4 @@ import reactor.core.publisher.Mono;
 
 public interface MediaStoragePort {
     Mono<UploadedObjectResponse> uploadTempImage(FilePart image);
-
-    Mono<UploadedObjectResponse> uploadVideoFromUrl(String sourceUrl);
 }

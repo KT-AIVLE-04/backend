@@ -63,12 +63,8 @@ public class ShortsService implements ShortsUseCase {
 
     @Override
     public Mono<Void> saveShorts(SaveShortsCommand command) {
-        return mediaStoragePort.uploadVideoFromUrl(command.videoUrl())
-                .flatMap(uploaded -> {
-                    CreateContentRequest request = toRequestMapper.toCreateContentRequest(command.userId(), command.storeId(), uploaded);
-                    return contentServicePort.createContent(request)
-                            .onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
-                });
+        CreateContentRequest request = toRequestMapper.toCreateContentRequest(command);
+        return contentServicePort.createContent(request).onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
     }
 
     private Mono<StoreInfoResponse> getStoreInfo(Long userId, Long storeId) {
