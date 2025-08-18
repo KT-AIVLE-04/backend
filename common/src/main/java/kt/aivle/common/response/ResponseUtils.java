@@ -2,6 +2,7 @@ package kt.aivle.common.response;
 
 import kt.aivle.common.code.DefaultCode;
 import kt.aivle.common.exception.FieldError;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,12 @@ import java.util.List;
 public class ResponseUtils {
     public <T> ResponseEntity<ApiResponse<T>> build(DefaultCode code, T result) {
         return ResponseEntity.status(code.getHttpStatus())
+                .body(ApiResponse.of(code, result));
+    }
+
+    public <T> ResponseEntity<ApiResponse<T>> build(DefaultCode code, T result, HttpHeaders headers) {
+        return ResponseEntity.status(code.getHttpStatus())
+                .headers(headers)
                 .body(ApiResponse.of(code, result));
     }
 
