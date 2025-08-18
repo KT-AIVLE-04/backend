@@ -10,5 +10,5 @@ import org.mapstruct.Mapper;
 public interface toDtoMapper {
     ScenarioDTO toScenarioDTO(GenerateScenarioResponse response);
 
-    ShortsDTO toShortsDTO(GenerateShortsResponse response);
+    ShortsDTO toShortsDTO(String videoUrl, GenerateShortsResponse response);
 }

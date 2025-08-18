@@ -1,5 +1,7 @@
-package kt.aivle.common.kafka;
+package kt.aivle.shorts.adapter.out.event.kafka;
 
+import kt.aivle.shorts.adapter.out.event.contents.Ack;
+import kt.aivle.shorts.adapter.out.event.contents.CreateContentRequestMessage;
 import kt.aivle.shorts.adapter.out.event.store.dto.StoreInfoRequestMessage;
 import kt.aivle.shorts.adapter.out.event.store.dto.StoreInfoResponseMessage;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -27,68 +29,102 @@ public class KafkaEventConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrap;
 
-    /* ========= 공통 Producer (모든 일반 이벤트 발행에 사용) ========= */
-    @Bean
-    public ProducerFactory<String, Object> objectProducerFactory() {
+    private Map<String, Object> commonProducerProps() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
-        return new DefaultKafkaProducerFactory<>(props);
+        return props;
     }
 
+    /* ====== store request-reply====== */
     @Bean
-    public KafkaTemplate<String, Object> eventKafkaTemplate(
-            ProducerFactory<String, Object> objectProducerFactory
-    ) {
-        return new KafkaTemplate<>(objectProducerFactory);
+    public ProducerFactory<String, StoreInfoRequestMessage> storeRequestProducerFactory() {
+        return new DefaultKafkaProducerFactory<>(commonProducerProps());
     }
 
-    /* ========= store request–reply 전용 빈 ========= */
     @Bean
     public ConsumerFactory<String, StoreInfoResponseMessage> storeReplyConsumerFactory() {
-        JsonDeserializer<StoreInfoResponseMessage> valueDeserializer =
+        JsonDeserializer<StoreInfoResponseMessage> vd =
                 new JsonDeserializer<>(StoreInfoResponseMessage.class, false);
-        valueDeserializer.addTrustedPackages("*");
-
+        vd.addTrustedPackages("*");
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), valueDeserializer);
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), vd);
     }
 
     @Bean
     public ConcurrentMessageListenerContainer<String, StoreInfoResponseMessage> storeRepliesContainer(
-            ConsumerFactory<String, StoreInfoResponseMessage> storeReplyConsumerFactory,
+            ConsumerFactory<String, StoreInfoResponseMessage> cf,
             @Value("${topic.store.reply}") String replyTopic
     ) {
         var factory = new ConcurrentKafkaListenerContainerFactory<String, StoreInfoResponseMessage>();
-        factory.setConsumerFactory(storeReplyConsumerFactory);
-
+        factory.setConsumerFactory(cf);
         var container = factory.createContainer(replyTopic);
-        container.getContainerProperties().setGroupId("shorts-replies-" + UUID.randomUUID());
+        container.getContainerProperties().setGroupId("shorts-store-replies-" + UUID.randomUUID());
         container.getContainerProperties().setMissingTopicsFatal(false);
         return container;
     }
 
     @Bean
-    public ProducerFactory<String, StoreInfoRequestMessage> storeRequestProducerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
-        return new DefaultKafkaProducerFactory<>(props);
+    public ReplyingKafkaTemplate<String, StoreInfoRequestMessage, StoreInfoResponseMessage> storeReplyingKafkaTemplate(
+            ProducerFactory<String, StoreInfoRequestMessage> pf,
+            ConcurrentMessageListenerContainer<String, StoreInfoResponseMessage> replies
+    ) {
+        var tpl = new ReplyingKafkaTemplate<>(pf, replies);
+        tpl.setDefaultReplyTimeout(Duration.ofSeconds(10));
+        return tpl;
+    }
+
+    /* ====== content request-reply (Ack) ====== */
+    @Bean
+    public ProducerFactory<String, CreateContentRequestMessage> contentRequestProducerFactory() {
+        return new DefaultKafkaProducerFactory<>(commonProducerProps());
     }
 
     @Bean
-    public ReplyingKafkaTemplate<String, StoreInfoRequestMessage, StoreInfoResponseMessage> storeReplyingKafkaTemplate(
-            ProducerFactory<String, StoreInfoRequestMessage> storeRequestProducerFactory,
-            ConcurrentMessageListenerContainer<String, StoreInfoResponseMessage> storeRepliesContainer
+    public ConsumerFactory<String, Ack> contentReplyConsumerFactory() {
+        JsonDeserializer<Ack> vd = new JsonDeserializer<>(Ack.class, false);
+        vd.addTrustedPackages("*");
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), vd);
+    }
+
+    @Bean
+    public ConcurrentMessageListenerContainer<String, Ack> contentRepliesContainer(
+            ConsumerFactory<String, Ack> cf,
+            @Value("${topic.content.reply}") String replyTopic
     ) {
-        var template = new ReplyingKafkaTemplate<>(storeRequestProducerFactory, storeRepliesContainer);
-        template.setDefaultReplyTimeout(Duration.ofSeconds(10));
-        return template;
+        var factory = new ConcurrentKafkaListenerContainerFactory<String, Ack>();
+        factory.setConsumerFactory(cf);
+        var container = factory.createContainer(replyTopic);
+        container.getContainerProperties().setGroupId("shorts-content-replies-" + UUID.randomUUID());
+        container.getContainerProperties().setMissingTopicsFatal(false);
+        return container;
+    }
+
+    @Bean
+    public ReplyingKafkaTemplate<String, CreateContentRequestMessage, Ack> contentReplyingKafkaTemplate(
+            ProducerFactory<String, CreateContentRequestMessage> pf,
+            ConcurrentMessageListenerContainer<String, Ack> replies
+    ) {
+        var tpl = new ReplyingKafkaTemplate<>(pf, replies);
+        tpl.setDefaultReplyTimeout(Duration.ofSeconds(30));
+        return tpl;
+    }
+
+    /* ====== 일반 이벤트 발행용 KafkaTemplate(Object) ====== */
+    @Bean
+    public ProducerFactory<String, Object> objectProducerFactory() {
+        return new DefaultKafkaProducerFactory<>(commonProducerProps());
+    }
+
+    @Bean
+    public KafkaTemplate<String, Object> eventKafkaTemplate(ProducerFactory<String, Object> pf) {
+        return new KafkaTemplate<>(pf);
     }
 }

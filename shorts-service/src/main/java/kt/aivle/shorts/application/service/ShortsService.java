@@ -49,26 +49,28 @@ public class ShortsService implements ShortsUseCase {
 
     @Override
     public Mono<ShortsDTO> createShorts(CreateShortsCommand command) {
-        return uploadTempImages(command.images())
+        return uploadTempImages(command.images()) // Mono<List<UploadedObjectResponse>>
                 .flatMap(uploaded -> {
                     List<String> presignedUrls = uploaded.stream()
                             .map(UploadedObjectResponse::presignedUrl)
                             .toList();
-                    GenerateShortsRequest req = toRequestMapper.toGenerateShortsRequest(command, presignedUrls);
+
+                    GenerateShortsRequest req =
+                            toRequestMapper.toGenerateShortsRequest(command, presignedUrls);
+
                     return aiShortsPort.generateShorts(req)
-                            .onErrorMap(e -> new BusinessException(AI_WEB_CLIENT_ERROR, e.getMessage()));
-                })
-                .map(toDtoMapper::toShortsDTO);
+                            .onErrorMap(e -> new BusinessException(AI_WEB_CLIENT_ERROR, e.getMessage()))
+                            .flatMap(res -> mediaStoragePort.getPresignedUrl(res.key())
+                                    .onErrorMap(e -> new BusinessException(S3_ERROR, "preSigned URL 발급 실패 " + e.getMessage()))
+                                    .map(videoUrl -> toDtoMapper.toShortsDTO(videoUrl, res))
+                            );
+                });
     }
 
     @Override
     public Mono<Void> saveShorts(SaveShortsCommand command) {
-        return mediaStoragePort.uploadVideoFromUrl(command.videoUrl())
-                .flatMap(uploaded -> {
-                    CreateContentRequest request = toRequestMapper.toCreateContentRequest(command.userId(), command.storeId(), uploaded);
-                    return contentServicePort.createContent(request)
-                            .onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
-                });
+        CreateContentRequest request = toRequestMapper.toCreateContentRequest(command);
+        return contentServicePort.createContent(request).onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
     }
 
     private Mono<StoreInfoResponse> getStoreInfo(Long userId, Long storeId) {

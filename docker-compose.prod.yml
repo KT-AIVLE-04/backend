@@ -92,6 +92,17 @@ services:
     networks:
       - backend
 
+  content-service:
+    image: ${DOCKER_USERNAME}/aivle-content:latest
+    container_name: content-service
+    depends_on:
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge

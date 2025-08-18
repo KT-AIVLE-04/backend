@@ -74,10 +74,6 @@ services:
       context: ./gateway
       dockerfile: Dockerfile
     container_name: gateway
-    depends_on:
-      - auth-service
-      - store-service
-      - shorts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
@@ -117,6 +113,20 @@ services:
     container_name: shorts-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
+  content-service:
+    build:
+      context: ./content-service
+      dockerfile: Dockerfile
+    container_name: content-service
+    depends_on:
+      - mysql
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
     networks:
       - backend
 
