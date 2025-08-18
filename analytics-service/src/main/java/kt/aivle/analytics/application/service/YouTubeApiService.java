@@ -169,7 +169,7 @@ public class YouTubeApiService {
                         var comment = commentThread.getSnippet().getTopLevelComment();
                         return PostCommentsQueryResponse.builder()
                             .commentId(comment.getId())
-                            .authorId(comment.getSnippet().getAuthorChannelId() != null ? Long.valueOf(comment.getSnippet().getAuthorChannelId().getValue()) : null)
+                            .authorId(comment.getSnippet().getAuthorChannelId() != null ? comment.getSnippet().getAuthorChannelId().getValue() : null)
                             .text(comment.getSnippet().getTextDisplay())
                             .likeCount(comment.getSnippet().getLikeCount() != null ? comment.getSnippet().getLikeCount().longValue() : 0L)
                             .publishedAt(LocalDateTime.now()) // 임시로 현재 시간 사용

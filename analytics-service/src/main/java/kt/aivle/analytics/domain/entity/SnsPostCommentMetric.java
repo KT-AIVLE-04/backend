@@ -29,7 +29,7 @@ public class SnsPostCommentMetric extends BaseEntity {
     private Long postId;
 
     @Column(name = "author_id")
-    private Long authorId;
+    private String authorId;
 
     @Column(name = "content")
     private String content;
@@ -41,7 +41,7 @@ public class SnsPostCommentMetric extends BaseEntity {
     private LocalDateTime publishedAt;
 
     @Builder
-    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, Long authorId, String content, Long likeCount, LocalDateTime publishedAt) {
+    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, String authorId, String content, Long likeCount, LocalDateTime publishedAt) {
         this.id = id;
         this.snsCommentId = snsCommentId;
         this.postId = postId;
