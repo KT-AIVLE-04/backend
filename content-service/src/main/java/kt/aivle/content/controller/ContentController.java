@@ -38,7 +38,7 @@ public class ContentController {
             @RequestHeader("X-USER-ID") Long userId,
             @RequestHeader("X-STORE-ID") Long storeId,
             @RequestPart("file") MultipartFile file
-    ) throws Exception {
+    ) {
         CreateContentRequest request = contentMapper.toCreateContentRequest(userId, storeId, file);
         ContentResponse response = contentService.uploadContent(request);
         return responseUtils.build(CREATED, response);

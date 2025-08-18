@@ -6,6 +6,7 @@ import kt.aivle.content.dto.request.*;
 import kt.aivle.content.dto.response.ContentDetailResponse;
 import kt.aivle.content.dto.response.ContentResponse;
 import kt.aivle.content.entity.Content;
+import kt.aivle.content.event.CreateContentRequestMessage;
 import kt.aivle.content.infra.CloudFrontSigner;
 import kt.aivle.content.infra.S3Storage;
 import kt.aivle.content.repository.ContentRepository;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -32,6 +34,7 @@ public class ContentServiceImpl implements ContentService {
     private final ContentMapper contentMapper;
     private final S3Storage s3Storage;
     private final CloudFrontSigner cloudFrontSigner;
+    private final UrlDownloader urlDownloader;
 
     @Override
     public ContentResponse uploadContent(CreateContentRequest request) {
@@ -168,6 +171,74 @@ public class ContentServiceImpl implements ContentService {
         s3Storage.delete(thumbKey);
 
         contentRepository.delete(content);
+    }
+
+    @Override
+    public void uploadContent(CreateContentRequestMessage request) {
+        try {
+            var dl = urlDownloader.fetch(request.url());
+
+            String uuid = UUID.randomUUID().toString();
+            String originKey = getOriginKey(uuid, dl.originalName());
+            String thumbKey = getThumbKey(request.userId(), request.storeId(), uuid);
+
+            Integer width = null, height = null, duration = null;
+            File thumb = null;
+
+            if (dl.contentType() != null && dl.contentType().startsWith("image")) {
+                try (InputStream in = Files.newInputStream(dl.file())) {
+                    var meta = MediaMetadataExtractor.extractImageMeta(in);
+                    width = meta.width();
+                    height = meta.height();
+                }
+                try (InputStream in = Files.newInputStream(dl.file())) {
+                    thumb = ThumbnailGenerator.createImageThumbnail(in, 300, 300);
+                }
+            } else {
+                File tmpVideo = dl.file().toFile();
+                var meta = MediaMetadataExtractor.extractVideoMeta(tmpVideo);
+                width = meta.width();
+                height = meta.height();
+                duration = meta.durationSeconds();
+                thumb = ThumbnailGenerator.createVideoThumbnail(tmpVideo, 300, 300);
+            }
+
+            try (InputStream in = Files.newInputStream(dl.file())) {
+                s3Storage.put(originKey, in, dl.size(), dl.contentType(), null);
+            }
+
+            if (thumb.exists()) {
+                try (InputStream tin = new FileInputStream(thumb)) {
+                    s3Storage.put(thumbKey, tin, thumb.length(), "image/jpeg", null);
+                } finally {
+                    try {
+                        thumb.delete();
+                    } catch (Exception ignore) {
+                    }
+                }
+            }
+
+            Content content = Content.builder()
+                    .userId(request.userId())
+                    .storeId(request.storeId())
+                    .objectKey(uuid)
+                    .title(dl.originalName())
+                    .originalName(dl.originalName())
+                    .contentType(dl.contentType())
+                    .width(width)
+                    .height(height)
+                    .durationSeconds(duration)
+                    .bytes(dl.size())
+                    .build();
+            contentRepository.save(content);
+
+            try {
+                Files.deleteIfExists(dl.file());
+            } catch (Exception ignore) {
+            }
+        } catch (Exception e) {
+            throw new BusinessException(URI_DOWNLOAD_ERROR, e.getMessage());
+        }
     }
 
     private String getExtSafe(String name, String defExt) {
