@@ -40,3 +40,5 @@ out/
 **/application*.yml
 **/.env
 .env
+
+**/.CLOUDFRONT_PRIVATE_KEY
