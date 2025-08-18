@@ -1,10 +1,12 @@
 package kt.aivle.analytics.application.service;
 
-import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
+import kt.aivle.analytics.exception.AnalyticsException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class MetricsCollectionScheduler {
     
     private final MetricsCollectionUseCase metricsCollectionUseCase;
+    private final BatchJobMonitor batchJobMonitor;
     
     /**
      * 매일 12시에 모든 계정과 게시물의 메트릭을 수집합니다.
@@ -35,8 +38,14 @@ public class MetricsCollectionScheduler {
             
             log.info("Daily metrics collection completed successfully");
             
+        } catch (AnalyticsException e) {
+            log.error("Analytics error during daily metrics collection: {}", e.getMessage(), e);
+            // 배치 작업 실패 기록
+            batchJobMonitor.recordJobFailure("daily-metrics-collection", e.getMessage());
         } catch (Exception e) {
-            log.error("Failed to collect daily metrics", e);
+            log.error("Unexpected error during daily metrics collection", e);
+            // 배치 작업 실패 기록
+            batchJobMonitor.recordJobFailure("daily-metrics-collection", "Unexpected error: " + e.getMessage());
         }
     }
     
@@ -44,6 +53,7 @@ public class MetricsCollectionScheduler {
      * 테스트용 - 1분마다 실행 (개발 환경에서만 사용)
      */
     @Scheduled(cron = "0 */1 * * * ?", zone = "Asia/Seoul")
+    @org.springframework.context.annotation.Profile("dev")
     public void collectTestMetrics() {
         log.info("Starting test metrics collection (every minute)");
         
@@ -62,8 +72,14 @@ public class MetricsCollectionScheduler {
             
             log.info("Test metrics collection completed successfully");
             
+        } catch (AnalyticsException e) {
+            log.error("Analytics error during test metrics collection: {}", e.getMessage(), e);
+            // 배치 작업 실패 기록
+            batchJobMonitor.recordJobFailure("test-metrics-collection", e.getMessage());
         } catch (Exception e) {
-            log.error("Failed to collect test metrics", e);
+            log.error("Unexpected error during test metrics collection", e);
+            // 배치 작업 실패 기록
+            batchJobMonitor.recordJobFailure("test-metrics-collection", "Unexpected error: " + e.getMessage());
         }
     }
 }

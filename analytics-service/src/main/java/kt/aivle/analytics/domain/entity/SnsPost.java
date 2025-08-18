@@ -1,27 +1,31 @@
 package kt.aivle.analytics.domain.entity;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
+import static lombok.AccessLevel.PROTECTED;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "POST")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Post extends BaseEntity {
-    
+@NoArgsConstructor(access = PROTECTED)
+public class SnsPost extends BaseEntity {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(name = "account_id", nullable = false)
     private Long accountId;
-    
+
     @Column(name = "sns_post_id", nullable = false)
     private String snsPostId;
-    
-    public Post(Long accountId, String snsPostId) {
+
+    @Builder
+    public SnsPost(Long id, Long accountId, String snsPostId) {
+        this.id = id;
         this.accountId = accountId;
         this.snsPostId = snsPostId;
     }

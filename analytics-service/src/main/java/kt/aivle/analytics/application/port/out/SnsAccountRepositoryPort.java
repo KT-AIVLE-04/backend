@@ -1,27 +1,17 @@
 package kt.aivle.analytics.application.port.out;
 
+import kt.aivle.analytics.domain.entity.SnsAccount;
+
 import java.util.List;
 import java.util.Optional;
 
-import kt.aivle.analytics.domain.entity.SnsAccount;
-
 public interface SnsAccountRepositoryPort {
-    
     SnsAccount save(SnsAccount snsAccount);
-    
     Optional<SnsAccount> findById(Long id);
-    
-    Optional<SnsAccount> findBySnsAccountId(String snsAccountId);
-    
-    List<SnsAccount> findByUserId(Long userId);
-    
-    List<SnsAccount> findByUserIdAndType(Long userId, String type);
-    
     List<SnsAccount> findAll();
-    
-    List<SnsAccount> findAllWithPagination(int page, int size);
-    
+    long countAll();
+    List<SnsAccount> findByUserId(Long userId);
+    Optional<SnsAccount> findBySnsAccountId(String snsAccountId);
     void deleteById(Long id);
-    
-    void deleteBySnsAccountId(String snsAccountId);
+    List<SnsAccount> findAllWithPagination(int page, int size);
 }

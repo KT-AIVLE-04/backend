@@ -1,5 +1,6 @@
 package kt.aivle.analytics.adapter.in.event.dto;
 
+import kt.aivle.analytics.domain.model.SnsType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,5 +12,5 @@ public class SnsAccountEvent {
     private Long accountId;
     private Long userId;
     private String snsAccountId;
-    private String type;
+    private SnsType type;
 }

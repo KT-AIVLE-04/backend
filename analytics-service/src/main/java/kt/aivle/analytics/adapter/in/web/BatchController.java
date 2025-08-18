@@ -1,15 +1,21 @@
 package kt.aivle.analytics.adapter.in.web;
 
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.service.BatchJobMonitor;
+import kt.aivle.analytics.exception.AnalyticsException;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -20,130 +26,86 @@ public class BatchController {
     private final MetricsCollectionUseCase metricsCollectionUseCase;
     private final BatchJobMonitor batchJobMonitor;
     
-    /**
-     * 모든 계정의 메트릭을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-account-metrics")
-    public ResponseEntity<ApiResponse<String>> collectAccountMetrics() {
+    // 공통 예외 처리 메서드
+    private ResponseEntity<ApiResponse<String>> executeBatchOperation(
+        String operationName, 
+        Runnable operation
+    ) {
+        try {
+            operation.run();
+            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, operationName + " completed"));
+        } catch (AnalyticsException e) {
+            log.error("Analytics error during {}: {}", operationName, e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.of(CommonResponseCode.BAD_REQUEST, e.getMessage()));
+        } catch (Exception e) {
+            log.error("System error during {}", operationName, e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "System error occurred"));
+        }
+    }
+    
+    // POST /api/analytics/batch/accounts/metrics
+    @PostMapping("/accounts/metrics")
+    public ResponseEntity<ApiResponse<String>> collectAllAccountMetrics() {
         log.info("Manual account metrics collection requested");
         
-        try {
-            metricsCollectionUseCase.collectAccountMetrics();
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Account metrics collection completed"));
-        } catch (Exception e) {
-            log.error("Failed to collect account metrics", e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect account metrics"));
-        }
+        return executeBatchOperation("account metrics collection", () -> metricsCollectionUseCase.collectAccountMetrics());
     }
     
-    /**
-     * 모든 게시물의 메트릭을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-post-metrics")
-    public ResponseEntity<ApiResponse<String>> collectPostMetrics() {
-        log.info("Manual post metrics collection requested");
-        
-        try {
-            metricsCollectionUseCase.collectPostMetrics();
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Post metrics collection completed"));
-        } catch (Exception e) {
-            log.error("Failed to collect post metrics", e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect post metrics"));
-        }
-    }
-    
-    /**
-     * 특정 계정의 메트릭을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-account-metrics/{accountId}")
-    public ResponseEntity<ApiResponse<String>> collectAccountMetricsByAccountId(@PathVariable Long accountId) {
+    // POST /api/analytics/batch/accounts/{accountId}/metrics
+    @PostMapping("/accounts/{accountId}/metrics")
+    public ResponseEntity<ApiResponse<String>> collectAccountMetrics(@PathVariable Long accountId) {
         log.info("Manual account metrics collection requested for accountId: {}", accountId);
         
-        try {
-            metricsCollectionUseCase.collectAccountMetricsByAccountId(accountId);
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Account metrics collection completed for accountId: " + accountId));
-        } catch (Exception e) {
-            log.error("Failed to collect account metrics for accountId: {}", accountId, e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect account metrics for accountId: " + accountId));
-        }
+        return executeBatchOperation("account metrics collection for accountId: " + accountId, () -> metricsCollectionUseCase.collectAccountMetricsByAccountId(accountId));
     }
     
-    /**
-     * 특정 게시물의 메트릭을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-post-metrics/{postId}")
-    public ResponseEntity<ApiResponse<String>> collectPostMetricsByPostId(@PathVariable Long postId) {
+    // POST /api/analytics/batch/posts/metrics
+    @PostMapping("/posts/metrics")
+    public ResponseEntity<ApiResponse<String>> collectAllPostMetrics() {
+        log.info("Manual post metrics collection requested");
+        
+        return executeBatchOperation("post metrics collection", () -> metricsCollectionUseCase.collectPostMetrics());
+    }
+    
+    // POST /api/analytics/batch/posts/{postId}/metrics
+    @PostMapping("/posts/{postId}/metrics")
+    public ResponseEntity<ApiResponse<String>> collectPostMetrics(@PathVariable Long postId) {
         log.info("Manual post metrics collection requested for postId: {}", postId);
         
-        try {
-            metricsCollectionUseCase.collectPostMetricsByPostId(postId);
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Post metrics collection completed for postId: " + postId));
-        } catch (Exception e) {
-            log.error("Failed to collect post metrics for postId: {}", postId, e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect post metrics for postId: " + postId));
-        }
+        return executeBatchOperation("post metrics collection for postId: " + postId, () -> metricsCollectionUseCase.collectPostMetricsByPostId(postId));
     }
     
-    /**
-     * 모든 게시물의 댓글을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-post-comments")
-    public ResponseEntity<ApiResponse<String>> collectPostComments() {
+    // POST /api/analytics/batch/posts/comments
+    @PostMapping("/posts/comments")
+    public ResponseEntity<ApiResponse<String>> collectAllPostComments() {
         log.info("Manual post comments collection requested");
         
-        try {
-            metricsCollectionUseCase.collectPostComments();
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Post comments collection completed"));
-        } catch (Exception e) {
-            log.error("Failed to collect post comments", e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect post comments"));
-        }
+        return executeBatchOperation("post comments collection", () -> metricsCollectionUseCase.collectPostComments());
     }
     
-    /**
-     * 특정 게시물의 댓글을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-post-comments/{postId}")
-    public ResponseEntity<ApiResponse<String>> collectPostCommentsByPostId(@PathVariable Long postId) {
+    // POST /api/analytics/batch/posts/{postId}/comments
+    @PostMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<String>> collectPostComments(@PathVariable Long postId) {
         log.info("Manual post comments collection requested for postId: {}", postId);
         
-        try {
-            metricsCollectionUseCase.collectPostCommentsByPostId(postId);
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "Post comments collection completed for postId: " + postId));
-        } catch (Exception e) {
-            log.error("Failed to collect post comments for postId: {}", postId, e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect post comments for postId: " + postId));
-        }
+        return executeBatchOperation("post comments collection for postId: " + postId, () -> metricsCollectionUseCase.collectPostCommentsByPostId(postId));
     }
     
-    /**
-     * 모든 메트릭을 수동으로 수집합니다.
-     */
-    @PostMapping("/collect-all-metrics")
+    // POST /api/analytics/batch/metrics
+    @PostMapping("/metrics")
     public ResponseEntity<ApiResponse<String>> collectAllMetrics() {
         log.info("Manual all metrics collection requested");
         
-        try {
+        return executeBatchOperation("all metrics collection", () -> {
             metricsCollectionUseCase.collectAccountMetrics();
             metricsCollectionUseCase.collectPostMetrics();
             metricsCollectionUseCase.collectPostComments();
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, "All metrics collection completed"));
-        } catch (Exception e) {
-            log.error("Failed to collect all metrics", e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "Failed to collect all metrics"));
-        }
+        });
     }
     
-    /**
-     * 모든 배치 작업 상태를 조회합니다.
-     */
+    // GET /api/analytics/batch/status
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<Map<String, BatchJobMonitor.BatchJobStatus>>> getAllBatchJobStatuses() {
         log.info("Batch job statuses requested");
@@ -152,9 +114,7 @@ public class BatchController {
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, statuses));
     }
     
-    /**
-     * 특정 배치 작업 상태를 조회합니다.
-     */
+    // GET /api/analytics/batch/status/{jobName}
     @GetMapping("/status/{jobName}")
     public ResponseEntity<ApiResponse<BatchJobMonitor.BatchJobStatus>> getBatchJobStatus(@PathVariable String jobName) {
         log.info("Batch job status requested for jobName: {}", jobName);

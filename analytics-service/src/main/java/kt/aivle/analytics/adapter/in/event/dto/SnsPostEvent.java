@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostEvent {
+public class SnsPostEvent {
     private Long postId;
     private Long accountId;
     private String snsPostId;
