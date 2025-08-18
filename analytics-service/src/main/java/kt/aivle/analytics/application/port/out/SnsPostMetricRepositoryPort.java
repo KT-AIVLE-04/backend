@@ -11,7 +11,7 @@ public interface SnsPostMetricRepositoryPort {
     Optional<SnsPostMetric> findById(Long id);
     List<SnsPostMetric> findAll();
     List<SnsPostMetric> findByPostId(Long postId);
-    List<SnsPostMetric> findByPostIdAndCrawledAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
-    boolean existsByPostIdAndCrawledAtAfter(Long postId, LocalDateTime date);
+    List<SnsPostMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
+    boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     void deleteById(Long id);
 }

@@ -11,9 +11,9 @@ public interface SnsPostCommentMetricRepositoryPort {
     Optional<SnsPostCommentMetric> findById(Long id);
     List<SnsPostCommentMetric> findAll();
     List<SnsPostCommentMetric> findByPostId(Long postId);
-    List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
-    List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetweenWithPagination(Long postId, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
-    List<SnsPostCommentMetric> findByPostIdsAndCrawledAtBetweenWithPagination(List<Long> postIds, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
+    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
+    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetweenWithPagination(Long postId, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
+    List<SnsPostCommentMetric> findByPostIdsAndCreatedAtBetweenWithPagination(List<Long> postIds, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     void deleteById(Long id);
 }

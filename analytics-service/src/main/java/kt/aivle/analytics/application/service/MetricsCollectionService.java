@@ -183,7 +183,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
             LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
             boolean hasRecentData = snsAccountMetricRepositoryPort
-                .existsByAccountIdAndCrawledAtAfter(snsAccount.getId(), oneHourAgo);
+                .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo);
             
             if (hasRecentData) {
                 log.info("Recent metrics already exist for accountId: {}, skipping", accountId);
@@ -194,7 +194,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 .accountId(snsAccount.getId())
                 .followers(subscriberCount)
                 .views(viewCount)
-                .crawledAt(LocalDateTime.now().withNano(0))
                 .build();
             
             snsAccountMetricRepositoryPort.save(accountMetric);
@@ -257,7 +256,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
                 LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
                 boolean hasRecentData = snsPostMetricRepositoryPort
-                    .existsByPostIdAndCrawledAtAfter(post.getId(), oneHourAgo);
+                    .existsByPostIdAndCreatedAtAfter(post.getId(), oneHourAgo);
                 
                 if (hasRecentData) {
                     log.info("Recent metrics already exist for postId: {}, skipping", postId);
@@ -271,7 +270,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     .comments(commentCount)
                     .shares(shareCount)
                     .views(viewCount)
-                    .crawledAt(LocalDateTime.now().withNano(0))
                     .build();
                 
                 snsPostMetricRepositoryPort.save(postMetric);
@@ -336,14 +334,21 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                             ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
                             LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
                             
+                            // 댓글 작성자 정보 가져오기
+                            String authorId = commentThread.getSnippet().getTopLevelComment().getSnippet().getAuthorChannelId().getValue();
+                            Long likeCount = commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount() != null ? 
+                                commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount().longValue() : 0L;
+                            
                             log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
                                 commentId, publishedAt, content);
                             
                             SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
                                 .snsCommentId(commentId)
                                 .postId(post.getId())
+                                .authorId(Long.parseLong(authorId))
                                 .content(content)
-                                .crawledAt(LocalDateTime.now().withNano(0))
+                                .likeCount(likeCount)
+                                .publishedAt(publishedAt)
                                 .build();
                             
                             snsPostCommentMetricRepositoryPort.save(commentMetric);

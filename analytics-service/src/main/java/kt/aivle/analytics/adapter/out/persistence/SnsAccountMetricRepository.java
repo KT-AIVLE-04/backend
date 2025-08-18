@@ -37,13 +37,13 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
     }
 
     @Override
-    public List<SnsAccountMetric> findByAccountIdAndCrawledAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate) {
-        return snsAccountMetricJpaRepository.findByAccountIdAndCrawledAtBetween(accountId, startDate, endDate);
+    public List<SnsAccountMetric> findByAccountIdAndCreatedAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate) {
+        return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtBetween(accountId, startDate, endDate);
     }
 
     @Override
-    public boolean existsByAccountIdAndCrawledAtAfter(Long accountId, LocalDateTime date) {
-        return snsAccountMetricJpaRepository.existsByAccountIdAndCrawledAtAfter(accountId, date);
+    public boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date) {
+        return snsAccountMetricJpaRepository.existsByAccountIdAndCreatedAtAfter(accountId, date);
     }
 
     @Override

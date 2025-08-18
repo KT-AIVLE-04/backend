@@ -11,7 +11,7 @@ public interface SnsAccountMetricRepositoryPort {
     Optional<SnsAccountMetric> findById(Long id);
     List<SnsAccountMetric> findAll();
     List<SnsAccountMetric> findByAccountId(Long accountId);
-    List<SnsAccountMetric> findByAccountIdAndCrawledAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate);
-    boolean existsByAccountIdAndCrawledAtAfter(Long accountId, LocalDateTime date);
+    List<SnsAccountMetric> findByAccountIdAndCreatedAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate);
+    boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
     void deleteById(Long id);
 }

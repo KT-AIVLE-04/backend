@@ -15,17 +15,17 @@ import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 @Repository
 public interface SnsPostCommentMetricJpaRepository extends JpaRepository<SnsPostCommentMetric, Long> {
     List<SnsPostCommentMetric> findByPostId(Long postId);
-    List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
+    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
     
-    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND c.crawledAt BETWEEN :startDate AND :endDate ORDER BY c.crawledAt DESC")
-    List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetweenWithPagination(
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND c.createdAt BETWEEN :startDate AND :endDate ORDER BY c.createdAt DESC")
+    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetweenWithPagination(
         @Param("postId") Long postId, 
         @Param("startDate") LocalDateTime startDate, 
         @Param("endDate") LocalDateTime endDate, 
         PageRequest pageRequest);
     
-    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId IN :postIds AND c.crawledAt BETWEEN :startDate AND :endDate ORDER BY c.crawledAt DESC")
-    List<SnsPostCommentMetric> findByPostIdsAndCrawledAtBetweenWithPagination(
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId IN :postIds AND c.createdAt BETWEEN :startDate AND :endDate ORDER BY c.createdAt DESC")
+    List<SnsPostCommentMetric> findByPostIdsAndCreatedAtBetweenWithPagination(
         @Param("postIds") List<Long> postIds, 
         @Param("startDate") LocalDateTime startDate, 
         @Param("endDate") LocalDateTime endDate, 

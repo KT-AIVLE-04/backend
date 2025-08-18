@@ -28,8 +28,8 @@ public class SnsPostCommentMetric extends BaseEntity {
     @Column(name = "post_id", nullable = false)
     private Long postId;
 
-    @Column(name = "author_name")
-    private String authorName;
+    @Column(name = "author_id")
+    private Long authorId;
 
     @Column(name = "content")
     private String content;
@@ -40,18 +40,14 @@ public class SnsPostCommentMetric extends BaseEntity {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
-    @Column(name = "crawled_at", nullable = false)
-    private LocalDateTime crawledAt;
-
     @Builder
-    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, String authorName, String content, Long likeCount, LocalDateTime publishedAt, LocalDateTime crawledAt) {
+    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, Long authorId, String content, Long likeCount, LocalDateTime publishedAt) {
         this.id = id;
         this.snsCommentId = snsCommentId;
         this.postId = postId;
-        this.authorName = authorName;
+        this.authorId = authorId;
         this.content = content;
         this.likeCount = likeCount;
         this.publishedAt = publishedAt;
-        this.crawledAt = crawledAt;
     }
 }

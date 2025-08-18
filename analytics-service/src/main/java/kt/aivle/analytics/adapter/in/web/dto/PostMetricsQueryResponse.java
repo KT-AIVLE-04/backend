@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PostMetricsQueryResponse {
     private Long postId;
-    private String snsPostId;
-    private Long accountId;
     private String likes;
     private Long dislikes;
     private Long comments;

@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AccountMetricsQueryResponse {
     private Long accountId;
-    private String snsAccountId;
     private Long followers;
     private Long views;
     private LocalDateTime crawledAt;

@@ -58,13 +58,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<SnsPostMetric> metrics;
         if (request.getPostId() != null) {
             // 특정 게시물의 메트릭 조회
-            metrics = snsPostMetricRepositoryPort.findByPostIdAndCrawledAtBetween(
+            metrics = snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(
                 Long.parseLong(request.getPostId()), startDate, endDate);
         } else if (request.getAccountId() != null) {
             // 특정 계정의 모든 게시물 메트릭 조회
             List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(Long.parseLong(request.getAccountId()));
             metrics = posts.stream()
-                .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCrawledAtBetween(post.getId(), startDate, endDate).stream())
+                .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream())
                 .collect(Collectors.toList());
         } else {
             // 사용자의 모든 계정 메트릭 조회
@@ -77,7 +77,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .flatMap(accountId -> {
                     List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(accountId);
                     return posts.stream()
-                        .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCrawledAtBetween(post.getId(), startDate, endDate).stream());
+                        .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream());
                 })
                 .collect(Collectors.toList());
         }
@@ -103,7 +103,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<SnsAccountMetric> metrics;
         if (request.getAccountId() != null) {
             // 특정 계정의 메트릭 조회
-            metrics = snsAccountMetricRepositoryPort.findByAccountIdAndCrawledAtBetween(
+            metrics = snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtBetween(
                 Long.parseLong(request.getAccountId()), startDate, endDate);
         } else {
             // 사용자의 모든 계정 메트릭 조회
@@ -113,7 +113,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .collect(Collectors.toList());
             
             metrics = accountIds.stream()
-                .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCrawledAtBetween(accountId, startDate, endDate).stream())
+                .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtBetween(accountId, startDate, endDate).stream())
                 .collect(Collectors.toList());
         }
         
@@ -138,7 +138,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<SnsPostCommentMetric> comments;
         if (request.getPostId() != null) {
             // 특정 게시물의 댓글 조회
-            comments = snsPostCommentMetricRepositoryPort.findByPostIdAndCrawledAtBetween(
+            comments = snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtBetween(
                 Long.parseLong(request.getPostId()), startDate, endDate);
         } else {
             // 사용자의 모든 게시물 댓글 조회
@@ -151,7 +151,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .flatMap(accountId -> {
                     List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(accountId);
                     return posts.stream()
-                        .flatMap(post -> snsPostCommentMetricRepositoryPort.findByPostIdAndCrawledAtBetween(post.getId(), startDate, endDate).stream());
+                        .flatMap(post -> snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream());
                 })
                 .collect(Collectors.toList());
         }
@@ -227,42 +227,38 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private PostMetricsQueryResponse toSnsPostMetricsQueryResponse(SnsPostMetric metric) {
         return PostMetricsQueryResponse.builder()
             .postId(metric.getPostId())
-            .snsPostId(metric.getSnsPostId())
-            .accountId(metric.getAccountId())
             .likes(metric.getLikes() != null ? metric.getLikes().toString() : "0")
             .dislikes(metric.getDislikes())
             .comments(metric.getComments())
             .shares(metric.getShares())
             .views(metric.getViews())
-            .crawledAt(metric.getCrawledAt())
+            .crawledAt(metric.getCreatedAt())
             .build();
     }
     
     private AccountMetricsQueryResponse toSnsAccountMetricsQueryResponse(SnsAccountMetric metric) {
         return AccountMetricsQueryResponse.builder()
             .accountId(metric.getAccountId())
-            .snsAccountId(metric.getSnsAccountId())
             .followers(metric.getFollowers())
             .views(metric.getViews())
-            .crawledAt(metric.getCrawledAt())
+            .crawledAt(metric.getCreatedAt())
             .build();
     }
     
     private PostCommentsQueryResponse toSnsPostCommentsQueryResponse(SnsPostCommentMetric comment) {
         return PostCommentsQueryResponse.builder()
             .commentId(comment.getSnsCommentId())
-            .authorName(comment.getAuthorName())
+            .authorId(comment.getAuthorId())
             .text(comment.getContent())
             .likeCount(comment.getLikeCount())
             .publishedAt(comment.getPublishedAt())
-            .crawledAt(comment.getCrawledAt())
+            .crawledAt(comment.getCreatedAt())
             .build();
     }
     
     private AccountMetricsQueryResponse convertToAccountMetricsQueryResponse(RealtimeAccountMetricsResponse realtime) {
         return AccountMetricsQueryResponse.builder()
             .accountId(realtime.getAccountId())
-            .snsAccountId(realtime.getSnsAccountId())
             .followers(realtime.getFollowers())
             .views(realtime.getViews())
             .crawledAt(realtime.getFetchedAt())
@@ -272,8 +268,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private PostMetricsQueryResponse convertToPostMetricsQueryResponse(RealtimePostMetricsResponse realtime) {
         return PostMetricsQueryResponse.builder()
             .postId(realtime.getPostId())
-            .snsPostId(realtime.getSnsPostId())
-            .accountId(realtime.getAccountId())
             .likes(realtime.getLikes())
             .dislikes(realtime.getDislikes())
             .comments(realtime.getComments())

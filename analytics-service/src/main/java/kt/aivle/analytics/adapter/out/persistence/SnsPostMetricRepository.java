@@ -37,13 +37,13 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     }
 
     @Override
-    public List<SnsPostMetric> findByPostIdAndCrawledAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate) {
-        return snsPostMetricJpaRepository.findByPostIdAndCrawledAtBetween(postId, startDate, endDate);
+    public List<SnsPostMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate) {
+        return snsPostMetricJpaRepository.findByPostIdAndCreatedAtBetween(postId, startDate, endDate);
     }
 
     @Override
-    public boolean existsByPostIdAndCrawledAtAfter(Long postId, LocalDateTime date) {
-        return snsPostMetricJpaRepository.existsByPostIdAndCrawledAtAfter(postId, date);
+    public boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date) {
+        return snsPostMetricJpaRepository.existsByPostIdAndCreatedAtAfter(postId, date);
     }
 
     @Override

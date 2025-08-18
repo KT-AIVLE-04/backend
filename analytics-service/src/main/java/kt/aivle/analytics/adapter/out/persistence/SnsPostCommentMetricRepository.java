@@ -39,20 +39,20 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     }
 
     @Override
-    public List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate) {
-        return snsPostCommentMetricJpaRepository.findByPostIdAndCrawledAtBetween(postId, startDate, endDate);
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate) {
+        return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtBetween(postId, startDate, endDate);
     }
 
     @Override
-    public List<SnsPostCommentMetric> findByPostIdAndCrawledAtBetweenWithPagination(Long postId, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size) {
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetweenWithPagination(Long postId, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        return snsPostCommentMetricJpaRepository.findByPostIdAndCrawledAtBetweenWithPagination(postId, startDate, endDate, pageRequest);
+        return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtBetweenWithPagination(postId, startDate, endDate, pageRequest);
     }
 
     @Override
-    public List<SnsPostCommentMetric> findByPostIdsAndCrawledAtBetweenWithPagination(List<Long> postIds, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size) {
+    public List<SnsPostCommentMetric> findByPostIdsAndCreatedAtBetweenWithPagination(List<Long> postIds, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        return snsPostCommentMetricJpaRepository.findByPostIdsAndCrawledAtBetweenWithPagination(postIds, startDate, endDate, pageRequest);
+        return snsPostCommentMetricJpaRepository.findByPostIdsAndCreatedAtBetweenWithPagination(postIds, startDate, endDate, pageRequest);
     }
 
     @Override
