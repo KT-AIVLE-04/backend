@@ -126,8 +126,7 @@ services:
       - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    volumes:
-      - ./content-service/.CLOUDFRONT_PRIVATE_KEY:/app/.CLOUDFRONT_PRIVATE_KEY:ro
+      - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
     networks:
       - backend
 

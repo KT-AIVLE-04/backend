@@ -12,8 +12,7 @@ public enum ContentErrorCode implements DefaultCode {
     FAIL_DECODE_IMAGE(HttpStatus.BAD_REQUEST, false, "이미지 디코딩에 실패했습니다."),
     THUMBNAIL_GENERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "썸네일 생성에 실패했습니다."),
     FAIL_GET_METADATA(HttpStatus.INTERNAL_SERVER_ERROR, false, "메타데이터 조회에 실패했습니다."),
-    CLOUD_FRONT_SIGN_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "CloudFront URL 서명에 실패했습니다."),
-    URI_DOWNLOAD_ERROR(HttpStatus.BAD_REQUEST, false, "URI 다운로드에 실패했습니다.");
+    CLOUD_FRONT_SIGN_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "CloudFront URL 서명에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean success;

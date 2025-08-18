@@ -19,11 +19,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import static kt.aivle.content.exception.ContentErrorCode.*;
+import static kt.aivle.content.util.ContentTypeUtil.*;
 
 @Service
 @Transactional
@@ -34,7 +36,6 @@ public class ContentServiceImpl implements ContentService {
     private final ContentMapper contentMapper;
     private final S3Storage s3Storage;
     private final CloudFrontSigner cloudFrontSigner;
-    private final UrlDownloader urlDownloader;
 
     @Override
     public ContentResponse uploadContent(CreateContentRequest request) {
@@ -174,70 +175,72 @@ public class ContentServiceImpl implements ContentService {
     }
 
     @Override
-    public void uploadContent(CreateContentRequestMessage request) {
+    public void uploadContent(CreateContentRequestMessage req) {
+        final String tempKey = req.key();
+
         try {
-            var dl = urlDownloader.fetch(request.url());
+            S3Storage.S3ObjectStat stat = s3Storage.head(tempKey);
+            String contentType = (stat.contentType() == null || stat.contentType().isBlank())
+                    ? guessFromKey(tempKey)
+                    : stat.contentType();
+            long size = stat.contentLength();
+
+            String originalFileName = fileName(tempKey);
 
             String uuid = UUID.randomUUID().toString();
-            String originKey = getOriginKey(uuid, dl.originalName());
-            String thumbKey = getThumbKey(request.userId(), request.storeId(), uuid);
+            String ext = extFromContentType(contentType);
+            String originKey = getOriginKey(uuid, originalFileName);
+            String thumbKey = getThumbKey(req.userId(), req.storeId(), uuid);
 
-            Integer width = null, height = null, duration = null;
-            File thumb = null;
+            s3Storage.copy(tempKey, originKey);
 
-            if (dl.contentType() != null && dl.contentType().startsWith("image")) {
-                try (InputStream in = Files.newInputStream(dl.file())) {
+            Path tmp = s3Storage.downloadToTempFile(tempKey, ext);
+
+            Integer width = null, height = null, durationSec = null;
+            File thumbFile;
+
+            if (isImage(contentType)) {
+                try (InputStream in = Files.newInputStream(tmp)) {
                     var meta = MediaMetadataExtractor.extractImageMeta(in);
                     width = meta.width();
                     height = meta.height();
                 }
-                try (InputStream in = Files.newInputStream(dl.file())) {
-                    thumb = ThumbnailGenerator.createImageThumbnail(in, 300, 300);
+                try (InputStream in = Files.newInputStream(tmp)) {
+                    thumbFile = ThumbnailGenerator.createImageThumbnail(in, 300, 300);
                 }
             } else {
-                File tmpVideo = dl.file().toFile();
-                var meta = MediaMetadataExtractor.extractVideoMeta(tmpVideo);
+                File video = tmp.toFile();
+                var meta = MediaMetadataExtractor.extractVideoMeta(video);
                 width = meta.width();
                 height = meta.height();
-                duration = meta.durationSeconds();
-                thumb = ThumbnailGenerator.createVideoThumbnail(tmpVideo, 300, 300);
+                durationSec = meta.durationSeconds();
+                thumbFile = ThumbnailGenerator.createVideoThumbnail(video, 300, 300);
             }
 
-            try (InputStream in = Files.newInputStream(dl.file())) {
-                s3Storage.put(originKey, in, dl.size(), dl.contentType(), null);
-            }
-
-            if (thumb.exists()) {
-                try (InputStream tin = new FileInputStream(thumb)) {
-                    s3Storage.put(thumbKey, tin, thumb.length(), "image/jpeg", null);
-                } finally {
-                    try {
-                        thumb.delete();
-                    } catch (Exception ignore) {
-                    }
-                }
+            try (InputStream tin = new FileInputStream(thumbFile)) {
+                s3Storage.put(thumbKey, tin, thumbFile.length(), "image/jpeg", null);
+            } finally {
+                if (thumbFile != null) thumbFile.delete();
+                Files.deleteIfExists(tmp);
             }
 
             Content content = Content.builder()
-                    .userId(request.userId())
-                    .storeId(request.storeId())
+                    .userId(req.userId())
+                    .storeId(req.storeId())
                     .objectKey(uuid)
-                    .title(dl.originalName())
-                    .originalName(dl.originalName())
-                    .contentType(dl.contentType())
+                    .title(fileName(tempKey).substring(34))
+                    .originalName(originalFileName)
+                    .contentType(contentType)
                     .width(width)
                     .height(height)
-                    .durationSeconds(duration)
-                    .bytes(dl.size())
+                    .durationSeconds(durationSec)
+                    .bytes(size)
                     .build();
+
             contentRepository.save(content);
 
-            try {
-                Files.deleteIfExists(dl.file());
-            } catch (Exception ignore) {
-            }
         } catch (Exception e) {
-            throw new BusinessException(URI_DOWNLOAD_ERROR, e.getMessage());
+            throw new BusinessException(IMAGE_UPLOAD_ERROR, e.getMessage());
         }
     }
 

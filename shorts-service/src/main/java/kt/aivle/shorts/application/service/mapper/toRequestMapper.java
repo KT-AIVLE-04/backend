@@ -31,6 +31,5 @@ public interface toRequestMapper {
 
     GenerateShortsRequest toGenerateShortsRequest(CreateShortsCommand command, List<String> imageUrls);
 
-    @Mapping(target = "url", source = "command.videoUrl")
     CreateContentRequest toCreateContentRequest(SaveShortsCommand command);
 }

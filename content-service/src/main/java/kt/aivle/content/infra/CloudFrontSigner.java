@@ -10,8 +10,6 @@ import software.amazon.awssdk.services.cloudfront.model.CannedSignerRequest;
 import software.amazon.awssdk.services.cloudfront.model.CustomSignerRequest;
 import software.amazon.awssdk.services.cloudfront.url.SignedUrl;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -33,7 +31,7 @@ public class CloudFrontSigner {
     @Value("${cdn.ttl}")
     private int defaultTtl;
 
-    private static final String KEY_FILE = ".CLOUDFRONT_PRIVATE_KEY";
+    private static final String KEY_FILE = "CLOUDFRONT_PRIVATE_KEY";
 
     public String signOriginalUrl(String objectKey) {
         try {
@@ -75,11 +73,8 @@ public class CloudFrontSigner {
     }
 
     private PrivateKey loadPkFromFile() throws Exception {
-        String pem = Files.readString(Paths.get(KEY_FILE));
-        String base64 = pem.replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s+", "");
-        byte[] der = Base64.getDecoder().decode(base64);
+        String pem = System.getenv(KEY_FILE);
+        byte[] der = Base64.getDecoder().decode(pem);
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
         return KeyFactory.getInstance("RSA").generatePrivate(spec);
     }

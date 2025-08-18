@@ -5,4 +5,6 @@ import reactor.core.publisher.Mono;
 
 public interface MediaStoragePort {
     Mono<UploadedObjectResponse> uploadTempImage(FilePart image);
+
+    Mono<String> getPresignedUrl(String key);
 }

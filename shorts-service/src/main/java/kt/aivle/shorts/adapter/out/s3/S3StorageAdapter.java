@@ -79,6 +79,11 @@ public class S3StorageAdapter implements MediaStoragePort {
                 .onErrorMap(SdkException.class, e -> new BusinessException(IMAGE_UPLOAD_ERROR, e.getMessage()));
     }
 
+    @Override
+    public Mono<String> getPresignedUrl(String key) {
+        return Mono.fromSupplier(() -> getPresignUrl(key));
+    }
+
     private Mono<Path> writeToTempFile(Flux<DataBuffer> content, String prefix) {
         return Mono.fromCallable(() -> {
                     Path temp = Files.createTempFile(prefix, ".upload");
