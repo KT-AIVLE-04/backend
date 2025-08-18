@@ -54,6 +54,7 @@ services:
       - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - TZ=Asia/Seoul
     expose:
       - "8084"
     networks:
