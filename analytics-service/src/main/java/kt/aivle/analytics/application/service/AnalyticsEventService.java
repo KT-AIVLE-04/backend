@@ -20,6 +20,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
 
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
+    private final AnalyticsCacheService cacheService;
     
     @Override
     public void handlePostCreated(SnsPostEvent event) {
@@ -33,6 +34,10 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                 .snsPostId(event.getSnsPostId())
                 .build();
             snsPostRepositoryPort.save(post);
+            
+            // 관련 캐시 무효화
+            cacheService.evictPostCache(event.getPostId());
+            cacheService.evictAccountCache(event.getAccountId());
             
             log.info("Post saved successfully: postId={}", event.getPostId());
             
@@ -49,7 +54,13 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                     event.getPostId(), event.getAccountId(), event.getSnsPostId());
             
             snsPostRepositoryPort.findBySnsPostId(event.getSnsPostId())
-                .ifPresent(post -> snsPostRepositoryPort.deleteById(post.getId()));
+                .ifPresent(post -> {
+                    snsPostRepositoryPort.deleteById(post.getId());
+                    
+                    // 관련 캐시 무효화
+                    cacheService.evictPostCache(post.getId());
+                    cacheService.evictAccountCache(event.getAccountId());
+                });
             
             log.info("Post deleted successfully: postId={}", event.getPostId());
             
@@ -73,6 +84,9 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                 .build();
             snsAccountRepositoryPort.save(snsAccount);
             
+            // 관련 캐시 무효화
+            cacheService.evictAccountCache(event.getAccountId());
+            
             log.info("SNS account saved successfully: accountId={}", event.getAccountId());
             
         } catch (Exception e) {
@@ -88,7 +102,12 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                     event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
             
             snsAccountRepositoryPort.findById(event.getAccountId())
-                .ifPresent(account -> snsAccountRepositoryPort.deleteById(account.getId()));
+                .ifPresent(account -> {
+                    snsAccountRepositoryPort.deleteById(account.getId());
+                    
+                    // 관련 캐시 무효화
+                    cacheService.evictAccountCache(account.getId());
+                });
             
             log.info("SNS account deleted successfully: accountId={}", event.getAccountId());
             

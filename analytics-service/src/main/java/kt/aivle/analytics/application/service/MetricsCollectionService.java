@@ -301,10 +301,11 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             ).build();
             
             String nextPageToken = null;
-            LocalDateTime lastCommentDate = LocalDateTime.now().minusDays(7); // 최근 7일 댓글만 수집
+            int newCommentsCount = 0;
+            int totalProcessedCount = 0;
             
             do {
-                // 댓글 스레드 조회
+                // 댓글 스레드 조회 (시간순 정렬)
                 CommentThreadListResponse commentResponse = youtube.commentThreads()
                     .list(Arrays.asList("snippet"))
                     .setVideoId(post.getSnsPostId())
@@ -319,34 +320,36 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 if (commentResponse.getItems() != null) {
                     for (CommentThread commentThread : commentResponse.getItems()) {
                         try {
-                            // 댓글 작성일 확인
+                            totalProcessedCount++;
+                            String commentId = commentThread.getSnippet().getTopLevelComment().getId();
+                            
+                            // 이미 DB에 있는 댓글인지 확인
+                            if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
+                                log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}, New comments: {}", 
+                                    commentId, totalProcessedCount, newCommentsCount);
+                                return; // 이미 있는 댓글을 만나면 수집 중단
+                            }
+                            
+                            // 새로운 댓글 처리
+                            String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
                             String publishedAtStr = commentThread.getSnippet().getTopLevelComment().getSnippet().getPublishedAt().toString();
                             ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
                             LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
                             
-                            // 최근 7일 이내 댓글만 처리
-                            if (publishedAt.isAfter(lastCommentDate)) {
-                                String commentId = commentThread.getSnippet().getTopLevelComment().getId();
-                                String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
-                                
-                                log.info("Collecting comment - commentId: {}, content: {}", commentId, content);
-                                
-                                // 중복 댓글 방지
-                                if (!snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
-                                    SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
-                                        .snsCommentId(commentId)
-                                        .postId(post.getId())
-                                        .content(content)
-                                        .crawledAt(LocalDateTime.now().withNano(0))
-                                        .build();
-                                    
-                                    snsPostCommentMetricRepositoryPort.save(commentMetric);
-                                    log.debug("Saved comment for postId: {}, commentId: {}", postId, commentId);
-                                }
-                            } else {
-                                // 7일 이전 댓글은 더 이상 처리하지 않음
-                                return;
-                            }
+                            log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
+                                commentId, publishedAt, content);
+                            
+                            SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
+                                .snsCommentId(commentId)
+                                .postId(post.getId())
+                                .content(content)
+                                .crawledAt(LocalDateTime.now().withNano(0))
+                                .build();
+                            
+                            snsPostCommentMetricRepositoryPort.save(commentMetric);
+                            newCommentsCount++;
+                            log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentId);
+                            
                         } catch (Exception e) {
                             log.error("Failed to process comment for postId: {}", postId, e);
                         }
@@ -357,7 +360,8 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 
             } while (nextPageToken != null);
             
-            log.info("Completed comment collection for postId: {}", postId);
+            log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
+                postId, totalProcessedCount, newCommentsCount);
             
         } catch (IOException e) {
             log.error("Failed to collect comments for postId: {}", postId, e);

@@ -1,6 +1,8 @@
 package kt.aivle.analytics.adapter.in.web;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import kt.aivle.analytics.adapter.in.web.dto.BatchJobStatusResponse;
+import kt.aivle.analytics.adapter.in.web.dto.BatchOperationResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.service.BatchJobMonitor;
 import kt.aivle.analytics.exception.AnalyticsException;
@@ -27,27 +31,48 @@ public class BatchController {
     private final BatchJobMonitor batchJobMonitor;
     
     // 공통 예외 처리 메서드
-    private ResponseEntity<ApiResponse<String>> executeBatchOperation(
+    private ResponseEntity<ApiResponse<BatchOperationResponse>> executeBatchOperation(
         String operationName, 
         Runnable operation
     ) {
         try {
             operation.run();
-            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, operationName + " completed"));
+            BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationName(operationName)
+                .status("SUCCESS")
+                .executedAt(LocalDateTime.now())
+                .message(operationName + " completed successfully")
+                .build();
+            
+            return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
         } catch (AnalyticsException e) {
             log.error("Analytics error during {}: {}", operationName, e.getMessage(), e);
+            BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationName(operationName)
+                .status("FAILED")
+                .executedAt(LocalDateTime.now())
+                .message(e.getMessage())
+                .build();
+            
             return ResponseEntity.badRequest()
-                .body(ApiResponse.of(CommonResponseCode.BAD_REQUEST, e.getMessage()));
+                .body(ApiResponse.of(CommonResponseCode.BAD_REQUEST, response));
         } catch (Exception e) {
             log.error("System error during {}", operationName, e);
+            BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationName(operationName)
+                .status("ERROR")
+                .executedAt(LocalDateTime.now())
+                .message("System error occurred")
+                .build();
+            
             return ResponseEntity.internalServerError()
-                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, "System error occurred"));
+                .body(ApiResponse.of(CommonResponseCode.INTERNAL_SERVER_ERROR, response));
         }
     }
     
     // POST /api/analytics/batch/accounts/metrics
     @PostMapping("/accounts/metrics")
-    public ResponseEntity<ApiResponse<String>> collectAllAccountMetrics() {
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectAllAccountMetrics() {
         log.info("Manual account metrics collection requested");
         
         return executeBatchOperation("account metrics collection", () -> metricsCollectionUseCase.collectAccountMetrics());
@@ -55,15 +80,15 @@ public class BatchController {
     
     // POST /api/analytics/batch/accounts/{accountId}/metrics
     @PostMapping("/accounts/{accountId}/metrics")
-    public ResponseEntity<ApiResponse<String>> collectAccountMetrics(@PathVariable Long accountId) {
-        log.info("Manual account metrics collection requested for accountId: {}", accountId);
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectAccountMetrics(@PathVariable Long accountId) {
+        log.info("Manual account metrics collection requested for local accountId: {}", accountId);
         
-        return executeBatchOperation("account metrics collection for accountId: " + accountId, () -> metricsCollectionUseCase.collectAccountMetricsByAccountId(accountId));
+        return executeBatchOperation("account metrics collection for local accountId: " + accountId, () -> metricsCollectionUseCase.collectAccountMetricsByAccountId(accountId));
     }
     
     // POST /api/analytics/batch/posts/metrics
     @PostMapping("/posts/metrics")
-    public ResponseEntity<ApiResponse<String>> collectAllPostMetrics() {
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectAllPostMetrics() {
         log.info("Manual post metrics collection requested");
         
         return executeBatchOperation("post metrics collection", () -> metricsCollectionUseCase.collectPostMetrics());
@@ -71,15 +96,15 @@ public class BatchController {
     
     // POST /api/analytics/batch/posts/{postId}/metrics
     @PostMapping("/posts/{postId}/metrics")
-    public ResponseEntity<ApiResponse<String>> collectPostMetrics(@PathVariable Long postId) {
-        log.info("Manual post metrics collection requested for postId: {}", postId);
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectPostMetrics(@PathVariable Long postId) {
+        log.info("Manual post metrics collection requested for local postId: {}", postId);
         
-        return executeBatchOperation("post metrics collection for postId: " + postId, () -> metricsCollectionUseCase.collectPostMetricsByPostId(postId));
+        return executeBatchOperation("post metrics collection for local postId: " + postId, () -> metricsCollectionUseCase.collectPostMetricsByPostId(postId));
     }
     
     // POST /api/analytics/batch/posts/comments
     @PostMapping("/posts/comments")
-    public ResponseEntity<ApiResponse<String>> collectAllPostComments() {
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectAllPostComments() {
         log.info("Manual post comments collection requested");
         
         return executeBatchOperation("post comments collection", () -> metricsCollectionUseCase.collectPostComments());
@@ -87,15 +112,15 @@ public class BatchController {
     
     // POST /api/analytics/batch/posts/{postId}/comments
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<ApiResponse<String>> collectPostComments(@PathVariable Long postId) {
-        log.info("Manual post comments collection requested for postId: {}", postId);
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectPostComments(@PathVariable Long postId) {
+        log.info("Manual post comments collection requested for local postId: {}", postId);
         
-        return executeBatchOperation("post comments collection for postId: " + postId, () -> metricsCollectionUseCase.collectPostCommentsByPostId(postId));
+        return executeBatchOperation("post comments collection for local postId: " + postId, () -> metricsCollectionUseCase.collectPostCommentsByPostId(postId));
     }
     
     // POST /api/analytics/batch/metrics
     @PostMapping("/metrics")
-    public ResponseEntity<ApiResponse<String>> collectAllMetrics() {
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> collectAllMetrics() {
         log.info("Manual all metrics collection requested");
         
         return executeBatchOperation("all metrics collection", () -> {
@@ -107,16 +132,22 @@ public class BatchController {
     
     // GET /api/analytics/batch/status
     @GetMapping("/status")
-    public ResponseEntity<ApiResponse<Map<String, BatchJobMonitor.BatchJobStatus>>> getAllBatchJobStatuses() {
+    public ResponseEntity<ApiResponse<Map<String, BatchJobStatusResponse>>> getAllBatchJobStatuses() {
         log.info("Batch job statuses requested");
         
         Map<String, BatchJobMonitor.BatchJobStatus> statuses = batchJobMonitor.getAllJobStatuses();
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, statuses));
+        Map<String, BatchJobStatusResponse> responseMap = statuses.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> convertToBatchJobStatusResponse(entry.getKey(), entry.getValue())
+            ));
+        
+        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, responseMap));
     }
     
     // GET /api/analytics/batch/status/{jobName}
     @GetMapping("/status/{jobName}")
-    public ResponseEntity<ApiResponse<BatchJobMonitor.BatchJobStatus>> getBatchJobStatus(@PathVariable String jobName) {
+    public ResponseEntity<ApiResponse<BatchJobStatusResponse>> getBatchJobStatus(@PathVariable String jobName) {
         log.info("Batch job status requested for jobName: {}", jobName);
         
         BatchJobMonitor.BatchJobStatus status = batchJobMonitor.getJobStatus(jobName);
@@ -124,6 +155,19 @@ public class BatchController {
             return ResponseEntity.notFound().build();
         }
         
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, status));
+        BatchJobStatusResponse response = convertToBatchJobStatusResponse(jobName, status);
+        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
+    }
+    
+    private BatchJobStatusResponse convertToBatchJobStatusResponse(String jobName, BatchJobMonitor.BatchJobStatus status) {
+        return BatchJobStatusResponse.builder()
+            .jobName(jobName)
+            .status(status.getStatus())
+            .startTime(status.getStartTime())
+            .endTime(status.getEndTime())
+            .progress(status.getProcessed())
+            .totalItems(status.getTotal())
+            .errorMessage(status.getError())
+            .build();
     }
 }

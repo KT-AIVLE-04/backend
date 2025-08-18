@@ -25,6 +25,9 @@ public class SnsAccountMetric extends BaseEntity {
     @Column(name = "account_id", nullable = false)
     private Long accountId;
 
+    @Column(name = "sns_account_id")
+    private String snsAccountId;
+
     @Column(name = "followers")
     private Long followers;
 
@@ -35,9 +38,10 @@ public class SnsAccountMetric extends BaseEntity {
     private LocalDateTime crawledAt;
 
     @Builder
-    public SnsAccountMetric(Long id, Long accountId, Long followers, Long views, LocalDateTime crawledAt) {
+    public SnsAccountMetric(Long id, Long accountId, String snsAccountId, Long followers, Long views, LocalDateTime crawledAt) {
         this.id = id;
         this.accountId = accountId;
+        this.snsAccountId = snsAccountId;
         this.followers = followers;
         this.views = views;
         this.crawledAt = crawledAt;
