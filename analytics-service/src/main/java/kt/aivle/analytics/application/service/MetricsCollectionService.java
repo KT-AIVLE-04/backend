@@ -348,7 +348,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                             SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
                                 .snsCommentId(commentId)
                                 .postId(post.getId())
-                                .authorId(Long.parseLong(authorId))
+                                .authorId(authorId)
                                 .content(content)
                                 .likeCount(likeCount)
                                 .publishedAt(publishedAt)
