@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -53,4 +54,11 @@ public class GlobalExceptionHandler {
         log.error("HTTP 메시지 읽기 예외 발생: {}", e.getMessage(), e);
         return responseUtils.build(BAD_REQUEST_MESSAGE);
     }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUploadSizeException(MaxUploadSizeExceededException e) {
+        log.error("파일 업로드 예외 발생: {} ", e.getMessage(), e);
+        return responseUtils.build(BAD_REQUEST_UPLOAD);
+    }
+
 }
