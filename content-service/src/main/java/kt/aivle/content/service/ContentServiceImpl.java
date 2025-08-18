@@ -2,9 +2,11 @@ package kt.aivle.content.service;
 
 import kt.aivle.common.exception.BusinessException;
 import kt.aivle.content.dto.ContentMapper;
-import kt.aivle.content.dto.ContentResponse;
-import kt.aivle.content.dto.CreateContentRequest;
+import kt.aivle.content.dto.request.*;
+import kt.aivle.content.dto.response.ContentDetailResponse;
+import kt.aivle.content.dto.response.ContentResponse;
 import kt.aivle.content.entity.Content;
+import kt.aivle.content.infra.CloudFrontSigner;
 import kt.aivle.content.infra.S3Storage;
 import kt.aivle.content.repository.ContentRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-import static kt.aivle.content.exception.ContentErrorCode.IMAGE_UPLOAD_ERROR;
+import static kt.aivle.content.exception.ContentErrorCode.*;
 
 @Service
 @Transactional
@@ -27,9 +31,7 @@ public class ContentServiceImpl implements ContentService {
     private final ContentRepository contentRepository;
     private final ContentMapper contentMapper;
     private final S3Storage s3Storage;
-
-    private static final String ORIGIN_KEY_PREFIX = "origin/";
-    private static final String THUMB_KEY_PREFIX = "thumbnail/";
+    private final CloudFrontSigner cloudFrontSigner;
 
     @Override
     public ContentResponse uploadContent(CreateContentRequest request) {
@@ -40,7 +42,7 @@ public class ContentServiceImpl implements ContentService {
             String uuid = UUID.randomUUID().toString();
 
             String originKey = getOriginKey(uuid, originalFilename);
-            String thumbKey = getThumbKey(uuid);
+            String thumbKey = getThumbKey(request.userId(), request.storeId(), uuid);
 
             // 1) 원본 업로드
             s3Storage.put(originKey, file, null);
@@ -99,17 +101,90 @@ public class ContentServiceImpl implements ContentService {
         }
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public ContentDetailResponse getContentDetail(GetContentRequest request) {
+        Content content = contentRepository.findById(request.id()).orElseThrow(() -> new BusinessException(NOT_FOUND_CONTENT));
+
+        if (!isValidOwner(content, request.userId(), request.storeId())) {
+            throw new BusinessException(NOT_AUTHORIZED_CONTENT);
+        }
+
+        String originKey = getOriginKey(content.getObjectKey(), content.getOriginalName());
+        String signedUrl = cloudFrontSigner.signOriginalUrl(originKey);
+
+        return contentMapper.toContentDetailResponse(content, signedUrl);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ContentResponse> getContents(GetContentListRequest request) {
+
+        String q = request.query() == null ? null : request.query().trim();
+        boolean noQuery = (q == null || q.isEmpty());
+
+        List<Content> contents = noQuery
+                ? contentRepository.findByUserIdAndStoreIdOrderByCreatedAtDesc(request.userId(), request.storeId())
+                : contentRepository.findByUserIdAndStoreIdAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(
+                request.userId(), request.storeId(), q
+        );
+
+        return contents.stream().map(content -> {
+            String thumbKey = getThumbKey(request.userId(), request.storeId(), content.getObjectKey());
+            String thumbUrl = cloudFrontSigner.getThumbUrl(thumbKey);
+            return contentMapper.toContentResponse(content, thumbUrl);
+        }).toList();
+    }
+
+    @Override
+    public ContentDetailResponse updateContent(UpdateContentRequest request) {
+        Content content = contentRepository.findById(request.id()).orElseThrow(() -> new BusinessException(NOT_FOUND_CONTENT));
+
+        if (!isValidOwner(content, request.userId(), request.storeId())) {
+            throw new BusinessException(NOT_AUTHORIZED_CONTENT);
+        }
+
+        content.updateTitle(request.title());
+
+        Content updated = contentRepository.save(content);
+        String originKey = getOriginKey(content.getObjectKey(), content.getOriginalName());
+        String signedUrl = cloudFrontSigner.signOriginalUrl(originKey);
+
+        return contentMapper.toContentDetailResponse(updated, signedUrl);
+    }
+
+    @Override
+    public void deleteContent(DeleteContentRequest request) {
+        Content content = contentRepository.findById(request.id()).orElseThrow(() -> new BusinessException(NOT_FOUND_CONTENT));
+
+        if (!isValidOwner(content, request.userId(), request.storeId())) {
+            throw new BusinessException(NOT_AUTHORIZED_CONTENT);
+        }
+
+        String originKey = getOriginKey(content.getObjectKey(), content.getOriginalName());
+        String thumbKey = getThumbKey(request.userId(), request.storeId(), content.getObjectKey());
+
+        s3Storage.delete(originKey);
+        s3Storage.delete(thumbKey);
+
+        contentRepository.delete(content);
+    }
+
     private String getExtSafe(String name, String defExt) {
         if (name == null) return defExt;
         int i = name.lastIndexOf('.');
         return i >= 0 ? name.substring(i) : defExt;
     }
 
-    public static String getOriginKey(String uuid, String originalFilename) {
+    private String getOriginKey(String uuid, String originalFilename) {
         return "origin/" + uuid + "-" + originalFilename;
     }
 
-    public static String getThumbKey(String uuid) {
-        return "thumbnail/" + uuid + ".jpg";
+    private String getThumbKey(long userId, long storeId, String uuid) {
+        return "thumbnail/%d-%d/%s.jpg".formatted(userId, storeId, uuid);
+    }
+
+    private boolean isValidOwner(Content content, Long userId, Long storeId) {
+        return Objects.equals(content.getUserId(), userId) && Objects.equals(content.getStoreId(), storeId);
     }
 }

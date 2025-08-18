@@ -1,15 +1,13 @@
-package kt.aivle.content.dto;
+package kt.aivle.content.dto.response;
 
 import java.time.LocalDateTime;
 
 public record ContentResponse(
         Long id,
+        String url,
         String title,
         String objectKey,
         String contentType,
-        Integer width,
-        Integer height,
-        Integer durationSeconds,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

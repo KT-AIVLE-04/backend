@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -52,20 +51,11 @@ public class S3Storage {
         }
     }
 
-    public void deleteQuietly(String key) {
+    public void delete(String key) {
         if (key == null || key.isBlank()) return;
         try {
             s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
         } catch (Exception ignore) {
-        }
-    }
-
-    public boolean exists(String key) {
-        try {
-            s3.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
-            return true;
-        } catch (S3Exception e) {
-            return false;
         }
     }
 

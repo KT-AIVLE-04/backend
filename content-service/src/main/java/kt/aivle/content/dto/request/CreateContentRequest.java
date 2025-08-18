@@ -1,4 +1,4 @@
-package kt.aivle.content.dto;
+package kt.aivle.content.dto.request;
 
 import org.springframework.web.multipart.MultipartFile;
 

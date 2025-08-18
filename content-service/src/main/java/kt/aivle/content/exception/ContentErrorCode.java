@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 public enum ContentErrorCode implements DefaultCode {
-
+    NOT_FOUND_CONTENT(HttpStatus.NOT_FOUND, false, "컨텐츠를 찾을 수 없습니다."),
+    NOT_AUTHORIZED_CONTENT(HttpStatus.UNAUTHORIZED, false, "컨텐츠에 접근할 권한이 없습니다."),
     IMAGE_UPLOAD_ERROR(HttpStatus.BAD_REQUEST, false, "이미지 업로드에 실패했습니다."),
     FAIL_DECODE_IMAGE(HttpStatus.BAD_REQUEST, false, "이미지 디코딩에 실패했습니다."),
     THUMBNAIL_GENERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "썸네일 생성에 실패했습니다."),
