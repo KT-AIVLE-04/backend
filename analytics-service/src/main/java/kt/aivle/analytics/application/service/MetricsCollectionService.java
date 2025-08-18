@@ -56,6 +56,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     @Value("${app.youtube.api.retry-delay:1000}")
     private int retryDelay;
     
+    @Value("${app.youtube.api.parallel-threads:4}")
+    private int parallelThreads;
+    
     @Override
     public void collectAccountMetrics() {
         processBatch(

@@ -3,8 +3,11 @@ package kt.aivle.analytics.application.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
@@ -43,6 +46,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final YouTubeApiService youtubeApiService;
     
     @Override
+    @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + #request.date")
     public List<PostMetricsQueryResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, accountId: {}, postId: {}", 
                 userId, request.getDate(), request.getAccountId(), request.getPostId());
@@ -85,6 +89,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return metrics.stream()
             .map(this::toSnsPostMetricsQueryResponse)
             .collect(Collectors.toList());
+    }
+    
+    @Async
+    public CompletableFuture<List<PostMetricsQueryResponse>> getPostMetricsAsync(String userId, PostMetricsQueryRequest request) {
+        return CompletableFuture.completedFuture(getPostMetrics(userId, request));
     }
     
     @Override

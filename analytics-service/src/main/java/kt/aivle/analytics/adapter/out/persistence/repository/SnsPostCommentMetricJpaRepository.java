@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Repository;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 
 @Repository
-public interface SnsPostCommentMetricJpaRepository extends JpaRepository<SnsPostCommentMetric, Long> {
+public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<SnsPostCommentMetric, Long> {
     List<SnsPostCommentMetric> findByPostId(Long postId);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
     
