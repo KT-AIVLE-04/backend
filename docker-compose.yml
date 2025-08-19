@@ -52,6 +52,7 @@ services:
     depends_on:
       - mysql
       - kafka
+      - redis-stack
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - TZ=Asia/Seoul
@@ -104,7 +105,7 @@ services:
     container_name: auth-service
     depends_on:
       - mysql
-      - redis
+      - redis-stack
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
