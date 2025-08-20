@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.ChannelListResponse;
 import com.google.api.services.youtube.model.ChannelStatistics;
@@ -23,6 +24,7 @@ import kt.aivle.analytics.domain.entity.SnsAccount;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.analytics.exception.AnalyticsQuotaExceededException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,11 +36,48 @@ public class YouTubeApiService {
     @Value("${app.youtube.api.key}")
     private String apiKey;
     
-    private final YouTubeApiQuotaManager quotaManager;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final AnalyticsCacheService cacheService;
     private YouTube youtubeClient;
+    
+    /**
+     * YouTube API 에러를 분석하여 적절한 예외로 변환
+     */
+    private void handleYouTubeApiError(IOException e, String operation) {
+        if (e instanceof GoogleJsonResponseException) {
+            GoogleJsonResponseException googleError = (GoogleJsonResponseException) e;
+            int statusCode = googleError.getStatusCode();
+            
+            log.error("YouTube API error - Status: {}, Operation: {}", statusCode, operation);
+            
+            // 할당량 초과 에러 (403 Forbidden 또는 429 Too Many Requests)
+            if (statusCode == 403 || statusCode == 429) {
+                String errorMessage = googleError.getDetails() != null ? 
+                    googleError.getDetails().getMessage() : "Quota exceeded";
+                
+                if (errorMessage.toLowerCase().contains("quota") || 
+                    errorMessage.toLowerCase().contains("limit") ||
+                    errorMessage.toLowerCase().contains("exceeded")) {
+                    
+                    log.warn("YouTube API quota exceeded detected: {}", errorMessage);
+                    throw new AnalyticsQuotaExceededException("YouTube API quota exceeded: " + errorMessage, e);
+                }
+            }
+            
+            // 비디오/채널을 찾을 수 없음 (404 Not Found)
+            if (statusCode == 404) {
+                if (operation.contains("video")) {
+                    throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_VIDEO_NOT_FOUND, "YouTube video not found", e);
+                } else if (operation.contains("channel")) {
+                    throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_CHANNEL_NOT_FOUND, "YouTube channel not found", e);
+                }
+            }
+        }
+        
+        // 기타 에러는 일반 YouTube API 에러로 처리
+        throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_API_ERROR, "YouTube API error: " + e.getMessage(), e);
+    }
     
     /**
      * 실시간 게시물 메트릭을 조회합니다.
@@ -161,8 +200,6 @@ public class YouTubeApiService {
                 .setKey(apiKey)
                 .execute();
                 
-            quotaManager.incrementApiCall();
-            
             if (response.getItems() != null) {
                 List<PostCommentsQueryResponse> result = response.getItems().stream()
                     .map(commentThread -> {
@@ -188,6 +225,9 @@ public class YouTubeApiService {
             
         } catch (AnalyticsException e) {
             throw e;
+        } catch (IOException e) {
+            handleYouTubeApiError(e, "comments for post " + postId);
+            return List.of(); // unreachable
         } catch (Exception e) {
             log.error("Error getting realtime post comments for postId: {}", postId, e);
             throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_API_ERROR, "Failed to get realtime post comments", e);
@@ -206,8 +246,6 @@ public class YouTubeApiService {
                 .setId(List.of(channelId))
                 .setKey(apiKey)
                 .execute();
-                
-            quotaManager.incrementApiCall();
             
             if (response.getItems() != null && !response.getItems().isEmpty()) {
                 return response.getItems().get(0).getStatistics();
@@ -217,8 +255,8 @@ public class YouTubeApiService {
             return null;
             
         } catch (IOException e) {
-            log.error("Failed to get channel statistics for channelId: {}", channelId, e);
-            throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_API_ERROR, "Failed to get channel statistics", e);
+            handleYouTubeApiError(e, "channel statistics for " + channelId);
+            return null; // unreachable
         }
     }
     
@@ -234,8 +272,6 @@ public class YouTubeApiService {
                 .setId(List.of(videoId))
                 .setKey(apiKey)
                 .execute();
-                
-            quotaManager.incrementApiCall();
             
             if (response.getItems() != null && !response.getItems().isEmpty()) {
                 return response.getItems().get(0).getStatistics();
@@ -245,8 +281,8 @@ public class YouTubeApiService {
             return null;
             
         } catch (IOException e) {
-            log.error("Failed to get video statistics for videoId: {}", videoId, e);
-            throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_API_ERROR, "Failed to get video statistics", e);
+            handleYouTubeApiError(e, "video statistics for " + videoId);
+            return null; // unreachable
         }
     }
     

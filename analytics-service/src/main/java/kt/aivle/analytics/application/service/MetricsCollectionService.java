@@ -16,6 +16,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
@@ -29,6 +30,7 @@ import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SnsType;
 import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.analytics.exception.AnalyticsQuotaExceededException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,7 +45,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
     private final SnsAccountMetricRepositoryPort snsAccountMetricRepositoryPort;
     private final BatchJobMonitor batchJobMonitor;
-    private final YouTubeApiQuotaManager quotaManager;
     private final MetricsValidator metricsValidator;
     private final YouTubeApiService youtubeApiService;
     
@@ -121,17 +122,25 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 
                 for (T item : items) {
                     try {
-                        if (quotaManager.checkQuotaLimit(YouTubeApiQuotaManager.ApiPriority.BATCH_COLLECTION)) {
-                            itemProcessor.accept(idExtractor.apply(item));
-                            totalProcessed++;
-                            batchJobMonitor.recordJobProgress(jobName, totalProcessed, (int) totalItems);
-                        } else {
-                            log.warn("YouTube API quota limit reached. Stopping collection.");
-                            break;
-                        }
+                        itemProcessor.accept(idExtractor.apply(item));
+                        totalProcessed++;
+                        batchJobMonitor.recordJobProgress(jobName, totalProcessed, (int) totalItems);
+                        
+                    } catch (AnalyticsQuotaExceededException e) {
+                        log.warn("YouTube API quota exceeded during {} collection. Stopping batch.", itemType);
+                        // 할당량 초과 시 배치 작업 중단
+                        break;
+                        
                     } catch (Exception e) {
-                        failedIds.add(idExtractor.apply(item));
-                        log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
+                        // YouTube API 할당량 초과 에러도 처리
+                        if (e.getCause() instanceof AnalyticsQuotaExceededException) {
+                            log.warn("YouTube API quota exceeded during {} collection (from API). Stopping batch.", itemType);
+                            // 할당량 초과 시 배치 작업 중단
+                            break;
+                        } else {
+                            failedIds.add(idExtractor.apply(item));
+                            log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
+                        }
                     }
                 }
                 page++;
@@ -315,8 +324,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     .setPageToken(nextPageToken)
                     .setKey(youtubeApiService.getApiKey())
                     .execute();
-                
-                quotaManager.incrementApiCall();
                 
                 if (commentResponse.getItems() != null) {
                     for (CommentThread commentThread : commentResponse.getItems()) {

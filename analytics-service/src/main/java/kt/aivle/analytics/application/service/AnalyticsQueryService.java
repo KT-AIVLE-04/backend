@@ -3,6 +3,7 @@ package kt.aivle.analytics.application.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -11,6 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
@@ -28,6 +30,8 @@ import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
+import kt.aivle.analytics.domain.model.SentimentType;
+import kt.aivle.analytics.domain.port.PostCommentKeywordRepository;
 import kt.aivle.analytics.exception.AnalyticsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +46,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
-    private final YouTubeApiQuotaManager quotaManager;
+    private final PostCommentKeywordRepository postCommentKeywordRepository;
     private final YouTubeApiService youtubeApiService;
     
     @Override
@@ -172,6 +176,55 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return comments.subList(start, end).stream()
             .map(this::toSnsPostCommentsQueryResponse)
             .collect(Collectors.toList());
+    }
+    
+    @Override
+    public EmotionAnalysisResponse getEmotionAnalysis(String userId, Long postId) {
+        log.info("Getting emotion analysis for userId: {}, postId: {}", userId, postId);
+        
+        // 게시물 존재 여부 확인
+        snsPostRepositoryPort.findById(postId)
+            .orElseThrow(() -> new AnalyticsException("Post not found: " + postId));
+        
+        // 감정분석 결과 조회
+        List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostId(postId);
+        
+        // 감정별 개수 계산
+        long positiveCount = commentMetrics.stream()
+            .filter(metric -> SentimentType.POSITIVE.equals(metric.getSentiment()))
+            .count();
+        
+        long neutralCount = commentMetrics.stream()
+            .filter(metric -> SentimentType.NEUTRAL.equals(metric.getSentiment()))
+            .count();
+        
+        long negativeCount = commentMetrics.stream()
+            .filter(metric -> SentimentType.NEGATIVE.equals(metric.getSentiment()))
+            .count();
+        
+        long totalCount = commentMetrics.size();
+        
+        // 키워드 조회
+        List<String> positiveKeywords = postCommentKeywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.POSITIVE);
+        List<String> negativeKeywords = postCommentKeywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.NEGATIVE);
+        
+        Map<String, List<String>> keywords = Map.of(
+            "positive", positiveKeywords,
+            "negative", negativeKeywords
+        );
+        
+        EmotionAnalysisResponse.EmotionSummary summary = EmotionAnalysisResponse.EmotionSummary.builder()
+            .positiveCount(positiveCount)
+            .neutralCount(neutralCount)
+            .negativeCount(negativeCount)
+            .totalCount(totalCount)
+            .build();
+        
+        return EmotionAnalysisResponse.builder()
+            .postId(postId)
+            .emotionSummary(summary)
+            .keywords(keywords)
+            .build();
     }
     
     // 실시간 데이터 조회 메서드들

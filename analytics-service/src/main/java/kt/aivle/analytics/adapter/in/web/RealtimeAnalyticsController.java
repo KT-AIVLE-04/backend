@@ -22,7 +22,6 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.application.service.YouTubeApiQuotaManager;
 import kt.aivle.analytics.exception.AnalyticsValidationException;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
@@ -36,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 public class RealtimeAnalyticsController {
     
     private final AnalyticsQueryUseCase analyticsQueryUseCase;
-    private final YouTubeApiQuotaManager quotaManager;
     private final AnalyticsRequestValidator validator;
     
     @Operation(summary = "실시간 게시물 메트릭 조회", description = "특정 게시물의 실시간 메트릭을 조회합니다.")
