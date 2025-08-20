@@ -130,6 +130,16 @@ services:
     networks:
       - backend
 
+  sns-service:
+    build:
+      context: ./sns-service
+      dockerfile: Dockerfile
+    container_name: sns-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
 volumes:
   mysql_data:
 
