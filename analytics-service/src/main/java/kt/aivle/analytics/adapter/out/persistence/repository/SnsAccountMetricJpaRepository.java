@@ -1,6 +1,5 @@
 package kt.aivle.analytics.adapter.out.persistence.repository;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -13,8 +12,7 @@ import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 @Repository
 public interface SnsAccountMetricJpaRepository extends BaseJpaRepository<SnsAccountMetric, Long> {
     List<SnsAccountMetric> findByAccountId(Long accountId);
-    List<SnsAccountMetric> findByAccountIdAndCreatedAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate);
-    boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
+    boolean existsByAccountIdAndCreatedAtAfter(Long accountId, Date date);
     
     // 날짜만 비교하는 메서드
     @Query("SELECT m FROM SnsAccountMetric m WHERE m.accountId = :accountId AND DATE(m.createdAt) = DATE(:date)")

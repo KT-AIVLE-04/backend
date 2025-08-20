@@ -1,6 +1,5 @@
 package kt.aivle.analytics.application.port.out;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -12,8 +11,7 @@ public interface SnsAccountMetricRepositoryPort {
     Optional<SnsAccountMetric> findById(Long id);
     List<SnsAccountMetric> findAll();
     List<SnsAccountMetric> findByAccountId(Long accountId);
-    List<SnsAccountMetric> findByAccountIdAndCreatedAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate);
     List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, Date date);
-    boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
+    boolean existsByAccountIdAndCreatedAtAfter(Long accountId, Date date);
     void deleteById(Long id);
 }

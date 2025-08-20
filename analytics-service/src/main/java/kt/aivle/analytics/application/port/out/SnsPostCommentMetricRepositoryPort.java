@@ -1,6 +1,5 @@
 package kt.aivle.analytics.application.port.out;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -12,9 +11,6 @@ public interface SnsPostCommentMetricRepositoryPort {
     Optional<SnsPostCommentMetric> findById(Long id);
     List<SnsPostCommentMetric> findAll();
     List<SnsPostCommentMetric> findByPostId(Long postId);
-    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate);
-    List<SnsPostCommentMetric> findByPostIdAndCreatedAtBetweenWithPagination(Long postId, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
-    List<SnsPostCommentMetric> findByPostIdsAndCreatedAtBetweenWithPagination(List<Long> postIds, LocalDateTime startDate, LocalDateTime endDate, Integer page, Integer size);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, Date date);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, Date date, Integer page, Integer size);
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
