@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import static kt.aivle.common.code.CommonResponseCode.OK;
 
 @RestController
-@RequestMapping("sns/account")
+@RequestMapping("/api/sns/account")
 @RequiredArgsConstructor
 public class SnsAccountController {
 

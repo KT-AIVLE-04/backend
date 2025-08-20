@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("sns/oauth")
+@RequestMapping("api/sns/oauth")
 @RequiredArgsConstructor
 public class SnsOAuthController {
     private final SnsOAuthDelegator delegator;
@@ -23,7 +23,7 @@ public class SnsOAuthController {
     @GetMapping("/{snsType}/url")
     public String getAuthUrl(@PathVariable SnsType snsType,
                              @RequestHeader("X-USER-ID") Long userId,
-                             @RequestParam Long storeId) {
+                             @RequestHeader("X-STORE-ID") Long storeId) {
         return delegator.getAuthUrl(snsType, userId, storeId);
     }
 

@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("sns/video")
+@RequestMapping("/api/sns/video")
 @RequiredArgsConstructor
 public class SnsPostController {
 
