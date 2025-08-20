@@ -21,6 +21,7 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
+import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
@@ -31,7 +32,6 @@ import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
-import kt.aivle.analytics.domain.port.PostCommentKeywordRepository;
 import kt.aivle.analytics.exception.AnalyticsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
-    private final PostCommentKeywordRepository postCommentKeywordRepository;
+    private final PostCommentKeywordRepositoryPort postCommentKeywordRepository;
     private final YouTubeApiService youtubeApiService;
     
     @Override

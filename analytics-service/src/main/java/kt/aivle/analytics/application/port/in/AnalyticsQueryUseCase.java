@@ -3,6 +3,7 @@ package kt.aivle.analytics.application.port.in;
 import java.util.List;
 
 import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
@@ -26,4 +27,7 @@ public interface AnalyticsQueryUseCase {
     List<RealtimeAccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request);
     
     List<PostCommentsQueryResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request);
+    
+    // 감정분석 데이터 조회
+    EmotionAnalysisResponse getEmotionAnalysis(String userId, Long postId);
 }

@@ -25,4 +25,8 @@ public class AnalyticsValidationException extends AnalyticsException {
     public static AnalyticsValidationException invalidPagination(Integer page, Integer size) {
         return new AnalyticsValidationException("Invalid pagination parameters - page: " + page + ", size: " + size);
     }
+    
+    public static AnalyticsValidationException invalidDate(String message) {
+        return new AnalyticsValidationException("Invalid date: " + message);
+    }
 }

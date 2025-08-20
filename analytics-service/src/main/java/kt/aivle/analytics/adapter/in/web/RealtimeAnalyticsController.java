@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kt.aivle.analytics.adapter.in.web.dto.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
@@ -118,10 +119,23 @@ public class RealtimeAnalyticsController {
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @Operation(summary = "YouTube API 할당량 상태 조회", description = "YouTube API 할당량 사용 현황을 조회합니다.")
-    @GetMapping("/quota/status")
-    public ResponseEntity<ApiResponse<YouTubeApiQuotaManager.QuotaStatus>> getQuotaStatus() {
-        YouTubeApiQuotaManager.QuotaStatus status = quotaManager.getQuotaStatus();
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, status));
+    @Operation(summary = "게시물 감정분석 조회", description = "특정 게시물의 댓글 감정분석 결과와 키워드를 조회합니다.")
+    @GetMapping("/posts/{postId}/emotion-analysis")
+    public ResponseEntity<ApiResponse<EmotionAnalysisResponse>> getEmotionAnalysis(
+            @Parameter(description = "게시물 ID") @PathVariable String postId,
+            @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
+        
+        // 입력 검증
+        if (!validator.isValidPostId(postId)) {
+            throw AnalyticsValidationException.invalidPostId(postId);
+        }
+        
+        if (!validator.isValidUserId(userId)) {
+            throw AnalyticsValidationException.invalidUserId(userId);
+        }
+        
+        EmotionAnalysisResponse response = analyticsQueryUseCase.getEmotionAnalysis(userId, Long.parseLong(postId));
+        
+        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
 }

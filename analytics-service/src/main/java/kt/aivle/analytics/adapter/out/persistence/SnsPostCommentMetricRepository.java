@@ -64,4 +64,9 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     public void deleteById(Long id) {
         snsPostCommentMetricJpaRepository.deleteById(id);
     }
+    
+    @Override
+    public void saveAll(List<SnsPostCommentMetric> metrics) {
+        snsPostCommentMetricJpaRepository.saveAll(metrics);
+    }
 }

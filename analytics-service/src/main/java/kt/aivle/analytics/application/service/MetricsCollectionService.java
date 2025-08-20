@@ -47,6 +47,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     private final BatchJobMonitor batchJobMonitor;
     private final MetricsValidator metricsValidator;
     private final YouTubeApiService youtubeApiService;
+    private final EmotionAnalysisService emotionAnalysisService;
     
     @Value("${app.youtube.api.batch-size:100}")
     private int batchSize;
@@ -313,6 +314,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             String nextPageToken = null;
             int newCommentsCount = 0;
             int totalProcessedCount = 0;
+            List<SnsPostCommentMetric> newComments = new ArrayList<>();
             
             do {
                 // 댓글 스레드 조회 (시간순 정렬)
@@ -335,7 +337,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                             if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
                                 log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}, New comments: {}", 
                                     commentId, totalProcessedCount, newCommentsCount);
-                                return; // 이미 있는 댓글을 만나면 수집 중단
+                                break; // 이미 있는 댓글을 만나면 수집 중단
                             }
                             
                             // 새로운 댓글 처리
@@ -362,6 +364,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                                 .build();
                             
                             snsPostCommentMetricRepositoryPort.save(commentMetric);
+                            newComments.add(commentMetric);
                             newCommentsCount++;
                             log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentId);
                             
@@ -377,6 +380,33 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             
             log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
                 postId, totalProcessedCount, newCommentsCount);
+            
+            // 새로운 댓글이 있으면 감정분석 수행
+            if (!newComments.isEmpty()) {
+                try {
+                    log.info("Starting emotion analysis for {} new comments in postId: {}", newComments.size(), postId);
+                    
+                    // 댓글을 PostCommentsQueryResponse로 변환
+                    List<PostCommentsQueryResponse> commentsForAnalysis = newComments.stream()
+                        .map(comment -> PostCommentsQueryResponse.builder()
+                            .commentId(comment.getSnsCommentId())
+                            .authorId(comment.getAuthorId())
+                            .text(comment.getContent())  // content -> text로 매핑
+                            .likeCount(comment.getLikeCount())
+                            .publishedAt(comment.getPublishedAt())
+                            .build())
+                        .collect(java.util.stream.Collectors.toList());
+                    
+                    // 감정분석 수행
+                    emotionAnalysisService.analyzeAndSaveEmotions(postId, commentsForAnalysis);
+                    
+                    log.info("Completed emotion analysis for postId: {}", postId);
+                    
+                } catch (Exception e) {
+                    log.error("Failed to perform emotion analysis for postId: {}", postId, e);
+                    // 감정분석 실패는 댓글 수집을 중단시키지 않음
+                }
+            }
             
         } catch (IOException e) {
             log.error("Failed to collect comments for postId: {}", postId, e);
