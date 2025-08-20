@@ -1,5 +1,6 @@
 package kt.aivle.sns.application.service;
 
+import kt.aivle.sns.adapter.in.web.dto.OAuthContext;
 import kt.aivle.sns.application.port.in.SnsOAuthUseCase;
 import kt.aivle.sns.domain.model.SnsType;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class SnsOAuthDelegator {
         return serviceMap.get(type).getAuthUrl(userId, storeId);
     }
 
-    public void handleCallback(SnsType type, String state, String code) throws Exception {
-        serviceMap.get(type).handleCallback(state, code);
+    public OAuthContext handleCallback(SnsType type, String state, String code) throws Exception {
+        return serviceMap.get(type).handleCallback(state, code);
     }
 }

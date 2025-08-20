@@ -1,5 +1,6 @@
 package kt.aivle.sns.application.port.in;
 
+import kt.aivle.sns.adapter.in.web.dto.OAuthContext;
 import kt.aivle.sns.domain.model.SnsType;
 
 public interface SnsOAuthUseCase {
@@ -13,5 +14,5 @@ public interface SnsOAuthUseCase {
     /**
      * callback code 처리 및 토큰 저장
      */
-    void handleCallback(String state, String code) throws Exception;
+    OAuthContext handleCallback(String state, String code) throws Exception;
 }

@@ -1,5 +1,7 @@
 package kt.aivle.sns.adapter.in.web;
 
+import kt.aivle.sns.adapter.in.web.dto.OAuthContext;
+import kt.aivle.sns.application.service.AccountSyncDelegator;
 import kt.aivle.sns.application.service.SnsOAuthDelegator;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SnsOAuthController {
     private final SnsOAuthDelegator delegator;
+    private final AccountSyncDelegator syncDelegator;
 
     @GetMapping("/")
     public String home() throws Exception {
@@ -28,7 +31,9 @@ public class SnsOAuthController {
     public String callback(@PathVariable SnsType snsType,
                            @RequestParam String code,
                            @RequestParam String state) throws Exception {
-        delegator.handleCallback(snsType, state, code);
+        OAuthContext ctx = delegator.handleCallback(snsType, state, code);
+        // account 초기화
+        syncDelegator.accountSync(snsType, ctx.getUserId(), ctx.getStoreId());
 
         return "계정 연동 완료";
     }
