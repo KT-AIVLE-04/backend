@@ -1,7 +1,7 @@
 package kt.aivle.analytics.application.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -262,8 +262,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     // 헬퍼 메서드들
-    private LocalDateTime getStartDate(LocalDate date) {
-        return date.atStartOfDay();
+    private LocalDateTime getStartDate(Date date) {
+        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate().atStartOfDay();
     }
     
     private List<PostMetricsQueryResponse> getCurrentPostMetrics(String userId, PostMetricsQueryRequest request) {

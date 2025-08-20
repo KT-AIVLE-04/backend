@@ -1,6 +1,6 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.time.LocalDate;
+import java.util.Date;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,10 +10,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public abstract class BaseQueryRequest {
-    private LocalDate date; // 특정 날짜, null이면 현재 날짜
+    private Date date; // 특정 날짜, null이면 현재 날짜
     
     // 생성자 추가
-    protected BaseQueryRequest(LocalDate date) {
+    protected BaseQueryRequest(Date date) {
         this.date = date;
     }
     
@@ -22,12 +22,12 @@ public abstract class BaseQueryRequest {
         return date == null;
     }
     
-    public LocalDate getEffectiveDate() {
-        return date != null ? date : LocalDate.now();
+    public Date getEffectiveDate() {
+        return date != null ? date : new Date();
     }
     
     // 날짜 검증 메서드
     public boolean isValidDate() {
-        return date == null || !date.isAfter(LocalDate.now());
+        return date == null || !date.after(new Date());
     }
 }

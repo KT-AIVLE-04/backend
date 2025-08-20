@@ -1,6 +1,6 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.time.LocalDate;
+import java.util.Date;
 
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -20,16 +20,16 @@ public class AccountMetricsQueryRequest extends BaseQueryRequest {
         return new AccountMetricsQueryRequest(null, accountId);
     }
     
-    public static AccountMetricsQueryRequest forDate(LocalDate date, String accountId) {
+    public static AccountMetricsQueryRequest forDate(Date date, String accountId) {
         return new AccountMetricsQueryRequest(date, accountId);
     }
     
-    public static AccountMetricsQueryRequest forAllAccounts(LocalDate date) {
+    public static AccountMetricsQueryRequest forAllAccounts(Date date) {
         return new AccountMetricsQueryRequest(date, null);
     }
     
     // 생성자
-    public AccountMetricsQueryRequest(LocalDate date, String accountId) {
+    public AccountMetricsQueryRequest(Date date, String accountId) {
         super(date);
         this.accountId = accountId;
     }
