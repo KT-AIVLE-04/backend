@@ -59,7 +59,7 @@ public class EmotionAnalysisService {
     private void saveCommentMetrics(Long postId, List<PostCommentsQueryResponse> comments, 
                                   List<AiAnalysisResponse.IndividualResult> analysisResults) {
         
-        Map<String, String> resultMap = analysisResults.stream()
+        Map<String, SentimentType> resultMap = analysisResults.stream()
             .collect(Collectors.toMap(
                 AiAnalysisResponse.IndividualResult::getId,
                 AiAnalysisResponse.IndividualResult::getResult
@@ -67,8 +67,8 @@ public class EmotionAnalysisService {
         
         List<SnsPostCommentMetric> metrics = comments.stream()
             .map(comment -> {
-                String sentiment = resultMap.get(comment.getCommentId());
-                SentimentType sentimentType = convertSentiment(sentiment);
+                SentimentType sentiment = resultMap.get(comment.getCommentId());
+                SentimentType sentimentType = sentiment != null ? sentiment : SentimentType.NEUTRAL;
                 
                 return SnsPostCommentMetric.builder()
                     .snsCommentId(comment.getCommentId())
@@ -121,22 +121,5 @@ public class EmotionAnalysisService {
         }
     }
     
-    /**
-     * 감정 문자열을 SentimentType으로 변환합니다.
-     */
-    private SentimentType convertSentiment(String sentiment) {
-        if (sentiment == null) {
-            return SentimentType.NEUTRAL;
-        }
-        
-        switch (sentiment.toLowerCase()) {
-            case "긍정":
-                return SentimentType.POSITIVE;
-            case "부정":
-                return SentimentType.NEGATIVE;
-            case "중립":
-            default:
-                return SentimentType.NEUTRAL;
-        }
-    }
+
 }
