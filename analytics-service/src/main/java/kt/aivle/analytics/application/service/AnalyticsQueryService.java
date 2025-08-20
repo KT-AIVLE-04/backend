@@ -26,6 +26,7 @@ import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
+import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
@@ -53,11 +54,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     public List<PostMetricsQueryResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, accountId: {}, postId: {}", 
                 userId, request.getDate(), request.getAccountId(), request.getPostId());
-        
-        // 실시간 데이터 조회인 경우
-        if (request.isCurrentDate()) {
-            return getCurrentPostMetrics(userId, request);
-        }
         
         Date targetDate = request.getEffectiveDate();
         
@@ -104,11 +100,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("Getting account metrics for userId: {}, date: {}, accountId: {}", 
                 userId, request.getDate(), request.getAccountId());
         
-        // 실시간 데이터 조회인 경우
-        if (request.isCurrentDate()) {
-            return getCurrentAccountMetrics(userId, request);
-        }
-        
         Date targetDate = request.getEffectiveDate();
         
         List<SnsAccountMetric> metrics;
@@ -138,11 +129,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     public List<PostCommentsQueryResponse> getPostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting post comments for userId: {}, date: {}, postId: {}, page: {}, size: {}", 
                 userId, request.getDate(), request.getPostId(), request.getPage(), request.getSize());
-        
-        // 실시간 데이터 조회인 경우
-        if (request.isCurrentDate()) {
-            return getCurrentPostComments(userId, request);
-        }
         
         Date targetDate = request.getEffectiveDate();
         
@@ -202,9 +188,18 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         long totalCount = commentMetrics.size();
         
-        // 키워드 조회
-        List<String> positiveKeywords = postCommentKeywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.POSITIVE);
-        List<String> negativeKeywords = postCommentKeywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.NEGATIVE);
+        // 키워드 조회 (한 번에 조회 후 메모리에서 분리)
+        List<PostCommentKeyword> allKeywords = postCommentKeywordRepository.findByPostId(postId);
+        
+        List<String> positiveKeywords = allKeywords.stream()
+            .filter(keyword -> SentimentType.POSITIVE.equals(keyword.getSentiment()))
+            .map(PostCommentKeyword::getKeyword)
+            .collect(Collectors.toList());
+            
+        List<String> negativeKeywords = allKeywords.stream()
+            .filter(keyword -> SentimentType.NEGATIVE.equals(keyword.getSentiment()))
+            .map(PostCommentKeyword::getKeyword)
+            .collect(Collectors.toList());
         
         Map<String, List<String>> keywords = Map.of(
             "positive", positiveKeywords,
@@ -261,25 +256,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 헬퍼 메서드들
     
-    private List<PostMetricsQueryResponse> getCurrentPostMetrics(String userId, PostMetricsQueryRequest request) {
-        // 실시간 데이터 조회 로직을 PostMetricsQueryResponse로 변환
-        return getRealtimePostMetrics(userId, request).stream()
-            .map(this::convertToPostMetricsQueryResponse)
-            .collect(Collectors.toList());
-    }
-    
-    private List<AccountMetricsQueryResponse> getCurrentAccountMetrics(String userId, AccountMetricsQueryRequest request) {
-        // 실시간 데이터 조회 로직
-        return getRealtimeAccountMetrics(userId, request).stream()
-            .map(this::convertToAccountMetricsQueryResponse)
-            .collect(Collectors.toList());
-    }
-    
-    private List<PostCommentsQueryResponse> getCurrentPostComments(String userId, PostCommentsQueryRequest request) {
-        // 실시간 데이터 조회 로직
-        return getRealtimePostComments(userId, request);
-    }
-    
     // 변환 메서드들
     private PostMetricsQueryResponse toSnsPostMetricsQueryResponse(SnsPostMetric metric) {
         return PostMetricsQueryResponse.builder()
@@ -310,27 +286,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .likeCount(comment.getLikeCount())
             .publishedAt(comment.getPublishedAt())
             .crawledAt(comment.getCreatedAt())
-            .build();
-    }
-    
-    private AccountMetricsQueryResponse convertToAccountMetricsQueryResponse(RealtimeAccountMetricsResponse realtime) {
-        return AccountMetricsQueryResponse.builder()
-            .accountId(realtime.getAccountId())
-            .followers(realtime.getFollowers())
-            .views(realtime.getViews())
-            .crawledAt(realtime.getFetchedAt())
-            .build();
-    }
-    
-    private PostMetricsQueryResponse convertToPostMetricsQueryResponse(RealtimePostMetricsResponse realtime) {
-        return PostMetricsQueryResponse.builder()
-            .postId(realtime.getPostId())
-            .likes(realtime.getLikes())
-            .dislikes(realtime.getDislikes())
-            .comments(realtime.getComments())
-            .shares(realtime.getShares())
-            .views(realtime.getViews())
-            .crawledAt(realtime.getFetchedAt())
             .build();
     }
 }
