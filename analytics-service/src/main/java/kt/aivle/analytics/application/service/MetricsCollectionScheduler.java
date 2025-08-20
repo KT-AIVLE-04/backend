@@ -22,9 +22,9 @@ public class MetricsCollectionScheduler {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     /**
-     * 매일 12시에 모든 계정과 게시물의 메트릭을 수집합니다.
+     * 매일 오후 11시에 모든 계정과 게시물의 메트릭을 수집합니다.
      */
-    @Scheduled(cron = "0 0 12 * * ?")
+    @Scheduled(cron = "0 0 23 * * ?")
     public void collectDailyMetrics() {
         LocalDateTime startTime = LocalDateTime.now();
         String formattedTime = startTime.format(TIME_FORMATTER);
@@ -32,7 +32,7 @@ public class MetricsCollectionScheduler {
         log.info("🚀 ===== DAILY METRICS COLLECTION STARTED =====");
         log.info("⏰ Execution Time: {}", formattedTime);
         log.info("📊 Target: All accounts, posts, and comments");
-        log.info("🎯 Schedule: Daily at 12:00 PM");
+        log.info("🎯 Schedule: Daily at 11:00 PM");
         log.info("�� Environment: Production");
         
         try {
