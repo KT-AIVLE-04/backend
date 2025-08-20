@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 import kt.aivle.analytics.adapter.out.persistence.repository.PostCommentKeywordJpaRepository;
 import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.domain.entity.PostCommentKeyword;
-import kt.aivle.analytics.domain.model.SentimentType;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -19,14 +18,6 @@ public class PostCommentKeywordRepository implements PostCommentKeywordRepositor
     @Override
     public List<PostCommentKeyword> findByPostId(Long postId) {
         return postCommentKeywordJpaRepository.findByPostId(postId);
-    }
-    
-    @Override
-    public List<String> findKeywordsByPostIdAndSentiment(Long postId, SentimentType sentiment) {
-        return postCommentKeywordJpaRepository.findByPostIdAndSentiment(postId, sentiment)
-            .stream()
-            .map(PostCommentKeyword::getKeyword)
-            .toList();
     }
     
     @Override

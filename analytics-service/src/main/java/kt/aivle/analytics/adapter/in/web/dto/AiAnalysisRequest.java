@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AiAnalysisRequest {
     private List<CommentData> data;
-    private List<String> keyword;
+    private Keywords keyword;
     
     @Getter
     @Builder
@@ -22,5 +22,14 @@ public class AiAnalysisRequest {
     public static class CommentData {
         private String id;
         private String result;
+    }
+    
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Keywords {
+        private List<String> positive;
+        private List<String> negative;
     }
 }

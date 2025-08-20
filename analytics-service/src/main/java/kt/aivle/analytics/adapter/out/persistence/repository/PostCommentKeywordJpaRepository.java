@@ -8,14 +8,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import kt.aivle.analytics.domain.entity.PostCommentKeyword;
-import kt.aivle.analytics.domain.model.SentimentType;
 
 @Repository
 public interface PostCommentKeywordJpaRepository extends BaseJpaRepository<PostCommentKeyword, Long> {
     
     List<PostCommentKeyword> findByPostId(Long postId);
-    
-    List<PostCommentKeyword> findByPostIdAndSentiment(Long postId, SentimentType sentiment);
     
     @Modifying
     @Query("DELETE FROM post_comment_keyword p WHERE p.postId = :postId")

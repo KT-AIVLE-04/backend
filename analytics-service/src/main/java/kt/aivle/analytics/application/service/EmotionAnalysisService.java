@@ -32,12 +32,8 @@ public class EmotionAnalysisService {
      */
     public void analyzeAndSaveEmotions(Long postId, List<PostCommentsQueryResponse> comments) {
         try {
-            // 기존 키워드 조회
-            List<String> existingKeywords = keywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.POSITIVE);
-            existingKeywords.addAll(keywordRepository.findKeywordsByPostIdAndSentiment(postId, SentimentType.NEGATIVE));
-            
-            // AI 분석 수행
-            AiAnalysisResponse aiResponse = aiAnalysisService.analyzeComments(comments, existingKeywords);
+            // AI 분석 수행 (기존 키워드는 AiAnalysisService 내부에서 조회)
+            AiAnalysisResponse aiResponse = aiAnalysisService.analyzeComments(comments, postId);
             
             // 감정분석 결과 저장
             saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
