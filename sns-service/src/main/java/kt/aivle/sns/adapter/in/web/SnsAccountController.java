@@ -24,7 +24,7 @@ public class SnsAccountController {
     @GetMapping("/{snsType}")
     public ResponseEntity<ApiResponse<SnsAccountResponse>> getAccountInfo(@PathVariable SnsType snsType,
                                                       @RequestHeader("X-USER-ID") Long userId,
-                                                      @RequestParam Long storeId) {
+                                                      @RequestHeader("X-STORE-ID") Long storeId) {
         SnsAccountResponse account = snsAccountDelegator.getAccountInfo(snsType, userId, storeId);
         return responseUtils.build(OK, account);
     }
@@ -40,7 +40,7 @@ public class SnsAccountController {
     @GetMapping("/{snsType}/list")
     public ResponseEntity<?> getPostList(@PathVariable SnsType snsType,
                                          @RequestHeader("X-USER-ID") Long userId,
-                                         @RequestParam Long storeId) {
+                                         @RequestHeader("X-STORE-ID") Long storeId) {
         snsAccountDelegator.getPostList(snsType, userId, storeId);
         return ResponseEntity.ok().build();
     }
