@@ -64,6 +64,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
                     .id(response.id())                  // 내 게시글 PK
                     .accountId(account.getId())         // 내 SNS계정 PK
                     .snsPostId(response.postId())       // SNS측 게시글 ID
+                    .publishAt(response.publishAt())
                     .build());
 
         } catch (Exception e) {
