@@ -2,6 +2,7 @@ package kt.aivle.sns.adapter.out.youtube;
 
 import com.google.api.services.youtube.YouTube;
 import kt.aivle.sns.adapter.out.persistence.JpaPostRepository;
+import kt.aivle.sns.application.port.out.PostRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ public class YoutubeVideoDeleteApi {
 
     private final YoutubeClientFactory youtubeClientFactory;
 
-    private final JpaPostRepository jpaPostRepository;
+    private final PostRepositoryPort postRepositoryPort;
 
     public void deleteVideo(Long userId,
                             Long storeId,
@@ -32,8 +33,8 @@ public class YoutubeVideoDeleteApi {
             System.out.println("삭제됨");
 
             // 게시물(DB)Post 삭제
-            jpaPostRepository.findByPostId(postId)
-                    .ifPresent(jpaPostRepository::delete);
+            postRepositoryPort.findByPostId(postId)
+                    .ifPresent(postRepositoryPort::delete);
 
 
 

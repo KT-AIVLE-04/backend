@@ -20,7 +20,7 @@ public class SnsAccountPersistenceAdapter implements SnsAccountRepositoryPort {
     }
 
     @Override
-    public Optional<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType) {
+    public Optional<SnsAccount> findByUserIdAndStoreIdAndSnsType(Long userId, Long storeId, SnsType snsType) {
         return snsAccountRepository.findByUserIdAndSnsType(userId, snsType);
     }
 

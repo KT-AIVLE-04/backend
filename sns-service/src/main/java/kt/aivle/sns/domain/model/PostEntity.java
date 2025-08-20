@@ -49,11 +49,4 @@ public class PostEntity {
 
     private Boolean notifySubscribers;
 
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
 }

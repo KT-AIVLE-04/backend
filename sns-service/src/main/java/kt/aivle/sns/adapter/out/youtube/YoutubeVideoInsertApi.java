@@ -8,6 +8,7 @@ import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 import com.google.api.services.youtube.model.VideoStatus;
+import kt.aivle.sns.adapter.in.web.dto.PostUploadResponse;
 import kt.aivle.sns.adapter.out.persistence.JpaPostRepository;
 import kt.aivle.sns.domain.model.PostEntity;
 import kt.aivle.sns.domain.model.SnsType;
@@ -28,15 +29,15 @@ public class YoutubeVideoInsertApi {
 
     private final JpaPostRepository jpaPostRepository;
 
-    public void uploadVideo(Long userId,
-                            Long storeId,
-                            String contentPath,
-                            String title,
-                            String description,
-                            String[] tags,
-                            String categoryId,
-                            boolean notifySubscribers,
-                            OffsetDateTime publishAt) {
+    public PostUploadResponse uploadVideo(Long userId,
+                                          Long storeId,
+                                          String contentPath,
+                                          String title,
+                                          String description,
+                                          String[] tags,
+                                          String categoryId,
+                                          boolean notifySubscribers,
+                                          OffsetDateTime publishAt) {
         try {
             // userId 기반으로 인증된 YouTube 객체 생성
             YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
@@ -136,6 +137,8 @@ public class YoutubeVideoInsertApi {
                             .publishAt(publishAt)
                             .build());
             jpaPostRepository.save(post);
+
+            return PostUploadResponse.from(post);
 
         } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException("YouTube 업로드 실패", e);
