@@ -1,14 +1,16 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
-import kt.aivle.analytics.domain.entity.SnsPostMetric;
-import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostMetricJpaRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.stereotype.Repository;
+
+import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostMetricJpaRepository;
+import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
+import kt.aivle.analytics.domain.entity.SnsPostMetric;
+import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
@@ -39,6 +41,11 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     @Override
     public List<SnsPostMetric> findByPostIdAndCreatedAtBetween(Long postId, LocalDateTime startDate, LocalDateTime endDate) {
         return snsPostMetricJpaRepository.findByPostIdAndCreatedAtBetween(postId, startDate, endDate);
+    }
+
+    @Override
+    public List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, Date date) {
+        return snsPostMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
     }
 
     @Override

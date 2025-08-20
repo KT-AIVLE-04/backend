@@ -1,14 +1,16 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
-import kt.aivle.analytics.domain.entity.SnsAccountMetric;
-import kt.aivle.analytics.adapter.out.persistence.repository.SnsAccountMetricJpaRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.stereotype.Repository;
+
+import kt.aivle.analytics.adapter.out.persistence.repository.SnsAccountMetricJpaRepository;
+import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
+import kt.aivle.analytics.domain.entity.SnsAccountMetric;
+import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
@@ -39,6 +41,11 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
     @Override
     public List<SnsAccountMetric> findByAccountIdAndCreatedAtBetween(Long accountId, LocalDateTime startDate, LocalDateTime endDate) {
         return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtBetween(accountId, startDate, endDate);
+    }
+
+    @Override
+    public List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, Date date) {
+        return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtDate(accountId, date);
     }
 
     @Override

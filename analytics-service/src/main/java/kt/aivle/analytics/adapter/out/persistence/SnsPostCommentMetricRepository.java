@@ -1,6 +1,7 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +66,17 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
         snsPostCommentMetricJpaRepository.deleteById(id);
     }
     
+    @Override
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, Date date) {
+        return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
+    }
+
+    @Override
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, Date date, Integer page, Integer size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDateWithPagination(postId, date, pageRequest);
+    }
+
     @Override
     public void saveAll(List<SnsPostCommentMetric> metrics) {
         snsPostCommentMetricJpaRepository.saveAll(metrics);

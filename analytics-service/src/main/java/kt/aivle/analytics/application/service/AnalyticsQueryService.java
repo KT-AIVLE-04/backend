@@ -1,6 +1,5 @@
 package kt.aivle.analytics.application.service;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final YouTubeApiService youtubeApiService;
     
     @Override
-    @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + #request.date")
+    @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
     public List<PostMetricsQueryResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, accountId: {}, postId: {}", 
                 userId, request.getDate(), request.getAccountId(), request.getPostId());
@@ -60,19 +59,18 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             return getCurrentPostMetrics(userId, request);
         }
         
-        LocalDateTime startDate = getStartDate(request.getEffectiveDate());
-        LocalDateTime endDate = LocalDateTime.now();
+        Date targetDate = request.getEffectiveDate();
         
         List<SnsPostMetric> metrics;
         if (request.getPostId() != null) {
             // 특정 게시물의 메트릭 조회
-            metrics = snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(
-                Long.parseLong(request.getPostId()), startDate, endDate);
+            metrics = snsPostMetricRepositoryPort.findByPostIdAndCreatedAtDate(
+                Long.parseLong(request.getPostId()), targetDate);
         } else if (request.getAccountId() != null) {
             // 특정 계정의 모든 게시물 메트릭 조회
             List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(Long.parseLong(request.getAccountId()));
             metrics = posts.stream()
-                .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream())
+                .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtDate(post.getId(), targetDate).stream())
                 .collect(Collectors.toList());
         } else {
             // 사용자의 모든 계정 메트릭 조회
@@ -85,7 +83,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .flatMap(accountId -> {
                     List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(accountId);
                     return posts.stream()
-                        .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream());
+                        .flatMap(post -> snsPostMetricRepositoryPort.findByPostIdAndCreatedAtDate(post.getId(), targetDate).stream());
                 })
                 .collect(Collectors.toList());
         }
@@ -101,6 +99,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "account-metrics", key = "#userId + '-' + #request.accountId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
     public List<AccountMetricsQueryResponse> getAccountMetrics(String userId, AccountMetricsQueryRequest request) {
         log.info("Getting account metrics for userId: {}, date: {}, accountId: {}", 
                 userId, request.getDate(), request.getAccountId());
@@ -110,14 +109,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             return getCurrentAccountMetrics(userId, request);
         }
         
-        LocalDateTime startDate = getStartDate(request.getEffectiveDate());
-        LocalDateTime endDate = LocalDateTime.now();
+        Date targetDate = request.getEffectiveDate();
         
         List<SnsAccountMetric> metrics;
         if (request.getAccountId() != null) {
             // 특정 계정의 메트릭 조회
-            metrics = snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtBetween(
-                Long.parseLong(request.getAccountId()), startDate, endDate);
+            metrics = snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtDate(
+                Long.parseLong(request.getAccountId()), targetDate);
         } else {
             // 사용자의 모든 계정 메트릭 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserId(Long.parseLong(userId))
@@ -126,7 +124,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .collect(Collectors.toList());
             
             metrics = accountIds.stream()
-                .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtBetween(accountId, startDate, endDate).stream())
+                .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtDate(accountId, targetDate).stream())
                 .collect(Collectors.toList());
         }
         
@@ -136,6 +134,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "comments", key = "#request.postId + '-' + #request.page + '-' + #request.size + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
     public List<PostCommentsQueryResponse> getPostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting post comments for userId: {}, date: {}, postId: {}, page: {}, size: {}", 
                 userId, request.getDate(), request.getPostId(), request.getPage(), request.getSize());
@@ -145,14 +144,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             return getCurrentPostComments(userId, request);
         }
         
-        LocalDateTime startDate = getStartDate(request.getEffectiveDate());
-        LocalDateTime endDate = LocalDateTime.now();
+        Date targetDate = request.getEffectiveDate();
         
         List<SnsPostCommentMetric> comments;
         if (request.getPostId() != null) {
             // 특정 게시물의 댓글 조회
-            comments = snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtBetween(
-                Long.parseLong(request.getPostId()), startDate, endDate);
+            comments = snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtDate(
+                Long.parseLong(request.getPostId()), targetDate);
         } else {
             // 사용자의 모든 게시물 댓글 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserId(Long.parseLong(userId))
@@ -164,7 +162,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .flatMap(accountId -> {
                     List<SnsPost> posts = snsPostRepositoryPort.findByAccountId(accountId);
                     return posts.stream()
-                        .flatMap(post -> snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtBetween(post.getId(), startDate, endDate).stream());
+                        .flatMap(post -> snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtDate(post.getId(), targetDate).stream());
                 })
                 .collect(Collectors.toList());
         }
@@ -262,9 +260,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     // 헬퍼 메서드들
-    private LocalDateTime getStartDate(Date date) {
-        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate().atStartOfDay();
-    }
     
     private List<PostMetricsQueryResponse> getCurrentPostMetrics(String userId, PostMetricsQueryRequest request) {
         // 실시간 데이터 조회 로직을 PostMetricsQueryResponse로 변환
