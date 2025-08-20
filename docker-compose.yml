@@ -67,6 +67,23 @@ services:
     networks:
       - backend
 
+  sns-service:
+    build:
+      context: ./sns-service
+      dockerfile: Dockerfile
+    container_name: sns-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+    volumes:
+      - "C:/Users/User/Desktop:/app/videos"
+
   mysql:
     image: mysql:8.0
     container_name: mysql
