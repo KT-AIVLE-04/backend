@@ -1,4 +1,4 @@
-package kt.aivle.store.config;
+package kt.aivle.analytics.config;
 
 import java.util.List;
 
