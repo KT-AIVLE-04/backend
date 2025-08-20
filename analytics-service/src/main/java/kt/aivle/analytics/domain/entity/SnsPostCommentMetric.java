@@ -6,9 +6,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import kt.aivle.analytics.domain.model.SentimentType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,9 +42,13 @@ public class SnsPostCommentMetric extends BaseEntity {
 
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sentiment", nullable = false)
+    private SentimentType sentiment;
 
     @Builder
-    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, String authorId, String content, Long likeCount, LocalDateTime publishedAt) {
+    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, String authorId, String content, Long likeCount, LocalDateTime publishedAt, SentimentType sentiment) {
         this.id = id;
         this.snsCommentId = snsCommentId;
         this.postId = postId;
@@ -49,5 +56,6 @@ public class SnsPostCommentMetric extends BaseEntity {
         this.content = content;
         this.likeCount = likeCount;
         this.publishedAt = publishedAt;
+        this.sentiment = sentiment;
     }
 }
