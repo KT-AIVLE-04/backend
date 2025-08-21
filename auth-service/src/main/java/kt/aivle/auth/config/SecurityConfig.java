@@ -39,7 +39,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.NEVER))
             .authorizeHttpRequests(authz -> authz
                 .anyRequest().permitAll() // Gateway에서 이미 인증 처리하므로 모든 요청 허용
             )
@@ -63,12 +63,10 @@ public class SecurityConfig {
                     AuthResponse authResponse = oAuthService.oauthLogin((OAuth2User) authentication.getPrincipal(), provider);
                     log.info("OAuth 로그인 성공: provider={}, userId={}", provider, authResponse.accessToken().substring(0, 10) + "...");
                     
-                    // 쿠키 설정
-                    oAuthService.setOAuthCookies(authResponse, response);
-                    
-                    // 설정에서 클라이언트 URL 가져와서 리다이렉트
-                    log.info("클라이언트로 리다이렉트: {}", clientUrl + "/oauth-success");
-                    response.sendRedirect(clientUrl + "/oauth-success");
+                    // Fragment URL 생성 및 리다이렉트
+                    String redirectUrl = oAuthService.createOAuthRedirectUrl(authResponse, clientUrl);
+                    log.info("클라이언트로 리다이렉트: {}", redirectUrl);
+                    response.sendRedirect(redirectUrl);
                 })
                 .failureHandler((request, response, exception) -> {
                     // 실패 시 클라이언트로 에러 페이지 리다이렉트
