@@ -67,14 +67,6 @@ public class JwtUtils {
         }
     }
 
-    public Claims validateToken(String token) {
-        Claims claims = parseClaimsAllowExpired(token);
-        if (claims.getExpiration().getTime() < System.currentTimeMillis()) {
-            throw new BusinessException(INVALID_TOKEN, "토큰이 만료되었습니다.");
-        }
-        return claims;
-    }
-
     public boolean isExpired(Claims claims) {
         return claims.getExpiration().getTime() <= System.currentTimeMillis();
     }

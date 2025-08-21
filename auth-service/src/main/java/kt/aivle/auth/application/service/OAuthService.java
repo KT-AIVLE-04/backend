@@ -12,8 +12,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import kt.aivle.auth.adapter.in.web.dto.AuthResponse;
 import kt.aivle.auth.adapter.out.jwt.JwtDto;
 import kt.aivle.auth.adapter.out.jwt.JwtUtils;
@@ -156,24 +154,22 @@ public class OAuthService implements OAuthUseCase {
     }
 
     /**
-     * OAuth 로그인 후 쿠키 설정
+     * OAuth 로그인 후 Fragment URL 생성
      */
-    public void setOAuthCookies(AuthResponse authResponse, HttpServletResponse response) {
-        // Access Token 쿠키 설정
-        Cookie accessTokenCookie = new Cookie("accessToken", authResponse.accessToken());
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setHttpOnly(false); // JavaScript에서 접근 가능
-        response.addCookie(accessTokenCookie);
+    public String createOAuthRedirectUrl(AuthResponse authResponse, String baseUrl) {
+        StringBuilder fragment = new StringBuilder();
+        fragment.append("accessToken=").append(authResponse.accessToken());
         
-        // Refresh Token 쿠키 설정 (있는 경우에만)
         if (authResponse.refreshToken() != null) {
-            Cookie refreshTokenCookie = new Cookie("refreshToken", authResponse.refreshToken());
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setHttpOnly(false);
-            response.addCookie(refreshTokenCookie);
+            fragment.append("&refreshToken=").append(authResponse.refreshToken());
         }
         
-        log.info("OAuth 쿠키 설정 완료");
+        fragment.append("&expiresIn=").append(authResponse.accessTokenExpiration());
+        
+        String redirectUrl = baseUrl + "/oauth-success#" + fragment.toString();
+        log.info("OAuth Fragment URL 생성 완료");
+        
+        return redirectUrl;
     }
 
     /**

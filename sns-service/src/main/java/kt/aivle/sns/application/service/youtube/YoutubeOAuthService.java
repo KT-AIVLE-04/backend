@@ -1,0 +1,95 @@
+package kt.aivle.sns.application.service.youtube;
+
+import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import kt.aivle.sns.adapter.in.web.dto.OAuthContext;
+import kt.aivle.sns.application.port.in.SnsOAuthUseCase;
+import kt.aivle.sns.application.service.oauth.OAuthStateService;
+import kt.aivle.sns.config.YoutubeOAuthProperties;
+import kt.aivle.sns.domain.model.SnsType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class YoutubeOAuthService implements SnsOAuthUseCase {
+    private static final List<String> SCOPES = List.of(
+            // video.insert
+            "https://www.googleapis.com/auth/youtube.upload",
+            // video.update, video.delete, channel.update
+            "https://www.googleapis.com/auth/youtube.force-ssl",
+            // channel.list, youtubeAnalyticsService.reports
+            "https://www.googleapis.com/auth/youtube.readonly");
+
+    private final YoutubeOAuthProperties properties;
+
+    private static final GsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    private final YoutubeTokenService youtubeTokenService;
+
+    private final OAuthStateService stateService;
+
+    @Override
+    public SnsType supportSnsType() {
+        return SnsType.youtube;
+    }
+
+    @Override
+    public String getAuthUrl(Long userId, Long storeId) {
+        try {
+            NetHttpTransport httpTransport = new NetHttpTransport();
+
+            GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                    httpTransport,
+                    JSON_FACTORY,
+                    properties.getClientId(),
+                    properties.getClientSecret(),
+                    SCOPES
+            ).setAccessType("offline").build();
+
+            String state = stateService.issue(userId, storeId);
+            return flow.newAuthorizationUrl()
+                    .setRedirectUri(properties.getRedirectUri())
+                    .setState(state)
+                    .set("prompt", "consent")   // refresh token 새로 발급 받게
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create Youtube auth URL", e);
+        }
+    }
+
+    @Override
+    public OAuthContext handleCallback(String state, String code) {
+        NetHttpTransport httpTransport = new NetHttpTransport();
+
+        var ids = stateService.consume(state);
+        Long userId = ids.getFirst();
+        Long storeId = ids.getSecond();
+
+        try {
+            TokenResponse tokens = new GoogleAuthorizationCodeFlow.Builder(
+                    httpTransport,
+                    JSON_FACTORY,
+                    properties.getClientId(),
+                    properties.getClientSecret(),
+                    SCOPES)
+                    .build()
+                    .newTokenRequest(code)
+                    .setRedirectUri(properties.getRedirectUri())
+                    .execute();
+
+            youtubeTokenService.saveToken(
+                    userId, storeId,
+                    tokens.getAccessToken(),
+                    tokens.getRefreshToken(),
+                    tokens.getExpiresInSeconds());
+            return new OAuthContext(userId, storeId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to handle Youtube OAuth callback", e);
+        }
+    }
+}

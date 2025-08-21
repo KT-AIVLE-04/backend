@@ -10,7 +10,6 @@ import kt.aivle.content.infra.CloudFrontSigner;
 import kt.aivle.content.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,14 +68,14 @@ public class ContentController {
         GetContentListRequest request = contentMapper.toGetContentListRequest(userId, storeId, query);
         List<ContentResponse> response = contentService.getContents(request);
 
-        ResponseCookie sig = buildCookie.buildCfCookie(cookies.signatureHeaderValue(), cookiePath);
-        ResponseCookie kpid = buildCookie.buildCfCookie(cookies.keyPairIdHeaderValue(), cookiePath);
-        ResponseCookie pol = buildCookie.buildCfCookie(cookies.policyHeaderValue(), cookiePath);
+        String sig = buildCookie.buildCfCookieHeader(cookies.signatureHeaderValue(), cookiePath);
+        String kpid = buildCookie.buildCfCookieHeader(cookies.keyPairIdHeaderValue(), cookiePath);
+        String pol = buildCookie.buildCfCookieHeader(cookies.policyHeaderValue(), cookiePath);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.SET_COOKIE, sig.toString());
-        headers.add(HttpHeaders.SET_COOKIE, kpid.toString());
-        headers.add(HttpHeaders.SET_COOKIE, pol.toString());
+        headers.add(HttpHeaders.SET_COOKIE, sig);
+        headers.add(HttpHeaders.SET_COOKIE, kpid);
+        headers.add(HttpHeaders.SET_COOKIE, pol);
 
         return responseUtils.build(OK, response, headers);
     }
