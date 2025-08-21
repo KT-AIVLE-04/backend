@@ -5,8 +5,9 @@ import org.springframework.stereotype.Service;
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
+import kt.aivle.analytics.application.port.out.infrastructure.CachePort;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccount;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.exception.AnalyticsException;
@@ -20,7 +21,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
 
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
-    private final AnalyticsCacheService cacheService;
+    private final CachePort cachePort;
     
     @Override
     public void handlePostCreated(SnsPostEvent event) {
@@ -36,8 +37,8 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             snsPostRepositoryPort.save(post);
             
             // 관련 캐시 무효화
-            cacheService.evictPostCache(event.getPostId());
-            cacheService.evictAccountCache(event.getAccountId());
+            cachePort.evictPostCache(event.getPostId());
+            cachePort.evictAccountCache(event.getAccountId());
             
             log.info("Post saved successfully: postId={}", event.getPostId());
             
@@ -58,8 +59,8 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                     snsPostRepositoryPort.deleteById(post.getId());
                     
                     // 관련 캐시 무효화
-                    cacheService.evictPostCache(post.getId());
-                    cacheService.evictAccountCache(event.getAccountId());
+                    cachePort.evictPostCache(post.getId());
+                    cachePort.evictAccountCache(event.getAccountId());
                 });
             
             log.info("Post deleted successfully: postId={}", event.getPostId());
@@ -85,7 +86,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             snsAccountRepositoryPort.save(snsAccount);
             
             // 관련 캐시 무효화
-            cacheService.evictAccountCache(event.getAccountId());
+            cachePort.evictAccountCache(event.getAccountId());
             
             log.info("SNS account saved successfully: accountId={}", event.getAccountId());
             
@@ -106,7 +107,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                     snsAccountRepositoryPort.deleteById(account.getId());
                     
                     // 관련 캐시 무효화
-                    cacheService.evictAccountCache(account.getId());
+                    cachePort.evictAccountCache(account.getId());
                 });
             
             log.info("SNS account deleted successfully: accountId={}", event.getAccountId());

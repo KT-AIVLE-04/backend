@@ -1,6 +1,6 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostJpaRepository;
 import lombok.RequiredArgsConstructor;

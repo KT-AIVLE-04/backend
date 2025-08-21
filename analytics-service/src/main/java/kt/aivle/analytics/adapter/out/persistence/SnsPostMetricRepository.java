@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostMetricJpaRepository;
-import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostMetricRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import lombok.RequiredArgsConstructor;
 

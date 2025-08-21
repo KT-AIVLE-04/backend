@@ -1,4 +1,4 @@
-package kt.aivle.analytics.application.service;
+package kt.aivle.analytics.adapter.out.infrastructure;
 
 import java.util.List;
 import java.util.Map;
@@ -8,13 +8,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import kt.aivle.analytics.adapter.in.web.dto.AiAnalysisRequest;
-import kt.aivle.analytics.adapter.in.web.dto.AiAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
+import kt.aivle.analytics.application.port.out.dto.AiAnalysisRequest;
+import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
+import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.analytics.exception.AnalyticsException;
@@ -22,19 +22,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
-public class AiAnalysisService {
+public class AiAnalysisAdapter implements AiAnalysisPort {
     
     private final RestTemplate restTemplate;
     private final PostCommentKeywordRepositoryPort keywordRepository;
     
-    @Value("${ai.analysis.url:http://localhost:8081/analyze}")
+    @Value("${ai.analysis.url}")
     private String aiAnalysisUrl;
     
-    /**
-     * AI 분석 서버에 댓글 데이터를 전송하여 감정분석을 수행합니다.
-     */
+    @Override
     public AiAnalysisResponse analyzeComments(List<PostCommentsQueryResponse> comments, Long postId) {
         try {
             // 기존 키워드를 감정별로 그룹화하여 조회
@@ -47,7 +45,7 @@ public class AiAnalysisService {
             List<AiAnalysisRequest.CommentData> commentDataList = comments.stream()
                 .map(comment -> AiAnalysisRequest.CommentData.builder()
                     .id(comment.getCommentId())
-                    .result(comment.getText())  // text 필드 사용
+                    .result(comment.getText())
                     .build())
                 .collect(Collectors.toList());
             

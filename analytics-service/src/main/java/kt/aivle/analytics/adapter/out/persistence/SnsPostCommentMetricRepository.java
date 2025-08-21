@@ -8,7 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostCommentMetricJpaRepository;
-import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import lombok.RequiredArgsConstructor;
 

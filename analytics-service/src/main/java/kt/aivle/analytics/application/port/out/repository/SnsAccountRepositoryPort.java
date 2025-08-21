@@ -1,9 +1,9 @@
-package kt.aivle.analytics.application.port.out;
-
-import kt.aivle.analytics.domain.entity.SnsAccount;
+package kt.aivle.analytics.application.port.out.repository;
 
 import java.util.List;
 import java.util.Optional;
+
+import kt.aivle.analytics.domain.entity.SnsAccount;
 
 public interface SnsAccountRepositoryPort {
     SnsAccount save(SnsAccount snsAccount);

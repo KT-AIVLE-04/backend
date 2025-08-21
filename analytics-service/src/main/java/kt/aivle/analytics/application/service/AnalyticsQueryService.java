@@ -20,17 +20,19 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
+import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
+import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.analytics.exception.AnalyticsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +48,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final PostCommentKeywordRepositoryPort postCommentKeywordRepository;
-    private final YouTubeApiService youtubeApiService;
+    private final ExternalApiPort externalApiPort;
     
     @Override
     @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
@@ -221,7 +223,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             throw new AnalyticsException("PostId is required for realtime metrics");
         }
         
-        return youtubeApiService.getRealtimePostMetrics(Long.parseLong(request.getPostId()));
+        return externalApiPort.getRealtimePostMetrics(Long.parseLong(request.getPostId()));
     }
     
     @Override
@@ -232,7 +234,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             throw new AnalyticsException("AccountId is required for realtime metrics");
         }
         
-        return youtubeApiService.getRealtimeAccountMetrics(Long.parseLong(request.getAccountId()));
+        return externalApiPort.getRealtimeAccountMetrics(Long.parseLong(request.getAccountId()));
     }
     
     @Override
@@ -243,7 +245,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             throw new AnalyticsException("PostId is required for realtime comments");
         }
         
-        return youtubeApiService.getRealtimePostComments(Long.parseLong(request.getPostId()), request.getPage(), request.getSize());
+        // 로컬 postId로 DB에서 snsPostId 조회
+        SnsPost post = snsPostRepositoryPort.findById(Long.parseLong(request.getPostId()))
+            .orElseThrow(() -> new AnalyticsException(AnalyticsErrorCode.POST_NOT_FOUND, "Post not found: " + request.getPostId()));
+        
+        return externalApiPort.getVideoComments(post.getSnsPostId());
     }
     
     // 헬퍼 메서드들
@@ -272,12 +278,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     private PostCommentsQueryResponse toSnsPostCommentsQueryResponse(SnsPostCommentMetric comment) {
         return PostCommentsQueryResponse.builder()
-            .commentId(comment.getSnsCommentId())
+            .commentId(comment.getSnsCommentId())  // SNS ID 사용
             .authorId(comment.getAuthorId())
             .text(comment.getContent())
             .likeCount(comment.getLikeCount())
             .publishedAt(comment.getPublishedAt())
-            .crawledAt(comment.getCreatedAt())
             .build();
     }
 }

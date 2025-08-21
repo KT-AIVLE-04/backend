@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
 import kt.aivle.analytics.adapter.out.persistence.repository.PostCommentKeywordJpaRepository;
-import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.model.SentimentType;
 import lombok.RequiredArgsConstructor;

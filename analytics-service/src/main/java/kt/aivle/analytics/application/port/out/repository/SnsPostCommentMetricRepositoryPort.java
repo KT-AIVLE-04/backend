@@ -1,4 +1,4 @@
-package kt.aivle.analytics.application.port.out;
+package kt.aivle.analytics.application.port.out.repository;
 
 import java.time.LocalDate;
 import java.util.List;

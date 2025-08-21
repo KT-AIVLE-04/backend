@@ -2,14 +2,8 @@ package kt.aivle.analytics.application.service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.CommentThread;
-import com.google.api.services.youtube.model.CommentThreadListResponse;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
@@ -19,11 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
-import kt.aivle.analytics.application.port.out.SnsAccountMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
+import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
+import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
+import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort.MetricsData;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccount;
 import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 import kt.aivle.analytics.domain.entity.SnsPost;
@@ -46,8 +43,8 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
     private final SnsAccountMetricRepositoryPort snsAccountMetricRepositoryPort;
     private final BatchJobMonitor batchJobMonitor;
-    private final MetricsValidator metricsValidator;
-    private final YouTubeApiService youtubeApiService;
+    private final ValidationPort validationPort;
+    private final ExternalApiPort externalApiPort;
     private final EmotionAnalysisService emotionAnalysisService;
     
     @Value("${app.youtube.api.batch-size:100}")
@@ -177,7 +174,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         
         try {
             // 채널 정보 조회
-            var statistics = youtubeApiService.getChannelStatistics(snsAccount.getSnsAccountId());
+            var statistics = externalApiPort.getChannelStatistics(snsAccount.getSnsAccountId());
                 
             // API 응답 검증
             if (statistics == null) {
@@ -185,14 +182,12 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 return;
             }
             
-            Long subscriberCount = statistics.getSubscriberCount() != null ? 
-                statistics.getSubscriberCount().longValue() : 0L;
-            Long viewCount = statistics.getViewCount() != null ? 
-                statistics.getViewCount().longValue() : 0L;
+            Long subscriberCount = statistics.getSubscriberCount();
+            Long viewCount = statistics.getViewCount();
             
             // 데이터 유효성 검증
-            metricsValidator.validateSubscriberCount(subscriberCount, accountId);
-            metricsValidator.validateViewCount(viewCount, accountId, "account");
+            MetricsData metricsData = new MetricsData(subscriberCount, viewCount, null, null, "account", accountId);
+            validationPort.validateMetrics(metricsData);
             
             // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
             LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
@@ -230,42 +225,20 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         
         try {
             // 비디오 정보 조회
-            var statistics = youtubeApiService.getVideoStatistics(post.getSnsPostId());
+            var statistics = externalApiPort.getVideoStatistics(post.getSnsPostId());
             
             if (statistics != null) {
-                // API 응답 검증
-                if (statistics == null) {
-                    log.warn("Video statistics is null for postId: {}", postId);
-                    return;
-                }
-                
-                String likeCount = statistics.getLikeCount() != null ? 
-                    statistics.getLikeCount().toString() : "0";
-                Long dislikeCount = statistics.getDislikeCount() != null ? 
-                    statistics.getDislikeCount().longValue() : 0L;
-                Long commentCount = statistics.getCommentCount() != null ? 
-                    statistics.getCommentCount().longValue() : 0L;
-                Long viewCount = statistics.getViewCount() != null ? 
-                    statistics.getViewCount().longValue() : 0L;
+                Long likeCount = statistics.getLikeCount();
+                Long dislikeCount = 0L; // YouTube API v3에서는 dislike count를 제공하지 않음
+                Long commentCount = statistics.getCommentCount();
+                Long viewCount = statistics.getViewCount();
                 
                 // 데이터 유효성 검증
-                metricsValidator.validateViewCount(viewCount, postId, "post");
-                metricsValidator.validateCommentCount(commentCount, postId);
+                MetricsData metricsData = new MetricsData(null, viewCount, likeCount, commentCount, "post", postId);
+                validationPort.validateMetrics(metricsData);
                 
                 // YouTube API v3에서는 share 정보를 직접 제공하지 않으므로 null로 설정
                 Long shareCount = null;
-                
-                // Long.parseLong() 예외 처리
-                Long likes;
-                try {
-                    likes = Long.parseLong(likeCount);
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid like count format for postId: {}, using 0", postId);
-                    likes = 0L;
-                }
-                
-                // 좋아요 수 유효성 검증
-                metricsValidator.validateLikeCount(likes, postId);
                 
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
                 LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
@@ -279,7 +252,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 
                 SnsPostMetric postMetric = SnsPostMetric.builder()
                     .postId(post.getId())
-                    .likes(likes)
+                    .likes(likeCount)
                     .dislikes(dislikeCount)
                     .comments(commentCount)
                     .shares(shareCount)
@@ -322,87 +295,54 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     
     // API 호출 메서드 (트랜잭션 외부)
     private List<SnsPostCommentMetric> fetchCommentsFromAPI(SnsPost post, Long postId) throws IOException {
-        YouTube youtube = new YouTube.Builder(
-            new com.google.api.client.http.javanet.NetHttpTransport(),
-            new com.google.api.client.json.gson.GsonFactory(),
-            null
-        ).build();
-        
-        String nextPageToken = null;
-        int totalProcessedCount = 0;
         List<SnsPostCommentMetric> newComments = new ArrayList<>();
         
-        do {
-            // 댓글 스레드 조회 (시간순 정렬)
-            CommentThreadListResponse commentResponse = youtube.commentThreads()
-                .list(Arrays.asList("snippet"))
-                .setVideoId(post.getSnsPostId())
-                .setMaxResults(100L)
-                .setOrder("time") // 최신순 정렬
-                .setPageToken(nextPageToken)
-                .setKey(youtubeApiService.getApiKey())
-                .execute();
-            
-            if (commentResponse.getItems() != null) {
-                for (CommentThread commentThread : commentResponse.getItems()) {
-                    try {
-                        totalProcessedCount++;
-                        String commentId = commentThread.getSnippet().getTopLevelComment().getId();
-                        
-                        // 이미 DB에 있는 댓글인지 확인
-                        try {
-                            if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
-                                log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}", 
-                                    commentId, totalProcessedCount);
-                                return newComments; // 이미 있는 댓글을 만나면 수집 중단
-                            }
-                        } catch (Exception e) {
-                            log.warn("Failed to check existing comment for commentId: {}, continuing with collection", commentId);
-                            // 기존 댓글 확인 실패 시 계속 진행
-                        }
-                        
-                        // 새로운 댓글 처리
-                        String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
-                        // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
-                        if (content != null && content.length() > 1000) {
-                            content = content.substring(0, 1000);
-                            log.warn("Comment content truncated to 1000 characters for commentId: {}", commentId);
-                        }
-                        String publishedAtStr = commentThread.getSnippet().getTopLevelComment().getSnippet().getPublishedAt().toString();
-                        ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
-                        LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
-                        
-                        // 댓글 작성자 정보 가져오기
-                        String authorId = commentThread.getSnippet().getTopLevelComment().getSnippet().getAuthorChannelId().getValue();
-                        Long likeCount = commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount() != null ? 
-                            commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount().longValue() : 0L;
-                        
-                        log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
-                            commentId, publishedAt, content);
-                        
-                        SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
-                            .snsCommentId(commentId)
-                            .postId(post.getId())
-                            .authorId(authorId)
-                            .content(content)
-                            .likeCount(likeCount)
-                            .publishedAt(publishedAt)
-                            .build();
-                        
-                        newComments.add(commentMetric);
-                        
-                    } catch (Exception e) {
-                        log.error("Failed to process comment for postId: {}", postId, e);
+        // ExternalApiPort를 통해 댓글 조회
+        List<PostCommentsQueryResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        
+        for (PostCommentsQueryResponse comment : comments) {
+            try {
+                // 이미 DB에 있는 댓글인지 확인
+                try {
+                    if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getCommentId()).isPresent()) {
+                        log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}", 
+                            comment.getCommentId(), newComments.size());
+                        return newComments; // 이미 있는 댓글을 만나면 수집 중단
                     }
+                } catch (Exception e) {
+                    log.warn("Failed to check existing comment for commentId: {}, continuing with collection", comment.getCommentId());
+                    // 기존 댓글 확인 실패 시 계속 진행
                 }
+                
+                // 새로운 댓글 처리
+                String content = comment.getText();
+                // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
+                if (content != null && content.length() > 1000) {
+                    content = content.substring(0, 1000);
+                    log.warn("Comment content truncated to 1000 characters for commentId: {}", comment.getCommentId());
+                }
+                
+                log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
+                    comment.getCommentId(), comment.getPublishedAt(), content);
+                
+                SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
+                    .snsCommentId(comment.getCommentId())
+                    .postId(post.getId())
+                    .authorId(comment.getAuthorId())  // null 가능
+                    .content(content)
+                    .likeCount(comment.getLikeCount())
+                    .publishedAt(comment.getPublishedAt())
+                    .build();
+                
+                newComments.add(commentMetric);
+                
+            } catch (Exception e) {
+                log.error("Failed to process comment for postId: {}", postId, e);
             }
-            
-            nextPageToken = commentResponse.getNextPageToken();
-            
-        } while (nextPageToken != null);
+        }
         
         log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
-            postId, totalProcessedCount, newComments.size());
+            postId, comments.size(), newComments.size());
         
         return newComments;
     }

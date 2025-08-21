@@ -1,9 +1,9 @@
-package kt.aivle.analytics.application.port.out;
-
-import kt.aivle.analytics.domain.entity.SnsPost;
+package kt.aivle.analytics.application.port.out.repository;
 
 import java.util.List;
 import java.util.Optional;
+
+import kt.aivle.analytics.domain.entity.SnsPost;
 
 public interface SnsPostRepositoryPort {
     SnsPost save(SnsPost snsPost);

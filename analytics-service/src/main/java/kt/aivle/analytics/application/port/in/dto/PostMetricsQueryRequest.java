@@ -16,7 +16,7 @@ public class PostMetricsQueryRequest extends BaseQueryRequest {
     private String accountId; // null이면 모든 계정
     
     @Pattern(regexp = "^\\d+$", message = "PostId must be a valid number")
-    private String postId; // null이면 모든 게시물
+    private String postId; // 로컬 DB의 sns_post 테이블 PK, null이면 모든 게시물
     
     // 편의 메서드들
     public static PostMetricsQueryRequest forCurrentDate(String postId) {

@@ -6,10 +6,10 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.web.dto.AiAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
-import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
+import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
@@ -25,15 +25,15 @@ public class EmotionAnalysisService {
     
     private final SnsPostCommentMetricRepositoryPort commentMetricRepository;
     private final PostCommentKeywordRepositoryPort keywordRepository;
-    private final AiAnalysisService aiAnalysisService;
+    private final AiAnalysisPort aiAnalysisPort;
     
     /**
      * 댓글 감정분석을 수행하고 결과를 저장합니다.
      */
     public void analyzeAndSaveEmotions(Long postId, List<PostCommentsQueryResponse> comments) {
         try {
-            // AI 분석 수행 (기존 키워드는 AiAnalysisService 내부에서 조회)
-            AiAnalysisResponse aiResponse = aiAnalysisService.analyzeComments(comments, postId);
+            // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
+            AiAnalysisPort.AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
             
             // 감정분석 결과 저장
             saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
@@ -53,12 +53,12 @@ public class EmotionAnalysisService {
      * 댓글 메트릭을 저장합니다.
      */
     private void saveCommentMetrics(Long postId, List<PostCommentsQueryResponse> comments, 
-                                  List<AiAnalysisResponse.IndividualResult> analysisResults) {
+                                  List<AiAnalysisPort.AiAnalysisResponse.IndividualResult> analysisResults) {
         
         Map<String, SentimentType> resultMap = analysisResults.stream()
             .collect(Collectors.toMap(
-                AiAnalysisResponse.IndividualResult::getId,
-                AiAnalysisResponse.IndividualResult::getResult
+                AiAnalysisPort.AiAnalysisResponse.IndividualResult::getId,
+                AiAnalysisPort.AiAnalysisResponse.IndividualResult::getResult
             ));
         
         List<SnsPostCommentMetric> metrics = comments.stream()
@@ -84,7 +84,7 @@ public class EmotionAnalysisService {
     /**
      * 키워드를 저장합니다.
      */
-    private void saveKeywords(Long postId, AiAnalysisResponse.Keywords keywords) {
+    private void saveKeywords(Long postId, AiAnalysisPort.AiAnalysisResponse.Keywords keywords) {
         // 기존 키워드 삭제
         keywordRepository.deleteByPostId(postId);
         
