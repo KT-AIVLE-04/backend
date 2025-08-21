@@ -1,6 +1,7 @@
 package kt.aivle.analytics.application.port.out;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +13,6 @@ public interface SnsPostMetricRepositoryPort {
     List<SnsPostMetric> findAll();
     List<SnsPostMetric> findByPostId(Long postId);
     List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
-    boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDate date);
+    boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     void deleteById(Long id);
 }

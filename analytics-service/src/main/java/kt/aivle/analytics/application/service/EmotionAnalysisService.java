@@ -64,7 +64,7 @@ public class EmotionAnalysisService {
         List<SnsPostCommentMetric> metrics = comments.stream()
             .map(comment -> {
                 SentimentType sentiment = resultMap.get(comment.getCommentId());
-                SentimentType sentimentType = sentiment != null ? sentiment : SentimentType.NEUTRAL;
+                // sentiment가 null이어도 허용
                 
                 return SnsPostCommentMetric.builder()
                     .snsCommentId(comment.getCommentId())
@@ -73,7 +73,7 @@ public class EmotionAnalysisService {
                     .content(comment.getText())  // text 필드 사용
                     .likeCount(comment.getLikeCount())
                     .publishedAt(comment.getPublishedAt())
-                    .sentiment(sentimentType)
+                    .sentiment(sentiment)  // null 허용
                     .build();
             })
             .collect(Collectors.toList());

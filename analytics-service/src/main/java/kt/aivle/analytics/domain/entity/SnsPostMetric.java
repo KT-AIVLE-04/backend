@@ -39,8 +39,7 @@ public class SnsPostMetric extends BaseEntity {
     private Long views;
 
     @Builder
-    public SnsPostMetric(Long id, Long postId, Long likes, Long dislikes, Long comments, Long shares, Long views) {
-        this.id = id;
+    public SnsPostMetric(Long postId, Long likes, Long dislikes, Long comments, Long shares, Long views) {
         this.postId = postId;
         this.likes = likes;
         this.dislikes = dislikes;

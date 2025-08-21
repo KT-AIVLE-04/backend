@@ -34,8 +34,7 @@ public class PostCommentKeyword extends BaseEntity {
     private SentimentType sentiment;
 
     @Builder
-    public PostCommentKeyword(Long id, Long postId, String keyword, SentimentType sentiment) {
-        this.id = id;
+    public PostCommentKeyword(Long postId, String keyword, SentimentType sentiment) {
         this.postId = postId;
         this.keyword = keyword;
         this.sentiment = sentiment;

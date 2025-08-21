@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
@@ -196,7 +197,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
             LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
             boolean hasRecentData = snsAccountMetricRepositoryPort
-                .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo.toLocalDate());
+                .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo);
             
             if (hasRecentData) {
                 log.info("Recent metrics already exist for accountId: {}, skipping", accountId);
@@ -269,7 +270,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
                 LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
                 boolean hasRecentData = snsPostMetricRepositoryPort
-                    .existsByPostIdAndCreatedAtAfter(post.getId(), oneHourAgo.toLocalDate());
+                    .existsByPostIdAndCreatedAtAfter(post.getId(), oneHourAgo);
                 
                 if (hasRecentData) {
                     log.info("Recent metrics already exist for postId: {}, skipping", postId);
@@ -305,112 +306,149 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             .orElseThrow(() -> new AnalyticsException("Post not found: " + postId));
         
         try {
-            YouTube youtube = new YouTube.Builder(
-                new com.google.api.client.http.javanet.NetHttpTransport(),
-                new com.google.api.client.json.gson.GsonFactory(),
-                null
-            ).build();
+            // 1. API 호출로 댓글 데이터 수집 (트랜잭션 외부)
+            List<SnsPostCommentMetric> newComments = fetchCommentsFromAPI(post, postId);
             
-            String nextPageToken = null;
-            int newCommentsCount = 0;
-            int totalProcessedCount = 0;
-            List<SnsPostCommentMetric> newComments = new ArrayList<>();
-            
-            do {
-                // 댓글 스레드 조회 (시간순 정렬)
-                CommentThreadListResponse commentResponse = youtube.commentThreads()
-                    .list(Arrays.asList("snippet"))
-                    .setVideoId(post.getSnsPostId())
-                    .setMaxResults(100L)
-                    .setOrder("time") // 최신순 정렬
-                    .setPageToken(nextPageToken)
-                    .setKey(youtubeApiService.getApiKey())
-                    .execute();
-                
-                if (commentResponse.getItems() != null) {
-                    for (CommentThread commentThread : commentResponse.getItems()) {
-                        try {
-                            totalProcessedCount++;
-                            String commentId = commentThread.getSnippet().getTopLevelComment().getId();
-                            
-                            // 이미 DB에 있는 댓글인지 확인
-                            if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
-                                log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}, New comments: {}", 
-                                    commentId, totalProcessedCount, newCommentsCount);
-                                break; // 이미 있는 댓글을 만나면 수집 중단
-                            }
-                            
-                            // 새로운 댓글 처리
-                            String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
-                            String publishedAtStr = commentThread.getSnippet().getTopLevelComment().getSnippet().getPublishedAt().toString();
-                            ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
-                            LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
-                            
-                            // 댓글 작성자 정보 가져오기
-                            String authorId = commentThread.getSnippet().getTopLevelComment().getSnippet().getAuthorChannelId().getValue();
-                            Long likeCount = commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount() != null ? 
-                                commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount().longValue() : 0L;
-                            
-                            log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
-                                commentId, publishedAt, content);
-                            
-                            SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
-                                .snsCommentId(commentId)
-                                .postId(post.getId())
-                                .authorId(authorId)
-                                .content(content)
-                                .likeCount(likeCount)
-                                .publishedAt(publishedAt)
-                                .build();
-                            
-                            snsPostCommentMetricRepositoryPort.save(commentMetric);
-                            newComments.add(commentMetric);
-                            newCommentsCount++;
-                            log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentId);
-                            
-                        } catch (Exception e) {
-                            log.error("Failed to process comment for postId: {}", postId, e);
-                        }
-                    }
-                }
-                
-                nextPageToken = commentResponse.getNextPageToken();
-                
-            } while (nextPageToken != null);
-            
-            log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
-                postId, totalProcessedCount, newCommentsCount);
-            
-            // 새로운 댓글이 있으면 감정분석 수행
+            // 2. DB 저장 (별도 트랜잭션)
             if (!newComments.isEmpty()) {
-                try {
-                    log.info("Starting emotion analysis for {} new comments in postId: {}", newComments.size(), postId);
-                    
-                    // 댓글을 PostCommentsQueryResponse로 변환
-                    List<PostCommentsQueryResponse> commentsForAnalysis = newComments.stream()
-                        .map(comment -> PostCommentsQueryResponse.builder()
-                            .commentId(comment.getSnsCommentId())
-                            .authorId(comment.getAuthorId())
-                            .text(comment.getContent())  // content -> text로 매핑
-                            .likeCount(comment.getLikeCount())
-                            .publishedAt(comment.getPublishedAt())
-                            .build())
-                        .collect(java.util.stream.Collectors.toList());
-                    
-                    // 감정분석 수행
-                    emotionAnalysisService.analyzeAndSaveEmotions(postId, commentsForAnalysis);
-                    
-                    log.info("Completed emotion analysis for postId: {}", postId);
-                    
-                } catch (Exception e) {
-                    log.error("Failed to perform emotion analysis for postId: {}", postId, e);
-                    // 감정분석 실패는 댓글 수집을 중단시키지 않음
-                }
+                saveCommentsToDatabase(newComments, postId);
             }
             
         } catch (IOException e) {
             log.error("Failed to collect comments for postId: {}", postId, e);
             throw new AnalyticsException("Failed to collect comments", e);
+        }
+    }
+    
+    // API 호출 메서드 (트랜잭션 외부)
+    private List<SnsPostCommentMetric> fetchCommentsFromAPI(SnsPost post, Long postId) throws IOException {
+        YouTube youtube = new YouTube.Builder(
+            new com.google.api.client.http.javanet.NetHttpTransport(),
+            new com.google.api.client.json.gson.GsonFactory(),
+            null
+        ).build();
+        
+        String nextPageToken = null;
+        int totalProcessedCount = 0;
+        List<SnsPostCommentMetric> newComments = new ArrayList<>();
+        
+        do {
+            // 댓글 스레드 조회 (시간순 정렬)
+            CommentThreadListResponse commentResponse = youtube.commentThreads()
+                .list(Arrays.asList("snippet"))
+                .setVideoId(post.getSnsPostId())
+                .setMaxResults(100L)
+                .setOrder("time") // 최신순 정렬
+                .setPageToken(nextPageToken)
+                .setKey(youtubeApiService.getApiKey())
+                .execute();
+            
+            if (commentResponse.getItems() != null) {
+                for (CommentThread commentThread : commentResponse.getItems()) {
+                    try {
+                        totalProcessedCount++;
+                        String commentId = commentThread.getSnippet().getTopLevelComment().getId();
+                        
+                        // 이미 DB에 있는 댓글인지 확인
+                        try {
+                            if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(commentId).isPresent()) {
+                                log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}", 
+                                    commentId, totalProcessedCount);
+                                return newComments; // 이미 있는 댓글을 만나면 수집 중단
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to check existing comment for commentId: {}, continuing with collection", commentId);
+                            // 기존 댓글 확인 실패 시 계속 진행
+                        }
+                        
+                        // 새로운 댓글 처리
+                        String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
+                        String publishedAtStr = commentThread.getSnippet().getTopLevelComment().getSnippet().getPublishedAt().toString();
+                        ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
+                        LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
+                        
+                        // 댓글 작성자 정보 가져오기
+                        String authorId = commentThread.getSnippet().getTopLevelComment().getSnippet().getAuthorChannelId().getValue();
+                        Long likeCount = commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount() != null ? 
+                            commentThread.getSnippet().getTopLevelComment().getSnippet().getLikeCount().longValue() : 0L;
+                        
+                        log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
+                            commentId, publishedAt, content);
+                        
+                        SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
+                            .snsCommentId(commentId)
+                            .postId(post.getId())
+                            .authorId(authorId)
+                            .content(content)
+                            .likeCount(likeCount)
+                            .publishedAt(publishedAt)
+                            .build();
+                        
+                        newComments.add(commentMetric);
+                        
+                    } catch (Exception e) {
+                        log.error("Failed to process comment for postId: {}", postId, e);
+                    }
+                }
+            }
+            
+            nextPageToken = commentResponse.getNextPageToken();
+            
+        } while (nextPageToken != null);
+        
+        log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
+            postId, totalProcessedCount, newComments.size());
+        
+        return newComments;
+    }
+    
+    // DB 저장 메서드 (별도 트랜잭션)
+    @Transactional
+    private void saveCommentsToDatabase(List<SnsPostCommentMetric> newComments, Long postId) {
+        log.info("Saving {} new comments to database for postId: {}", newComments.size(), postId);
+        
+        int savedCount = 0;
+        for (SnsPostCommentMetric commentMetric : newComments) {
+            try {
+                SnsPostCommentMetric savedComment = snsPostCommentMetricRepositoryPort.save(commentMetric);
+                if (savedComment != null && savedComment.getId() != null) {
+                    savedCount++;
+                    log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentMetric.getSnsCommentId());
+                } else {
+                    log.warn("Failed to save comment - saved entity is null or has no ID for commentId: {}", commentMetric.getSnsCommentId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to save comment for commentId: {}", commentMetric.getSnsCommentId(), e);
+            }
+        }
+        
+        log.info("Successfully saved {} out of {} comments for postId: {}", savedCount, newComments.size(), postId);
+        
+        // 새로운 댓글이 있으면 감정분석 수행 (AI 서버 미사용으로 주석 처리)
+        if (savedCount > 0) {
+            try {
+                log.info("AI emotion analysis skipped for {} saved comments in postId: {} (AI server not available)", savedCount, postId);
+                
+                // 댓글을 PostCommentsQueryResponse로 변환
+                List<PostCommentsQueryResponse> commentsForAnalysis = newComments.stream()
+                    .map(comment -> PostCommentsQueryResponse.builder()
+                        .commentId(comment.getSnsCommentId())
+                        .authorId(comment.getAuthorId())
+                        .text(comment.getContent())  // content -> text로 매핑
+                        .likeCount(comment.getLikeCount())
+                        .publishedAt(comment.getPublishedAt())
+                        .build())
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // 감정분석 수행 (주석 처리)
+                // emotionAnalysisService.analyzeAndSaveEmotions(postId, commentsForAnalysis);
+                
+                log.info("Emotion analysis skipped for postId: {} (AI server disabled)", postId);
+                
+            } catch (Exception e) {
+                log.error("Failed to perform emotion analysis for postId: {}", postId, e);
+                // 감정분석 실패는 댓글 수집을 중단시키지 않음
+            }
         }
     }
 }

@@ -173,17 +173,17 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         // 감정분석 결과 조회
         List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostId(postId);
         
-        // 감정별 개수 계산
+        // 감정별 개수 계산 (null 제외)
         long positiveCount = commentMetrics.stream()
-            .filter(metric -> SentimentType.POSITIVE.equals(metric.getSentiment()))
+            .filter(metric -> metric.getSentiment() != null && SentimentType.POSITIVE.equals(metric.getSentiment()))
             .count();
         
         long neutralCount = commentMetrics.stream()
-            .filter(metric -> SentimentType.NEUTRAL.equals(metric.getSentiment()))
+            .filter(metric -> metric.getSentiment() != null && SentimentType.NEUTRAL.equals(metric.getSentiment()))
             .count();
         
         long negativeCount = commentMetrics.stream()
-            .filter(metric -> SentimentType.NEGATIVE.equals(metric.getSentiment()))
+            .filter(metric -> metric.getSentiment() != null && SentimentType.NEGATIVE.equals(metric.getSentiment()))
             .count();
         
         long totalCount = commentMetrics.size();

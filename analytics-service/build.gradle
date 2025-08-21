@@ -42,7 +42,6 @@ dependencies {
     
     // Spring Batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
-    implementation 'org.springframework.boot:spring-boot-starter-quartz'
     
     // 배치 모니터링
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

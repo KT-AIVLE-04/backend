@@ -30,8 +30,7 @@ public class SnsAccountMetric extends BaseEntity {
     private Long views;
 
     @Builder
-    public SnsAccountMetric(Long id, Long accountId, Long followers, Long views) {
-        this.id = id;
+    public SnsAccountMetric(Long accountId, Long followers, Long views) {
         this.accountId = accountId;
         this.followers = followers;
         this.views = views;

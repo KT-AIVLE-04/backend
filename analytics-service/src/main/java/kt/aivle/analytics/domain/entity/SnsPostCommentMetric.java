@@ -44,18 +44,17 @@ public class SnsPostCommentMetric extends BaseEntity {
     private LocalDateTime publishedAt;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "sentiment", nullable = false)
+    @Column(name = "sentiment", nullable = true)
     private SentimentType sentiment;
 
     @Builder
-    public SnsPostCommentMetric(Long id, String snsCommentId, Long postId, String authorId, String content, Long likeCount, LocalDateTime publishedAt, SentimentType sentiment) {
-        this.id = id;
+    public SnsPostCommentMetric(String snsCommentId, Long postId, String authorId, String content, Long likeCount, LocalDateTime publishedAt, SentimentType sentiment) {
         this.snsCommentId = snsCommentId;
         this.postId = postId;
         this.authorId = authorId;
         this.content = content;
         this.likeCount = likeCount;
         this.publishedAt = publishedAt;
-        this.sentiment = sentiment;
+        this.sentiment = sentiment;  // null 허용
     }
 }
