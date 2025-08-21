@@ -1,4 +1,4 @@
-package kt.aivle.sns.adapter.in.web.dto;
+package kt.aivle.sns.adapter.in.web.dto.request;
 
 public class SnsAccountUpdateRequest {
 

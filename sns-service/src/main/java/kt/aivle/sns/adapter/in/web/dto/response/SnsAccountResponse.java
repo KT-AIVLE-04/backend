@@ -1,4 +1,4 @@
-package kt.aivle.sns.adapter.in.web.dto;
+package kt.aivle.sns.adapter.in.web.dto.response;
 
 import kt.aivle.sns.domain.model.SnsAccount;
 import kt.aivle.sns.domain.model.SnsType;

@@ -1,5 +1,6 @@
 package kt.aivle.sns.adapter.out.persistence;
 
+import kt.aivle.sns.adapter.out.persistence.repository.JpaSnsTokenRepository;
 import kt.aivle.sns.application.port.out.SnsTokenRepositoryPort;
 import kt.aivle.sns.domain.model.SnsToken;
 import kt.aivle.sns.domain.model.SnsType;

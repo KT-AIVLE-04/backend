@@ -1,144 +1,105 @@
 package kt.aivle.sns.adapter.out.youtube;
 
 import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 import com.google.api.services.youtube.model.VideoStatus;
-import kt.aivle.sns.adapter.out.persistence.JpaPostRepository;
-import kt.aivle.sns.domain.model.PostEntity;
-import kt.aivle.sns.domain.model.SnsType;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.sns.infra.S3Storage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Locale;
+
+import static kt.aivle.sns.exception.SnsErrorCode.FAIL_UPLOAD;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class YoutubeVideoInsertApi {
 
     private final YoutubeClientFactory youtubeClientFactory;
+    private final S3Storage s3Storage; // S3 스트리밍
 
-    private final JpaPostRepository jpaPostRepository;
-
-    public void uploadVideo(Long userId,
-                            Long storeId,
-                            String contentPath,
-                            String title,
-                            String description,
-                            String[] tags,
-                            String categoryId,
-                            boolean notifySubscribers,
-                            OffsetDateTime publishAt) {
+    /** 업로드 성공 시 videoId 반환 */
+    public String uploadVideo(Long userId,
+                              Long storeId,
+                              String objectKey,          // S3 Object Key (예: videos/2025/08/xxx.mp4)
+                              String title,
+                              String description,
+                              String[] tags,
+                              String categoryId,
+                              boolean notifySubscribers,
+                              OffsetDateTime publishAt) {
         try {
-            // userId 기반으로 인증된 YouTube 객체 생성
             YouTube youtube = youtubeClientFactory.youtube(userId, storeId);
 
-            // 1. 동영상 메타데이터 생성
-            Video videoMetadata = new Video();
-
-            // status 설정
+            // 메타데이터
             VideoStatus status = new VideoStatus();
-            status.setPrivacyStatus("private"); // 예약공개는 반드시 private
-            if(publishAt != null) {
+            status.setPrivacyStatus("private"); // 예약 게시하려면 private + publishAt
+            if (publishAt != null) {
                 status.setPublishAt(new DateTime(publishAt.toInstant().toEpochMilli()));
             }
-            videoMetadata.setStatus(status);
-
-            // snippet 설정
             VideoSnippet snippet = new VideoSnippet();
             snippet.setTitle(title);
             snippet.setDescription(description);
-            snippet.setTags(Arrays.asList(tags));
-            snippet.setCategoryId(categoryId);
+            if (tags != null) snippet.setTags(Arrays.asList(tags));
+            if (categoryId != null) snippet.setCategoryId(categoryId);
+
+            Video videoMetadata = new Video();
+            videoMetadata.setStatus(status);
             videoMetadata.setSnippet(snippet);
 
-            // 2. 파일 읽기 및 업로드 준비 (테스트 : contentPath가 로컬)
-            InputStreamContent mediaContent = new InputStreamContent(
-                    "video/*", new FileInputStream(contentPath));
-            mediaContent.setLength(new java.io.File(contentPath).length());
-            /* 2-1. contentPath가 S3 URL
-            InputStream inputStream = new URL(contentPath).openStream(); // IOException 처리 필요
-            InputStreamContent mediaContent = new InputStreamContent(
-                    "video/*",
-                    new BufferedInputStream(inputStream)
-            );
-             */
+            // S3에서 스트리밍 + Content-Length/MIME 결정
+            try (var s3obj = s3Storage.fetchForUpload(objectKey)) {
+                String s3Ct = s3obj.contentType();
+                String mediaType = resolveVideoContentType(s3Ct, objectKey);
 
+                log.info("[YouTubeUpload] key={}, s3ContentType={}, useContentType={}, length={}",
+                        objectKey, s3Ct, mediaType, s3obj.contentLength());
 
-            // 3. 업로드 요청
-            YouTube.Videos.Insert videoInsert = youtube.videos()
-                    .insert("snippet,status", videoMetadata, mediaContent);
-            videoInsert.setNotifySubscribers(notifySubscribers);
+                InputStreamContent mediaContent = new InputStreamContent(mediaType, s3obj.stream());
+                mediaContent.setLength(s3obj.contentLength());
 
-            // 4. 업로드 진행 상황 출력
-            MediaHttpUploader uploader = videoInsert.getMediaHttpUploader();
-            uploader.setDirectUploadEnabled(false); // resumable upload
-            uploader.setProgressListener(new MediaHttpUploaderProgressListener() {
-                @Override
-                public void progressChanged(MediaHttpUploader uploader) throws IOException {
-                    switch (uploader.getUploadState()) {
-                        case INITIATION_STARTED:
-                            System.out.println("업로드 시작...");
-                            break;
-                        case MEDIA_IN_PROGRESS:
-                            System.out.printf("업로드 중... %.2f%% 완료%n", uploader.getProgress() * 100);
-                            break;
-                        case MEDIA_COMPLETE:
-                            System.out.println("업로드 완료!");
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
+                YouTube.Videos.Insert insert = youtube.videos()
+                        .insert("snippet,status", videoMetadata, mediaContent);
+                insert.setNotifySubscribers(notifySubscribers);
 
-            // 5. 업로드 실행
-            Video uploadedVideo = videoInsert.execute();
-            System.out.println("업로드된 비디오 ID: " + uploadedVideo.getId()); // youtube에 저장된 비디오 ID
+                MediaHttpUploader uploader = insert.getMediaHttpUploader();
+                uploader.setDirectUploadEnabled(false);        // Resumable
+                uploader.setChunkSize(10 * 1024 * 1024);       // 10MB
 
-            // 6. Post 저장
-            String videoId = uploadedVideo.getId();
-            PostEntity post = jpaPostRepository.findByPostId(videoId)
-                    .map(existing -> {
-                        existing = PostEntity.builder()
-                                .id(existing.getId())
-                                .userId(userId)
-                                .snsType(SnsType.youtube)
-                                .postId(videoId)
-                                .title(title)
-                                .description(description)
-                                .contentPath(contentPath)
-                                .tags(Arrays.asList(tags))
-                                .categoryId(categoryId)
-                                .notifySubscribers(notifySubscribers)
-                                .publishAt(publishAt)
-                                .build();
-                        return existing;
-                    })
-                    .orElse(PostEntity.builder()
-                            .userId(userId)
-                            .snsType(SnsType.youtube)
-                            .postId(videoId)
-                            .title(title)
-                            .description(description)
-                            .contentPath(contentPath)
-                            .tags(Arrays.asList(tags))
-                            .categoryId(categoryId)
-                            .notifySubscribers(notifySubscribers)
-                            .publishAt(publishAt)
-                            .build());
-            jpaPostRepository.save(post);
-
+                return insert.execute().getId();
+            }
         } catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException("YouTube 업로드 실패", e);
+            throw new BusinessException(FAIL_UPLOAD, e.getMessage());
         }
+    }
+
+    /** S3 Content-Type가 부정확할 때, 확장자로 안전한 비디오 MIME을 결정 */
+    private String resolveVideoContentType(String s3ContentType, String key) {
+        if (s3ContentType != null) {
+            String ct = s3ContentType.toLowerCase(Locale.ROOT).trim();
+            if (!ct.equals("application/octet-stream") && !ct.equals("binary/octet-stream") && !ct.isBlank()) {
+                return ct;
+            }
+        }
+        String lower = key.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".mp4"))  return "video/mp4";
+        if (lower.endsWith(".m4v"))  return "video/x-m4v";
+        if (lower.endsWith(".mov"))  return "video/quicktime";
+        if (lower.endsWith(".webm")) return "video/webm";
+        if (lower.endsWith(".mkv"))  return "video/x-matroska";
+        if (lower.endsWith(".mpeg") || lower.endsWith(".mpg")) return "video/mpeg";
+        // 알 수 없으면 mp4로 가정(YouTube 호환성 가장 높음)
+        return "video/mp4";
     }
 }

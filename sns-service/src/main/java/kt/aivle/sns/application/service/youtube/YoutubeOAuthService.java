@@ -2,10 +2,9 @@ package kt.aivle.sns.application.service.youtube;
 
 import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import kt.aivle.sns.adapter.in.web.dto.OAuthContext;
 import kt.aivle.sns.application.port.in.SnsOAuthUseCase;
 import kt.aivle.sns.application.service.oauth.OAuthStateService;
 import kt.aivle.sns.config.YoutubeOAuthProperties;
@@ -42,7 +41,7 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
     @Override
     public String getAuthUrl(Long userId, Long storeId) {
         try {
-            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            NetHttpTransport httpTransport = new NetHttpTransport();
 
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                     httpTransport,
@@ -64,27 +63,33 @@ public class YoutubeOAuthService implements SnsOAuthUseCase {
     }
 
     @Override
-    public void handleCallback(String state, String code) throws Exception {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+    public OAuthContext handleCallback(String state, String code) {
+        NetHttpTransport httpTransport = new NetHttpTransport();
 
         var ids = stateService.consume(state);
         Long userId = ids.getFirst();
         Long storeId = ids.getSecond();
 
-        TokenResponse tokens =  new GoogleAuthorizationCodeTokenRequest(
-                httpTransport,
-                JSON_FACTORY,
-                properties.getTokenUri(),
-                properties.getClientId(),
-                properties.getClientSecret(),
-                code,
-                properties.getRedirectUri()
-        ).execute();
+        try {
+            TokenResponse tokens = new GoogleAuthorizationCodeFlow.Builder(
+                    httpTransport,
+                    JSON_FACTORY,
+                    properties.getClientId(),
+                    properties.getClientSecret(),
+                    SCOPES)
+                    .build()
+                    .newTokenRequest(code)
+                    .setRedirectUri(properties.getRedirectUri())
+                    .execute();
 
-        youtubeTokenService.saveToken(
-                userId,storeId,
-                tokens.getAccessToken(),
-                tokens.getRefreshToken(),
-                tokens.getExpiresInSeconds());
+            youtubeTokenService.saveToken(
+                    userId, storeId,
+                    tokens.getAccessToken(),
+                    tokens.getRefreshToken(),
+                    tokens.getExpiresInSeconds());
+            return new OAuthContext(userId, storeId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to handle Youtube OAuth callback", e);
+        }
     }
 }

@@ -2,7 +2,7 @@ package kt.aivle.sns.adapter.out.youtube;
 
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.SnsAccountResponse;
 import kt.aivle.sns.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.sns.domain.model.SnsAccount;
 import kt.aivle.sns.domain.model.SnsType;
@@ -40,12 +40,12 @@ public class YoutubeChannelListApi {
 
 
             // SnsAccount Info 저장
-            SnsAccount account = snsAccountRepositoryPort.findByUserIdAndSnsType(userId, SnsType.youtube)
+            SnsAccount account = snsAccountRepositoryPort.findByUserIdAndStoreIdAndSnsType(userId, storeId, SnsType.youtube)
                     .map(existing -> {
                         existing = SnsAccount.builder()
                                 .id(existing.getId())
-                                .userId(userId)
-                                .storeId(storeId)
+                                .userId(existing.getUserId())
+                                .storeId(existing.getStoreId())
                                 .snsType(SnsType.youtube)
                                 .snsAccountId(channel.getId()) // 유튜브 채널 id
                                 .snsAccountName(snippet.getTitle()) // 채널명

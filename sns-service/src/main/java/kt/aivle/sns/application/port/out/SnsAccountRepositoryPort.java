@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface SnsAccountRepositoryPort {
     SnsAccount save(SnsAccount snsAccount);
 
-    Optional<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType);
+    Optional<SnsAccount> findByUserIdAndStoreIdAndSnsType(Long userId, Long storeId, SnsType snsType);
 
     Optional<SnsAccount> findBySnsAccountId(String snsAccountId);
 }

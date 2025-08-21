@@ -1,7 +1,10 @@
 package kt.aivle.sns.adapter.in.web.dto;
 
+import lombok.Getter;
+
 import java.time.OffsetDateTime;
 
+@Getter
 public class YoutubeUploadDetail {
     private String categoryId; // 카테고리 번호로 입력 (String)
 //    1 	영화/애니메이션    Film & Animation
@@ -38,24 +41,12 @@ public class YoutubeUploadDetail {
 
     public YoutubeUploadDetail() {}
 
-    public OffsetDateTime getPublishAt() {
-        return publishAt;
-    }
-
     public void setPublishAt(OffsetDateTime publishAt) {
         this.publishAt = publishAt;
     }
 
-    public String getCategoryId() {
-        return categoryId;
-    }
-
     public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
-    }
-
-    public boolean isNotifySubscribers() {
-        return notifySubscribers;
     }
 
     public void setNotifySubscribers(boolean notifySubscribers) {

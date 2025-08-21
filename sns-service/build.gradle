@@ -29,5 +29,12 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // aws
+    implementation "software.amazon.awssdk:s3"
+    implementation "software.amazon.awssdk:cloudfront"
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

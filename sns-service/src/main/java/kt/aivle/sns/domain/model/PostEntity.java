@@ -2,46 +2,37 @@ package kt.aivle.sns.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "posts")
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@EntityListeners(AuditingEntityListener.class)
-public class PostEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class PostEntity extends BaseEntity {
 
     private Long userId;
+    private Long storeId;
 
     @Enumerated(EnumType.STRING)
     private SnsType snsType;
 
-    private String postId; // 유튜브 videoId
+    private String snsPostId; // 유튜브 videoId
 
     private String title;
 
     private String description;
 
-    private String contentPath; // S3경로
+    private String originalFileName;
+    private String ObjectKey; // S3경로
 
     @ElementCollection
     @CollectionTable(name = "post_tags", joinColumns = @JoinColumn(name = "post_id"))
     @Column(name = "tag")
-    private List<String> tags; // (유튜브에선 사용자에게만 보임 알고리즘을 위한 태그)
-    // tags를 별도 테이블로 분리하여 @ElementCollection으로 저장 (단순 문자열 리스트일 경우 유용)
+    private List<String> tags = new ArrayList<>();
 
     private String categoryId;
 
@@ -49,11 +40,21 @@ public class PostEntity {
 
     private Boolean notifySubscribers;
 
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
+    @Builder
+    public PostEntity(Long userId, Long storeId, SnsType snsType, String snsPostId, String title,
+                      String description, String originalFileName, String objectKey, List<String> tags, String categoryId,
+                      OffsetDateTime publishAt, Boolean notifySubscribers) {
+        this.userId = userId;
+        this.storeId = storeId;
+        this.snsType = snsType;
+        this.snsPostId = snsPostId;
+        this.title = title;
+        this.description = description;
+        this.originalFileName = originalFileName;
+        this.ObjectKey = objectKey;
+        this.tags = tags;
+        this.categoryId = categoryId;
+        this.publishAt = publishAt;
+        this.notifySubscribers = notifySubscribers;
+    }
 }

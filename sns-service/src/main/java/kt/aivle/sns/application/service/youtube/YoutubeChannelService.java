@@ -1,11 +1,11 @@
 package kt.aivle.sns.application.service.youtube;
 
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.SnsAccountResponse;
 import kt.aivle.sns.adapter.out.youtube.YoutubeChannelListApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeChannelUpdateApi;
 import kt.aivle.sns.adapter.out.youtube.YoutubeSearchListApi;
 import kt.aivle.sns.application.port.in.SnsAccountUseCase;
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.request.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

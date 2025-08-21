@@ -1,8 +1,8 @@
 package kt.aivle.sns.application.service;
 
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.SnsAccountResponse;
 import kt.aivle.sns.application.port.in.SnsAccountUseCase;
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.request.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
 package kt.aivle.sns.application.service.oauth;
 
-import kt.aivle.sns.adapter.out.persistence.JpaOAuthStateRepository;
-import kt.aivle.sns.adapter.out.persistence.OAuthStateEntity;
+import kt.aivle.sns.adapter.out.persistence.repository.JpaOAuthStateRepository;
+import kt.aivle.sns.adapter.out.persistence.entity.OAuthStateEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;

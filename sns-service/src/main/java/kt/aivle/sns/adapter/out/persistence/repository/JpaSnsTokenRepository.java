@@ -1,4 +1,4 @@
-package kt.aivle.sns.adapter.out.persistence;
+package kt.aivle.sns.adapter.out.persistence.repository;
 
 import kt.aivle.sns.domain.model.SnsToken;
 import kt.aivle.sns.domain.model.SnsType;

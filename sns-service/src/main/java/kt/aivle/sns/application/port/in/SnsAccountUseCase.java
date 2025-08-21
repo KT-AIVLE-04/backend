@@ -1,7 +1,7 @@
 package kt.aivle.sns.application.port.in;
 
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountResponse;
-import kt.aivle.sns.adapter.in.web.dto.SnsAccountUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.response.SnsAccountResponse;
+import kt.aivle.sns.adapter.in.web.dto.request.SnsAccountUpdateRequest;
 import kt.aivle.sns.domain.model.SnsType;
 
 public interface SnsAccountUseCase {
