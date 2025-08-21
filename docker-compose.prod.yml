@@ -108,7 +108,6 @@ services:
     container_name: sns-service
     depends_on:
       - kafka
-      - mysql
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
