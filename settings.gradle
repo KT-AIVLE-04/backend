@@ -5,4 +5,5 @@ include 'auth-service'
 include 'store-service'
 include 'shorts-service'
 include 'sns-post-service'
+include 'sns-service' 
 

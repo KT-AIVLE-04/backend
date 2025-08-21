@@ -1,10 +1,10 @@
-// FastAPI 서버로 요청을 보내는 클라이언트
-package kt.aivle.snspost.adapter.out.web;
+// FastApiClient에서 호출하는 외부 FastAPI 서버 경로 (Spring Boot → FastAPI)
+package kt.aivle.sns.adapter.out.web;
 
-import kt.aivle.snspost.adapter.in.web.dto.request.HashtagRequest;
-import kt.aivle.snspost.adapter.in.web.dto.request.SNSPostRequest;
-import kt.aivle.snspost.adapter.in.web.dto.response.HashtagResponse;
-import kt.aivle.snspost.adapter.in.web.dto.response.SNSPostResponse;
+import kt.aivle.sns.adapter.in.web.dto.request.CreateHashtagRequest;
+import kt.aivle.sns.adapter.in.web.dto.request.CreatePostRequest;
+import kt.aivle.sns.adapter.in.web.dto.response.CreateHashtagResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.CreatePostResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,13 +17,13 @@ public class FastApiClient {
 
     private final WebClient fastApiWebClient;
 
-    public SNSPostResponse generatePost(SNSPostRequest request) {
+    public CreatePostResponse createPost(CreatePostRequest request) {
         try {
             return fastApiWebClient.post()
                     .uri("/sns-post/agent/post")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(SNSPostResponse.class)
+                    .bodyToMono(CreatePostResponse.class)
                     .block();
         } catch (Exception e) {
             log.error("FastAPI 게시물 생성 실패: {}", e.getMessage());
@@ -31,13 +31,13 @@ public class FastApiClient {
         }
     }
 
-    public HashtagResponse generateHashtags(HashtagRequest request) {
+    public CreateHashtagResponse createHashtags(CreateHashtagRequest request) {
         try {
             return fastApiWebClient.post()
                     .uri("/sns-post/agent/hashtags")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(HashtagResponse.class)
+                    .bodyToMono(CreateHashtagResponse.class)
                     .block();
         } catch (Exception e) {
             log.error("FastAPI 해시태그 생성 실패: {}", e.getMessage());

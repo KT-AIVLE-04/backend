@@ -1,4 +1,4 @@
-package kt.aivle.snspost.adapter.in.web.dto.request;
+package kt.aivle.sns.adapter.in.web.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HashtagRequest {
+public class CreateHashtagRequest {
 
     @JsonProperty("post_title")
     @NotBlank(message = "게시물 제목을 입력해주세요.")

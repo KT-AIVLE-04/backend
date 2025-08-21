@@ -1,4 +1,4 @@
-package kt.aivle.snspost.config;
+package kt.aivle.sns.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

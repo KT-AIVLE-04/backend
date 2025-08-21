@@ -9,6 +9,7 @@ dependencies {
 
     // Web/API
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Youtube API/인증
     implementation 'com.google.api-client:google-api-client:1.34.1'
@@ -43,5 +44,4 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-
 }

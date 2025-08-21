@@ -120,13 +120,13 @@ services:
     networks:
       - backend
 
-  sns-post-service:
+  sns-service:
     build:
-      context: ./sns-post-service
+      context: ./sns-service
       dockerfile: Dockerfile
-    container_name: sns-post-service
-    depends_on:
-      - mysql
+    container_name: sns-service
+    ports:
+      - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
