@@ -42,3 +42,6 @@ out/
 .env
 
 **/.CLOUDFRONT_PRIVATE_KEY
+
+### personal ###
+_myDoc

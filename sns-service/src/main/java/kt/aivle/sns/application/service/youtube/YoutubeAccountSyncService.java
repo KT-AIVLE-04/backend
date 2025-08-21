@@ -32,7 +32,7 @@ public class YoutubeAccountSyncService implements AccountSyncUseCase {
 
 
         SnsAccountEvent e = SnsAccountEvent.builder()
-                .id(response.id())
+                .accountId(response.id())
                 .userId(response.userId())
                 .snsAccountId(response.snsAccountId())
                 .type(SnsType.youtube)
