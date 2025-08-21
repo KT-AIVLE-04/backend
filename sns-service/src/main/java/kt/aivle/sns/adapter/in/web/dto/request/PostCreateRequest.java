@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public record PostCreateRequest(
         String snsType,
-        String originalFileName,
+        String originalName,
         String objectKey,
         String title,
         String description,

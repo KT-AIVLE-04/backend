@@ -26,7 +26,7 @@ public class PostEntity extends BaseEntity {
 
     private String description;
 
-    private String originalFileName;
+    private String originalName; // 원본 파일 이름
     private String ObjectKey; // S3경로
 
     @ElementCollection
@@ -42,7 +42,7 @@ public class PostEntity extends BaseEntity {
 
     @Builder
     public PostEntity(Long userId, Long storeId, SnsType snsType, String snsPostId, String title,
-                      String description, String originalFileName, String objectKey, List<String> tags, String categoryId,
+                      String description, String originalName, String objectKey, List<String> tags, String categoryId,
                       OffsetDateTime publishAt, Boolean notifySubscribers) {
         this.userId = userId;
         this.storeId = storeId;
@@ -50,7 +50,7 @@ public class PostEntity extends BaseEntity {
         this.snsPostId = snsPostId;
         this.title = title;
         this.description = description;
-        this.originalFileName = originalFileName;
+        this.originalName = originalName;
         this.ObjectKey = objectKey;
         this.tags = tags;
         this.categoryId = categoryId;

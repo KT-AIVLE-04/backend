@@ -16,7 +16,7 @@ public record PostResponse(
         String title,
         String description,
         SnsType snsType,
-        String originalFilename,
+        String originalName,
         String objectKey,
         String url,
         List<String> tags,
@@ -31,7 +31,7 @@ public record PostResponse(
                 .snsPostId(post.getSnsPostId())
                 .title(post.getTitle())
                 .description(post.getDescription())
-                .originalFilename(post.getOriginalFileName())
+                .originalName(post.getOriginalName())
                 .objectKey(post.getObjectKey())
                 .tags(post.getTags() != null ? new ArrayList<>(post.getTags()) : Collections.emptyList())
                 .categoryId(post.getCategoryId())
@@ -48,7 +48,7 @@ public record PostResponse(
                 .title(post.getTitle())
                 .description(post.getDescription())
                 .url(url)
-                .originalFilename(post.getOriginalFileName())
+                .originalName(post.getOriginalName())
                 .objectKey(post.getObjectKey())
                 .tags(post.getTags() != null ? new ArrayList<>(post.getTags()) : Collections.emptyList())
                 .categoryId(post.getCategoryId())

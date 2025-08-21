@@ -58,7 +58,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
     @Override
     public PostResponse upload(Long userId, Long storeId, PostCreateRequest request) {
         // 1) 입력 정리
-        String originKey = getOriginKey(request.objectKey(), request.originalFileName());
+        String originKey = getOriginKey(request.objectKey(), request.originalName());
         String title = request.title();
         String description = request.description();
         String[] tags = request.tags();
@@ -81,7 +81,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
                 .snsPostId(videoId)
                 .title(title)
                 .description(description)
-                .originalFileName(request.originalFileName()) // 요청에 있는 원본 파일명
+                .originalFileName(request.originalName()) // 요청에 있는 원본 파일명
                 .objectKey(request.objectKey())         // 엔티티 필드명: ObjectKey
                 .tags(tagList)
                 .categoryId(categoryId)
@@ -166,7 +166,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
         PostEntity post = postRepositoryPort.findById(postId)
                 .orElseThrow(() -> new BusinessException(NOT_FOUND_POST));
 
-        String originKey = getOriginKey(post.getObjectKey(), post.getOriginalFileName());
+        String originKey = getOriginKey(post.getObjectKey(), post.getOriginalName());
         String signUrl = cloudFrontSigner.signOriginalUrl(originKey);
 
         return PostResponse.from(post, signUrl);
