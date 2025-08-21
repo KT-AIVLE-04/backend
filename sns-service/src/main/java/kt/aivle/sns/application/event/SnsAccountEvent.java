@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class SnsAccountEvent {
-    private Long id;          // 내 DB의 sns_account PK
+    private Long accountId;          // 내 DB의 sns_account PK
     private Long userId;
     private String snsAccountId; // 예: 유튜브 채널ID
     private SnsType type;

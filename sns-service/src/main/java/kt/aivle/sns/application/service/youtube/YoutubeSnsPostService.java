@@ -95,10 +95,9 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
                 .findByUserIdAndStoreIdAndSnsType(userId, storeId, SnsType.youtube)
                 .orElseThrow();
         publisher.publishPostCreated(PostEvent.builder()
-                .id(saved.getId())                 // 로컬 PK
+                .postId(saved.getId())                 // 로컬 PK
                 .accountId(account.getId())        // SNS 계정 PK
                 .snsPostId(saved.getSnsPostId())   // YouTube videoId
-                .publishAt(saved.getPublishAt())
                 .build());
 
         return PostResponse.from(saved);
@@ -154,7 +153,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
         postRepositoryPort.delete(post);
 
         publisher.publishPostDeleted(PostEvent.builder()
-                .id(post.getId())
+                .postId(post.getId())
                 .accountId(account.getId())
                 .snsPostId(post.getSnsPostId())
                 .build());
