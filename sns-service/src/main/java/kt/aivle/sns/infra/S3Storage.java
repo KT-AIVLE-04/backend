@@ -6,8 +6,11 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -18,18 +21,22 @@ public class S3Storage {
     @Value("${cloud.aws.s3.bucket.origin}")
     private String originBucket;
 
-    /**
-     * S3 객체 삭제
-     */
-    public void delete(String key) {
-        if (key == null || key.isBlank()) return;
-        try {
-            s3.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(originBucket)
-                    .key(key)
-                    .build());
-        } catch (Exception ignore) {
-        }
+    private final S3Presigner s3Presigner;
+
+    private static final Duration DEFAULT_PRESIGN_TTL = Duration.ofMinutes(15);
+
+    public String getPresignUrl(String key) {
+        GetObjectRequest getReq = GetObjectRequest.builder()
+                .bucket(originBucket)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignReq = GetObjectPresignRequest.builder()
+                .signatureDuration(DEFAULT_PRESIGN_TTL)
+                .getObjectRequest(getReq)
+                .build();
+
+        return s3Presigner.presignGetObject(presignReq).url().toString();
     }
 
     /**
@@ -102,13 +109,6 @@ public class S3Storage {
 
         public String contentType() {
             return contentType;
-        }
-
-        /**
-         * contentType 이 비어있으면 video/* 로 대체
-         */
-        public String contentTypeOrDefault() {
-            return (contentType == null || contentType.isBlank()) ? "video/*" : contentType;
         }
 
         @Override

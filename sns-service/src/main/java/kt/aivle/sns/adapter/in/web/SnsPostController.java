@@ -2,9 +2,14 @@ package kt.aivle.sns.adapter.in.web;
 
 import kt.aivle.common.response.ApiResponse;
 import kt.aivle.common.response.ResponseUtils;
+import kt.aivle.sns.adapter.in.web.dto.request.AiPostCreateRequest;
+import kt.aivle.sns.adapter.in.web.dto.request.AiTagCreateRequest;
 import kt.aivle.sns.adapter.in.web.dto.request.PostCreateRequest;
 import kt.aivle.sns.adapter.in.web.dto.request.PostDeleteRequest;
+import kt.aivle.sns.adapter.in.web.dto.response.AiPostResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.AiTagResponse;
 import kt.aivle.sns.adapter.in.web.dto.response.PostResponse;
+import kt.aivle.sns.application.port.in.AiSnsUseCase;
 import kt.aivle.sns.application.port.in.SnsPostUseCase;
 import kt.aivle.sns.application.service.SnsPostDelegator;
 import kt.aivle.sns.infra.CloudFrontSigner;
@@ -25,6 +30,7 @@ public class SnsPostController {
 
     private final SnsPostDelegator snsPostDelegator;
     private final SnsPostUseCase snsPostUseCase;
+    private final AiSnsUseCase aiSnsUseCase;
     private final CloudFrontSigner cloudFrontSigner;
     private final BuildCookie buildCookie;
     private final ResponseUtils responseUtils;
@@ -75,6 +81,18 @@ public class SnsPostController {
         List<PostResponse> response = snsPostUseCase.getAll(userId, storeId);
 
         return responseUtils.build(OK, response, headers);
+    }
+
+    @PostMapping("/ai")
+    public ResponseEntity<ApiResponse<AiPostResponse>> uploadAiPost(@RequestBody AiPostCreateRequest request) {
+        AiPostResponse response = aiSnsUseCase.createAiPost(request);
+        return responseUtils.build(OK, response);
+    }
+
+    @PostMapping("/ai/tag")
+    public ResponseEntity<ApiResponse<AiTagResponse>> uploadAiTag(@RequestBody AiTagCreateRequest request) {
+        AiTagResponse response = aiSnsUseCase.createAiTag(request);
+        return responseUtils.build(OK, response);
     }
 
     public String thumbPrefix(Long userId, Long storeId) {

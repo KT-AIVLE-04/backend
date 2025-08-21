@@ -1,8 +1,8 @@
 package kt.aivle.sns.application.port.in;
 
-import kt.aivle.sns.adapter.in.web.dto.request.PostCreateRequest;
-import kt.aivle.sns.adapter.in.web.dto.request.PostDeleteRequest;
-import kt.aivle.sns.adapter.in.web.dto.request.PostUpdateRequest;
+import kt.aivle.sns.adapter.in.web.dto.request.*;
+import kt.aivle.sns.adapter.in.web.dto.response.AiPostResponse;
+import kt.aivle.sns.adapter.in.web.dto.response.AiTagResponse;
 import kt.aivle.sns.adapter.in.web.dto.response.PostResponse;
 import kt.aivle.sns.domain.model.SnsType;
 

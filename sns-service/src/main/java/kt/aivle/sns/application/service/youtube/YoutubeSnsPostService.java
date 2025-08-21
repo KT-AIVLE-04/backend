@@ -81,7 +81,7 @@ public class YoutubeSnsPostService implements SnsPostUseCase {
                 .snsPostId(videoId)
                 .title(title)
                 .description(description)
-                .originalFileName(request.originalName()) // 요청에 있는 원본 파일명
+                .originalName(request.originalName()) // 요청에 있는 원본 파일명
                 .objectKey(request.objectKey())         // 엔티티 필드명: ObjectKey
                 .tags(tagList)
                 .categoryId(categoryId)
