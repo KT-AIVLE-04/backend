@@ -363,6 +363,11 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                         
                         // 새로운 댓글 처리
                         String content = commentThread.getSnippet().getTopLevelComment().getSnippet().getTextDisplay();
+                        // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
+                        if (content != null && content.length() > 1000) {
+                            content = content.substring(0, 1000);
+                            log.warn("Comment content truncated to 1000 characters for commentId: {}", commentId);
+                        }
                         String publishedAtStr = commentThread.getSnippet().getTopLevelComment().getSnippet().getPublishedAt().toString();
                         ZonedDateTime zonedDateTime = ZonedDateTime.parse(publishedAtStr);
                         LocalDateTime publishedAt = zonedDateTime.toLocalDateTime();
@@ -402,15 +407,15 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         return newComments;
     }
     
-    // DB 저장 메서드 (별도 트랜잭션)
-    @Transactional
+    // DB 저장 메서드 (개별 저장으로 변경하여 일부 실패해도 계속 진행)
     private void saveCommentsToDatabase(List<SnsPostCommentMetric> newComments, Long postId) {
         log.info("Saving {} new comments to database for postId: {}", newComments.size(), postId);
         
         int savedCount = 0;
         for (SnsPostCommentMetric commentMetric : newComments) {
             try {
-                SnsPostCommentMetric savedComment = snsPostCommentMetricRepositoryPort.save(commentMetric);
+                // 개별 댓글을 별도 트랜잭션으로 저장
+                SnsPostCommentMetric savedComment = saveCommentInTransaction(commentMetric);
                 if (savedComment != null && savedComment.getId() != null) {
                     savedCount++;
                     log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentMetric.getSnsCommentId());
@@ -419,6 +424,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 }
             } catch (Exception e) {
                 log.error("Failed to save comment for commentId: {}", commentMetric.getSnsCommentId(), e);
+                // 개별 댓글 저장 실패는 다른 댓글 저장에 영향을 주지 않음
             }
         }
         
@@ -450,6 +456,14 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 // 감정분석 실패는 댓글 수집을 중단시키지 않음
             }
         }
+    }
+    
+    /**
+     * 개별 댓글을 별도 트랜잭션으로 저장
+     */
+    @Transactional
+    private SnsPostCommentMetric saveCommentInTransaction(SnsPostCommentMetric commentMetric) {
+        return snsPostCommentMetricRepositoryPort.save(commentMetric);
     }
 }
 

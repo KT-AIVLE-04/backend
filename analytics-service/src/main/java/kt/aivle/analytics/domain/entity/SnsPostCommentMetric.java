@@ -34,7 +34,7 @@ public class SnsPostCommentMetric extends BaseEntity {
     @Column(name = "author_id")
     private String authorId;
 
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "like_count")
