@@ -6,6 +6,7 @@ public record ContentResponse(
         Long id,
         String url,
         String title,
+        String originalName,
         String objectKey,
         String contentType,
         LocalDateTime createdAt,
