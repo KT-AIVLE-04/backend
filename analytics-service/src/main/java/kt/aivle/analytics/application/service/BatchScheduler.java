@@ -28,9 +28,9 @@ public class BatchScheduler {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     /**
-     * 매일 오전 9시에 메트릭 수집 배치 작업을 실행합니다.
+     * 매일 오전 11시 30분에 메트릭 수집 배치 작업을 실행합니다.
      */
-    @Scheduled(cron = "0 0 09 * * ?", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 30 23 * * ?", zone = "Asia/Seoul")
     public void runDailyMetricsCollectionJob() {
         LocalDateTime startTime = LocalDateTime.now();
         String formattedTime = startTime.format(TIME_FORMATTER);

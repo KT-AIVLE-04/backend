@@ -109,7 +109,7 @@ public class EmotionAnalysisService {
                     .keyword(keyword)
                     .sentiment(SentimentType.NEGATIVE)
                     .build())
-                .collect(Collectors.toList()));
+                .toList());
         }
         
         if (!keywordEntities.isEmpty()) {

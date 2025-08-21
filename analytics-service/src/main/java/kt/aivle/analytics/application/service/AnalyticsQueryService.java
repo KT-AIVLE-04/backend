@@ -26,7 +26,6 @@ import kt.aivle.analytics.application.port.out.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.SnsPostRepositoryPort;
-import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
@@ -188,18 +187,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         long totalCount = commentMetrics.size();
         
-        // 키워드 조회 (한 번에 조회 후 메모리에서 분리)
-        List<PostCommentKeyword> allKeywords = postCommentKeywordRepository.findByPostId(postId);
+        // 키워드를 감정별로 그룹화하여 조회
+        Map<SentimentType, List<String>> groupedKeywords = postCommentKeywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
         
-        List<String> positiveKeywords = allKeywords.stream()
-            .filter(keyword -> SentimentType.POSITIVE.equals(keyword.getSentiment()))
-            .map(PostCommentKeyword::getKeyword)
-            .collect(Collectors.toList());
-            
-        List<String> negativeKeywords = allKeywords.stream()
-            .filter(keyword -> SentimentType.NEGATIVE.equals(keyword.getSentiment()))
-            .map(PostCommentKeyword::getKeyword)
-            .collect(Collectors.toList());
+        List<String> positiveKeywords = groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of());
+        List<String> negativeKeywords = groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of());
         
         Map<String, List<String>> keywords = Map.of(
             "positive", positiveKeywords,

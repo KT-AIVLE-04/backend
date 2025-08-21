@@ -1,6 +1,7 @@
 package kt.aivle.analytics.application.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +15,6 @@ import kt.aivle.analytics.adapter.in.web.dto.AiAnalysisRequest;
 import kt.aivle.analytics.adapter.in.web.dto.AiAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.application.port.out.PostCommentKeywordRepositoryPort;
-import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.analytics.exception.AnalyticsException;
@@ -37,18 +37,11 @@ public class AiAnalysisService {
      */
     public AiAnalysisResponse analyzeComments(List<PostCommentsQueryResponse> comments, Long postId) {
         try {
-            // 기존 키워드를 한 번에 조회 후 긍정/부정으로 분리
-            List<PostCommentKeyword> allKeywords = keywordRepository.findByPostId(postId);
+            // 기존 키워드를 감정별로 그룹화하여 조회
+            Map<SentimentType, List<String>> groupedKeywords = keywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
             
-            List<String> positiveKeywords = allKeywords.stream()
-                .filter(keyword -> SentimentType.POSITIVE.equals(keyword.getSentiment()))
-                .map(PostCommentKeyword::getKeyword)
-                .collect(Collectors.toList());
-                
-            List<String> negativeKeywords = allKeywords.stream()
-                .filter(keyword -> SentimentType.NEGATIVE.equals(keyword.getSentiment()))
-                .map(PostCommentKeyword::getKeyword)
-                .collect(Collectors.toList());
+            List<String> positiveKeywords = groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of());
+            List<String> negativeKeywords = groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of());
             
             // 요청 데이터 구성
             List<AiAnalysisRequest.CommentData> commentDataList = comments.stream()
