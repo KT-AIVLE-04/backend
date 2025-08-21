@@ -67,30 +67,30 @@ public class BatchScheduler {
      * 테스트용 - 1분마다 실행 (개발 환경에서만 사용)
      * 현재 활성화됨 - 테스트용
      */
-    @Scheduled(cron = "0 */2 * * * ?", zone = "Asia/Seoul")
-    // @org.springframework.context.annotation.Profile("dev")
-    public void runTestMetricsCollectionJob() {
-        LocalDateTime startTime = LocalDateTime.now();
-        String formattedTime = startTime.format(TIME_FORMATTER);
+    // @Scheduled(cron = "0 */2 * * * ?", zone = "Asia/Seoul")
+    // // @org.springframework.context.annotation.Profile("dev")
+    // public void runTestMetricsCollectionJob() {
+    //     LocalDateTime startTime = LocalDateTime.now();
+    //     String formattedTime = startTime.format(TIME_FORMATTER);
         
-        log.info("🧪 Test metrics collection started at {}", formattedTime);
+    //     log.info("🧪 Test metrics collection started at {}", formattedTime);
         
-        try {
-            JobParameters jobParameters = new JobParametersBuilder()
-                .addString("executionTime", formattedTime)
-                .addLong("timestamp", System.currentTimeMillis())
-                .addString("testRun", "true")
-                .toJobParameters();
+    //     try {
+    //         JobParameters jobParameters = new JobParametersBuilder()
+    //             .addString("executionTime", formattedTime)
+    //             .addLong("timestamp", System.currentTimeMillis())
+    //             .addString("testRun", "true")
+    //             .toJobParameters();
             
-            jobLauncher.run(dailyMetricsCollectionJob, jobParameters);
+    //         jobLauncher.run(dailyMetricsCollectionJob, jobParameters);
             
-            LocalDateTime endTime = LocalDateTime.now();
-            long totalDuration = System.currentTimeMillis() - startTime.getNano() / 1_000_000;
+    //         LocalDateTime endTime = LocalDateTime.now();
+    //         long totalDuration = System.currentTimeMillis() - startTime.getNano() / 1_000_000;
             
-            log.info("✅ Test metrics collection completed in {:.1f}s", totalDuration / 1000.0);
+    //         log.info("✅ Test metrics collection completed in {:.1f}s", totalDuration / 1000.0);
             
-        } catch (Exception e) {
-            log.error("❌ Test metrics collection failed: {}", e.getMessage());
-        }
-    }
+    //     } catch (Exception e) {
+    //         log.error("❌ Test metrics collection failed: {}", e.getMessage());
+    //     }
+    // }
 }
