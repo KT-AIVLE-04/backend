@@ -6,6 +6,7 @@ public record ContentDetailResponse(
         Long id,
         String url,
         String title,
+        String originalName,
         String objectKey,
         String contentType,
         Integer width,
