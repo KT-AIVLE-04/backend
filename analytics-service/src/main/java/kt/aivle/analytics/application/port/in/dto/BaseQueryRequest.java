@@ -1,6 +1,8 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,10 +12,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public abstract class BaseQueryRequest {
-    private Date date; // 특정 날짜, null이면 현재 날짜
+    private LocalDate date; // 특정 날짜, null이면 현재 날짜
     
     // 생성자 추가
-    protected BaseQueryRequest(Date date) {
+    protected BaseQueryRequest(LocalDate date) {
         this.date = date;
     }
     
@@ -22,12 +24,21 @@ public abstract class BaseQueryRequest {
         return date == null;
     }
     
-    public Date getEffectiveDate() {
-        return date != null ? date : new Date();
+    public LocalDate getEffectiveDate() {
+        return date != null ? date : LocalDate.now();
     }
     
     // 날짜 검증 메서드
     public boolean isValidDate() {
-        return date == null || !date.after(new Date());
+        return date == null || !date.isAfter(LocalDate.now());
+    }
+    
+    // 타임존 명시적 처리 메서드
+    public ZonedDateTime getStartOfDay(ZoneId zoneId) {
+        return getEffectiveDate().atStartOfDay(zoneId);
+    }
+    
+    public ZonedDateTime getEndOfDay(ZoneId zoneId) {
+        return getEffectiveDate().atStartOfDay(zoneId).plusDays(1).minusNanos(1);
     }
 }

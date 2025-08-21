@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import com.google.api.services.youtube.YouTube;
@@ -195,9 +194,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             metricsValidator.validateViewCount(viewCount, accountId, "account");
             
             // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
-            Date oneHourAgo = new Date(System.currentTimeMillis() - 60 * 60 * 1000);
+            LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
             boolean hasRecentData = snsAccountMetricRepositoryPort
-                .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo);
+                .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo.toLocalDate());
             
             if (hasRecentData) {
                 log.info("Recent metrics already exist for accountId: {}, skipping", accountId);
@@ -268,9 +267,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 metricsValidator.validateLikeCount(likes, postId);
                 
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
-                Date oneHourAgo = new Date(System.currentTimeMillis() - 60 * 60 * 1000);
+                LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
                 boolean hasRecentData = snsPostMetricRepositoryPort
-                    .existsByPostIdAndCreatedAtAfter(post.getId(), oneHourAgo);
+                    .existsByPostIdAndCreatedAtAfter(post.getId(), oneHourAgo.toLocalDate());
                 
                 if (hasRecentData) {
                     log.info("Recent metrics already exist for postId: {}, skipping", postId);

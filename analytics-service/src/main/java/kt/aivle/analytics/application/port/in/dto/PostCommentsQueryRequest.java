@@ -1,6 +1,6 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -36,16 +36,16 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
         return new PostCommentsQueryRequest(null, postId, page, size);
     }
     
-    public static PostCommentsQueryRequest forDate(Date date, String postId) {
+    public static PostCommentsQueryRequest forDate(LocalDate date, String postId) {
         return new PostCommentsQueryRequest(date, postId, 0, 20);
     }
     
-    public static PostCommentsQueryRequest forDate(Date date, String postId, Integer page, Integer size) {
+    public static PostCommentsQueryRequest forDate(LocalDate date, String postId, Integer page, Integer size) {
         return new PostCommentsQueryRequest(date, postId, page, size);
     }
     
     // 생성자
-    public PostCommentsQueryRequest(Date date, String postId, Integer page, Integer size) {
+    public PostCommentsQueryRequest(LocalDate date, String postId, Integer page, Integer size) {
         super(date);
         this.postId = postId;
         this.page = page != null ? page : 0;

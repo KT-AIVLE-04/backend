@@ -24,7 +24,7 @@ public class MetricsCollectionScheduler {
     /**
      * 매일 오후 11시에 모든 계정과 게시물의 메트릭을 수집합니다.
      */
-    @Scheduled(cron = "0 0 23 * * ?")
+    @Scheduled(cron = "0 0 09 * * ?")
     public void collectDailyMetrics() {
         LocalDateTime startTime = LocalDateTime.now();
         String formattedTime = startTime.format(TIME_FORMATTER);

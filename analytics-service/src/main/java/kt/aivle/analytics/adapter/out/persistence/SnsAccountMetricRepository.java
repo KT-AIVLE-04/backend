@@ -1,6 +1,6 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,12 +38,14 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
     }
 
     @Override
-    public List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, Date date) {
+    public List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, LocalDate date) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtDate(accountId, date);
     }
 
     @Override
-    public boolean existsByAccountIdAndCreatedAtAfter(Long accountId, Date date) {
+    public boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDate date) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsAccountMetricJpaRepository.existsByAccountIdAndCreatedAtAfter(accountId, date);
     }
 

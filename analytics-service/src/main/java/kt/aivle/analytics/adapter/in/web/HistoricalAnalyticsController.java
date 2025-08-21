@@ -1,9 +1,10 @@
 package kt.aivle.analytics.adapter.in.web;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +44,7 @@ public class HistoricalAnalyticsController {
     @GetMapping("/posts/{postId}/metrics")
     public ResponseEntity<ApiResponse<List<PostMetricsQueryResponse>>> getHistoricalPostMetrics(
             @Parameter(description = "게시물 ID") @PathVariable String postId,
-            @Parameter(description = "조회할 날짜") @RequestParam Date date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
@@ -55,7 +56,7 @@ public class HistoricalAnalyticsController {
             throw AnalyticsValidationException.invalidUserId(userId);
         }
         
-        if (date == null || date.after(new Date())) {
+        if (date == null || date.isAfter(LocalDate.now())) {
             throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
         }
         
@@ -73,7 +74,7 @@ public class HistoricalAnalyticsController {
     @GetMapping("/accounts/{accountId}/metrics")
     public ResponseEntity<ApiResponse<List<AccountMetricsQueryResponse>>> getHistoricalAccountMetrics(
             @Parameter(description = "계정 ID") @PathVariable String accountId,
-            @Parameter(description = "조회할 날짜") @RequestParam Date date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
@@ -85,7 +86,7 @@ public class HistoricalAnalyticsController {
             throw AnalyticsValidationException.invalidUserId(userId);
         }
         
-        if (date == null || date.after(new Date())) {
+        if (date == null || date.isAfter(LocalDate.now())) {
             throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
         }
         
@@ -103,7 +104,7 @@ public class HistoricalAnalyticsController {
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<List<PostCommentsQueryResponse>>> getHistoricalPostComments(
             @Parameter(description = "게시물 ID") @PathVariable String postId,
-            @Parameter(description = "조회할 날짜") @RequestParam Date date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @Parameter(description = "페이지 번호 (기본값: 0)") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "페이지 크기 (기본값: 20, 최대: 100)") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
@@ -117,7 +118,7 @@ public class HistoricalAnalyticsController {
             throw AnalyticsValidationException.invalidUserId(userId);
         }
         
-        if (date == null || date.after(new Date())) {
+        if (date == null || date.isAfter(LocalDate.now())) {
             throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
         }
         
@@ -139,7 +140,7 @@ public class HistoricalAnalyticsController {
     @GetMapping("/accounts/{accountId}/posts/metrics")
     public ResponseEntity<ApiResponse<List<PostMetricsQueryResponse>>> getHistoricalAccountPostsMetrics(
             @Parameter(description = "계정 ID") @PathVariable String accountId,
-            @Parameter(description = "조회할 날짜") @RequestParam Date date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
@@ -151,7 +152,7 @@ public class HistoricalAnalyticsController {
             throw AnalyticsValidationException.invalidUserId(userId);
         }
         
-        if (date == null || date.after(new Date())) {
+        if (date == null || date.isAfter(LocalDate.now())) {
             throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
         }
         
@@ -165,7 +166,7 @@ public class HistoricalAnalyticsController {
     @GetMapping("/users/{userId}/metrics")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHistoricalUserMetrics(
             @Parameter(description = "사용자 ID") @PathVariable String userId,
-            @Parameter(description = "조회할 날짜") @RequestParam Date date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @Parameter(description = "현재 사용자 ID") @RequestHeader("X-USER-ID") String currentUserId) {
         
         // 입력 검증
@@ -177,7 +178,7 @@ public class HistoricalAnalyticsController {
             throw AnalyticsValidationException.invalidUserId(currentUserId);
         }
         
-        if (date == null || date.after(new Date())) {
+        if (date == null || date.isAfter(LocalDate.now())) {
             throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
         }
         

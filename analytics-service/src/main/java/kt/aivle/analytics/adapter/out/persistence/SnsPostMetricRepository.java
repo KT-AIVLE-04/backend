@@ -1,6 +1,6 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,12 +38,14 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     }
 
     @Override
-    public List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, Date date) {
+    public List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
     }
 
     @Override
-    public boolean existsByPostIdAndCreatedAtAfter(Long postId, Date date) {
+    public boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDate date) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostMetricJpaRepository.existsByPostIdAndCreatedAtAfter(postId, date);
     }
 

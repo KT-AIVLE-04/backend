@@ -1,6 +1,6 @@
 package kt.aivle.analytics.application.service;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -50,12 +50,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final YouTubeApiService youtubeApiService;
     
     @Override
-    @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
+    @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
     public List<PostMetricsQueryResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, accountId: {}, postId: {}", 
                 userId, request.getDate(), request.getAccountId(), request.getPostId());
         
-        Date targetDate = request.getEffectiveDate();
+        LocalDate targetDate = request.getEffectiveDate();
         
         List<SnsPostMetric> metrics;
         if (request.getPostId() != null) {
@@ -95,12 +95,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    @Cacheable(value = "account-metrics", key = "#userId + '-' + #request.accountId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
+    @Cacheable(value = "account-metrics", key = "#userId + '-' + #request.accountId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
     public List<AccountMetricsQueryResponse> getAccountMetrics(String userId, AccountMetricsQueryRequest request) {
         log.info("Getting account metrics for userId: {}, date: {}, accountId: {}", 
                 userId, request.getDate(), request.getAccountId());
         
-        Date targetDate = request.getEffectiveDate();
+        LocalDate targetDate = request.getEffectiveDate();
         
         List<SnsAccountMetric> metrics;
         if (request.getAccountId() != null) {
@@ -125,12 +125,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    @Cacheable(value = "comments", key = "#request.postId + '-' + #request.page + '-' + #request.size + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.date.toInstant().atZone(T(java.time.ZoneId).of('Asia/Seoul')).toLocalDate())")
+    @Cacheable(value = "comments", key = "#request.postId + '-' + #request.page + '-' + #request.size + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
     public List<PostCommentsQueryResponse> getPostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting post comments for userId: {}, date: {}, postId: {}, page: {}, size: {}", 
                 userId, request.getDate(), request.getPostId(), request.getPage(), request.getSize());
         
-        Date targetDate = request.getEffectiveDate();
+        LocalDate targetDate = request.getEffectiveDate();
         
         List<SnsPostCommentMetric> comments;
         if (request.getPostId() != null) {

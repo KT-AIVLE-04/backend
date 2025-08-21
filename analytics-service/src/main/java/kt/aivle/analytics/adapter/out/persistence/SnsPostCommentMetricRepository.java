@@ -1,6 +1,6 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,12 +49,14 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     }
     
     @Override
-    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, Date date) {
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
     }
 
     @Override
-    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, Date date, Integer page, Integer size) {
+    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, LocalDate date, Integer page, Integer size) {
+        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         PageRequest pageRequest = PageRequest.of(page, size);
         return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDateWithPagination(postId, date, pageRequest);
     }

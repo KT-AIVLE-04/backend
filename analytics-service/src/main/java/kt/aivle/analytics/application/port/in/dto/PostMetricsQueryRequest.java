@@ -1,6 +1,6 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -23,20 +23,20 @@ public class PostMetricsQueryRequest extends BaseQueryRequest {
         return new PostMetricsQueryRequest(null, null, postId);
     }
     
-    public static PostMetricsQueryRequest forDate(Date date, String accountId, String postId) {
+    public static PostMetricsQueryRequest forDate(LocalDate date, String accountId, String postId) {
         return new PostMetricsQueryRequest(date, accountId, postId);
     }
     
-    public static PostMetricsQueryRequest forAccount(Date date, String accountId) {
+    public static PostMetricsQueryRequest forAccount(LocalDate date, String accountId) {
         return new PostMetricsQueryRequest(date, accountId, null);
     }
     
-    public static PostMetricsQueryRequest forAllPosts(Date date) {
+    public static PostMetricsQueryRequest forAllPosts(LocalDate date) {
         return new PostMetricsQueryRequest(date, null, null);
     }
     
     // 생성자
-    public PostMetricsQueryRequest(Date date, String accountId, String postId) {
+    public PostMetricsQueryRequest(LocalDate date, String accountId, String postId) {
         super(date);
         this.accountId = accountId;
         this.postId = postId;
