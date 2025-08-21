@@ -25,7 +25,8 @@ public class ExcludePaths {
             "/v3/api-docs/**",
             "/api/auth/v3/api-docs/**",
             "/api/stores/v3/api-docs/**",
-            "/api/shorts/v3/api-docs/**"
+            "/api/shorts/v3/api-docs/**",
+            "/api/contents/v3/api-docs/**"
     );
 
     public static boolean isPatternMatch(String path) {

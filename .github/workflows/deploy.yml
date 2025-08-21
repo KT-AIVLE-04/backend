@@ -19,18 +19,19 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      compose: ${{ steps.filter.outputs.compose }}
-      common:  ${{ steps.filter.outputs.common }}
-      gateway: ${{ steps.filter.outputs.gateway }}
-      auth:    ${{ steps.filter.outputs.auth }}
-      store:   ${{ steps.filter.outputs.store }}
-      shorts:  ${{ steps.filter.outputs.shorts }}
+      compose:  ${{ steps.filter.outputs.compose }}
+      common:   ${{ steps.filter.outputs.common }}
+      gateway:  ${{ steps.filter.outputs.gateway }}
+      auth:     ${{ steps.filter.outputs.auth }}
+      store:    ${{ steps.filter.outputs.store }}
+      shorts:   ${{ steps.filter.outputs.shorts }}
+      content:  ${{ steps.filter.outputs.content }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 첫 배포/수동 실행 예외처리
+      # 첫 배포/수동 실행 예외처리: 비교 기준(base) 커밋 계산
       - name: Compute base SHA (handle first push / dispatch)
         id: base
         shell: bash
@@ -44,7 +45,6 @@ jobs:
               echo "base=$BEFORE" >> $GITHUB_OUTPUT
             fi
           else
-            # workflow_dispatch: 직전 커밋과 비교(없으면 루트)
             if git rev-parse HEAD^ >/dev/null 2>&1; then
               echo "base=$(git rev-parse HEAD^)" >> $GITHUB_OUTPUT
             else
@@ -75,6 +75,8 @@ jobs:
               - 'store-service/**'
             shorts:
               - 'shorts-service/**'
+            content:                   
+              - 'content-service/**'
 
   plan:
     needs: filter
@@ -94,6 +96,7 @@ jobs:
           changed_auth='${{ needs.filter.outputs.auth }}'
           changed_store='${{ needs.filter.outputs.store }}'
           changed_shorts='${{ needs.filter.outputs.shorts }}'
+          changed_content='${{ needs.filter.outputs.content }}'   
 
           tb() { [ "$1" = "true" ] && echo true || echo false; }
 
@@ -103,6 +106,7 @@ jobs:
           CHANGED_AUTH=$(tb "$changed_auth")
           CHANGED_STORE=$(tb "$changed_store")
           CHANGED_SHORTS=$(tb "$changed_shorts")
+          CHANGED_CONTENT=$(tb "$changed_content")             
 
           add() {
             local service="$1" module="$2" image="$3" compose_name="$4" build="$5"
@@ -111,20 +115,20 @@ jobs:
 
           ITEMS=""
 
-          # build = 서비스 자체 변경 OR 공용 변경
           include_svc() {
             local svc="$1" module="$2" image="$3" compose="$4" svc_changed="$5"
             local build=$([ "$svc_changed" = true ] || [ "$CHANGED_COMMON" = true ] && echo true || echo false)
-            # 포함 조건: build == true  OR  CHANGED_COMPOSE == true (compose만 바뀌어도 재배포 필요)
+            # 포함 조건: build == true OR CHANGED_COMPOSE == true (compose만 바뀌어도 재배포)
             if [ "$build" = true ] || [ "$CHANGED_COMPOSE" = true ]; then
               add "$svc" "$module" "$image" "$compose" "$build"
             fi
           }
 
-          include_svc "gateway"        "gateway"        "aivle-gateway"  "gateway"        "$CHANGED_GATEWAY"
-          include_svc "auth-service"   "auth-service"   "aivle-auth"     "auth-service"   "$CHANGED_AUTH"
-          include_svc "store-service"  "store-service"  "aivle-store"    "store-service"  "$CHANGED_STORE"
-          include_svc "shorts-service" "shorts-service" "aivle-shorts"   "shorts-service" "$CHANGED_SHORTS"
+          include_svc "gateway"         "gateway"         "aivle-gateway"   "gateway"         "$CHANGED_GATEWAY"
+          include_svc "auth-service"    "auth-service"    "aivle-auth"      "auth-service"    "$CHANGED_AUTH"
+          include_svc "store-service"   "store-service"   "aivle-store"     "store-service"   "$CHANGED_STORE"
+          include_svc "shorts-service"  "shorts-service"  "aivle-shorts"    "shorts-service"  "$CHANGED_SHORTS"
+          include_svc "content-service" "content-service" "aivle-content"   "content-service" "$CHANGED_CONTENT"   
 
           ITEMS="[${ITEMS%,}]"
 
@@ -173,10 +177,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
-      APP_YML_GATEWAY: ${{ secrets.APPLICATION_YML_GATEWAY }}
-      APP_YML_AUTH:    ${{ secrets.APPLICATION_YML_AUTH }}
-      APP_YML_STORE:   ${{ secrets.APPLICATION_YML_STORE }}
-      APP_YML_SHORTS:  ${{ secrets.APPLICATION_YML_SHORTS }}
+      APP_YML_GATEWAY:   ${{ secrets.APPLICATION_YML_GATEWAY }}
+      APP_YML_AUTH:      ${{ secrets.APPLICATION_YML_AUTH }}
+      APP_YML_STORE:     ${{ secrets.APPLICATION_YML_STORE }}
+      APP_YML_SHORTS:    ${{ secrets.APPLICATION_YML_SHORTS }}
+      APP_YML_CONTENT:   ${{ secrets.APPLICATION_YML_CONTENT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -192,10 +197,11 @@ jobs:
         run: |
           mkdir -p ./${{ matrix.module }}/src/main/resources
           case "${{ matrix.module }}" in
-            gateway)        APP_YML="$APP_YML_GATEWAY" ;;
-            auth-service)   APP_YML="$APP_YML_AUTH" ;;
-            store-service)  APP_YML="$APP_YML_STORE" ;;
-            shorts-service) APP_YML="$APP_YML_SHORTS" ;;
+            gateway)         APP_YML="$APP_YML_GATEWAY"  ;;
+            auth-service)    APP_YML="$APP_YML_AUTH"     ;;
+            store-service)   APP_YML="$APP_YML_STORE"    ;;
+            shorts-service)  APP_YML="$APP_YML_SHORTS"   ;;
+            content-service) APP_YML="$APP_YML_CONTENT"  ;;  
           esac
           cat <<EOF > ./${{ matrix.module }}/src/main/resources/application.yml
           ${APP_YML}
@@ -204,7 +210,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # build=true일 때만 빌드
       - name: Build JAR
         if: ${{ matrix.build == true }}
         run: ./gradlew :${{ matrix.module }}:clean :${{ matrix.module }}:build
@@ -222,7 +227,6 @@ jobs:
           docker push "$IMG:latest"
           docker push "$IMG:${SHA}"
 
-      # 재배포 (compose만 바뀐 경우도 여기서 처리)
       - name: Deploy ${{ matrix.service }} to server
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -232,10 +236,12 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/deploy/
-            tmp_env=$(mktemp)
-            grep -v '^DOCKER_USERNAME=' .env > "$tmp_env" || true
-            echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> "$tmp_env"
-            mv "$tmp_env" .env
+
+            cat > .env <<'EOF'
+            DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}
+            CLOUDFRONT_PRIVATE_KEY=${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+            EOF
+
             docker compose pull ${{ matrix.compose }}
             docker compose up -d --no-deps ${{ matrix.compose }}
             docker image prune -f || true

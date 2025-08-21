@@ -10,22 +10,18 @@ import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioReques
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateScenarioResponse;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateShortsRequest;
 import kt.aivle.shorts.application.port.out.ai.shorts.dto.GenerateShortsResponse;
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
+@RequiredArgsConstructor
 public class AiShortsAdapter implements AiShortsPort {
 
     private final WebClient aiWebClient;
     private final AiShortsMapper mapper;
-
-    public AiShortsAdapter(@Qualifier("aiWebClient") WebClient aiWebClient, AiShortsMapper mapper) {
-        this.aiWebClient = aiWebClient;
-        this.mapper = mapper;
-    }
 
     @Override
     public Mono<GenerateScenarioResponse> generateScenario(GenerateScenarioRequest request) {

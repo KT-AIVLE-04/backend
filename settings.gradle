@@ -4,4 +4,4 @@ include 'gateway'
 include 'auth-service'
 include 'store-service'
 include 'shorts-service'
-
+include 'content-service'
