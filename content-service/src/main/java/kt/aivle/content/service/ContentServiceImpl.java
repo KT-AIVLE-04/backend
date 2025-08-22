@@ -37,6 +37,10 @@ public class ContentServiceImpl implements ContentService {
     private final S3Storage s3Storage;
     private final CloudFrontSigner cloudFrontSigner;
 
+    private static final String MEDIA_PREFIX = "media/";
+    private static final String ORIGIN_DIR = "origin/";
+    private static final String THUMB_DIR = "thumbnail/";
+
     @Override
     public ContentResponse uploadContent(CreateContentRequest request) {
         try {
@@ -251,11 +255,11 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private String getOriginKey(String uuid, String originalFilename) {
-        return "origin/" + uuid + "-" + originalFilename;
+        return MEDIA_PREFIX + ORIGIN_DIR + uuid + "-" + originalFilename;
     }
 
     private String getThumbKey(long userId, long storeId, String uuid) {
-        return "thumbnail/%d-%d/%s.jpg".formatted(userId, storeId, uuid);
+        return MEDIA_PREFIX + THUMB_DIR + "%d-%d/%s.jpg".formatted(userId, storeId, uuid);
     }
 
     private boolean isValidOwner(Content content, Long userId, Long storeId) {
