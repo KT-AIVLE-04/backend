@@ -103,7 +103,7 @@ public class ContentController {
     }
 
     public String thumbPrefix(Long userId, Long storeId) {
-        return String.format("thumbnail/%d-%d/", userId, storeId);
+        return String.format("media/thumbnail/%d-%d/", userId, storeId);
     }
 //
 //    @DeleteMapping("/{id}")
