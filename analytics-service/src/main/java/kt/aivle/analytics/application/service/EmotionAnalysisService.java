@@ -98,7 +98,7 @@ public class EmotionAnalysisService {
                     .keyword(keyword)
                     .sentiment(SentimentType.POSITIVE)
                     .build())
-                .collect(Collectors.toList()));
+                .toList());
         }
         
         // 부정 키워드 저장
