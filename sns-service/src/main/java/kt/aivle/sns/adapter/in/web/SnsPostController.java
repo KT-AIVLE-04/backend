@@ -96,7 +96,7 @@ public class SnsPostController {
     }
 
     public String thumbPrefix(Long userId, Long storeId) {
-        return String.format("thumbnail/%d-%d/", userId, storeId);
+        return String.format("media/thumbnail/%d-%d/", userId, storeId);
     }
 
     //    @PatchMapping("/{id}")
