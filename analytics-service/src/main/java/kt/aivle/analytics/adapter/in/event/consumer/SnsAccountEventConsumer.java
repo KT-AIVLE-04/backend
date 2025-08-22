@@ -1,13 +1,14 @@
 package kt.aivle.analytics.adapter.in.event.consumer;
 
-import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
-import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.common.exception.BusinessException;
-import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
+import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
+import kt.aivle.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -16,11 +17,10 @@ public class SnsAccountEventConsumer {
     
     private final AnalyticsEventUseCase analyticsEventUseCase;
     
-    @KafkaListener(topics = "sns-account.connected", groupId = "analytics-service")
+    @KafkaListener(topics = "sns-account.connected", containerFactory = "snsAccountEventListenerFactory")
     public void handleSnsAccountConnected(SnsAccountEvent event) {
         try {
-            log.info("Received SNS account connected event: accountId={}, userId={}, snsAccountId={}, type={}", 
-                    event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
+            log.info("Received SNS account connected event: {}", event);
             
             analyticsEventUseCase.handleSnsAccountConnected(event);
             
@@ -30,11 +30,10 @@ public class SnsAccountEventConsumer {
         }
     }
     
-    @KafkaListener(topics = "sns-account.disconnected", groupId = "analytics-service")
+    @KafkaListener(topics = "sns-account.disconnected", containerFactory = "snsAccountEventListenerFactory")
     public void handleSnsAccountDisconnected(SnsAccountEvent event) {
         try {
-            log.info("Received SNS account disconnected event: accountId={}, userId={}, snsAccountId={}, type={}", 
-                    event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
+            log.info("Received SNS account disconnected event: {}", event);
             
             analyticsEventUseCase.handleSnsAccountDisconnected(event);
             
@@ -43,4 +42,6 @@ public class SnsAccountEventConsumer {
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
+    
+
 }

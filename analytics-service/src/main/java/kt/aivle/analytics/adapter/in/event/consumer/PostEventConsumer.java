@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.common.exception.BusinessException;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,11 +17,10 @@ public class PostEventConsumer {
     
     private final AnalyticsEventUseCase analyticsEventUseCase;
     
-    @KafkaListener(topics = "post.created", groupId = "analytics-service")
+    @KafkaListener(topics = "post.created", containerFactory = "postEventListenerFactory")
     public void handlePostCreated(SnsPostEvent event) {
         try {
-            log.info("Received post created event: postId={}, accountId={}, snsPostId={}", 
-                    event.getPostId(), event.getAccountId(), event.getSnsPostId());
+            log.info("Received post created event: {}", event);
             
             analyticsEventUseCase.handlePostCreated(event);
             
@@ -31,11 +30,10 @@ public class PostEventConsumer {
         }
     }
     
-    @KafkaListener(topics = "post.deleted", groupId = "analytics-service")
+    @KafkaListener(topics = "post.deleted", containerFactory = "postEventListenerFactory")
     public void handlePostDeleted(SnsPostEvent event) {
         try {
-            log.info("Received post deleted event: postId={}, accountId={}, snsPostId={}", 
-                    event.getPostId(), event.getAccountId(), event.getSnsPostId());
+            log.info("Received post deleted event: {}", event);
             
             analyticsEventUseCase.handlePostDeleted(event);
             
@@ -44,4 +42,6 @@ public class PostEventConsumer {
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
+    
+
 }

@@ -1,14 +1,16 @@
 package kt.aivle.analytics.adapter.in.event.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class SnsPostEvent {
-    private Long postId;
-    private Long accountId;
-    private String snsPostId;
+    private Long postId;          // 내부 post PK
+    private Long accountId;       // SNS 계정 PK (내 DB)
+    private String snsPostId;     // SNS 측 게시글 ID(생성 후 채워짐)
 }
