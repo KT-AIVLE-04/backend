@@ -1,42 +1,60 @@
 package kt.aivle.analytics.exception;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
-@Getter
-@RequiredArgsConstructor
-public enum AnalyticsErrorCode {
-    
+import kt.aivle.common.code.DefaultCode;
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public enum AnalyticsErrorCode implements DefaultCode {
+
     // 입력 검증 관련
-    INVALID_POST_ID("ANALYTICS-001", "Invalid post ID format"),
-    INVALID_ACCOUNT_ID("ANALYTICS-002", "Invalid account ID format"),
-    INVALID_DATE("ANALYTICS-003", "Invalid date parameter"),
-    INVALID_PAGINATION("ANALYTICS-004", "Invalid pagination parameters"),
+    INVALID_POST_ID(HttpStatus.BAD_REQUEST, false, "잘못된 게시물 ID 형식입니다."),
+    INVALID_ACCOUNT_ID(HttpStatus.BAD_REQUEST, false, "잘못된 계정 ID 형식입니다."),
+    INVALID_USER_ID(HttpStatus.BAD_REQUEST, false, "잘못된 사용자 ID 형식입니다."),
+    INVALID_DATE(HttpStatus.BAD_REQUEST, false, "잘못된 날짜 매개변수입니다."),
+    INVALID_PAGINATION(HttpStatus.BAD_REQUEST, false, "잘못된 페이지네이션 매개변수입니다."),
     
     // 데이터 조회 관련
-    POST_NOT_FOUND("ANALYTICS-101", "Post not found"),
-    ACCOUNT_NOT_FOUND("ANALYTICS-102", "Account not found"),
-    NO_DATA_AVAILABLE("ANALYTICS-103", "No data available for the specified criteria"),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, false, "게시물을 찾을 수 없습니다."),
+    ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, false, "계정을 찾을 수 없습니다."),
+    NO_DATA_AVAILABLE(HttpStatus.NOT_FOUND, false, "지정된 조건에 해당하는 데이터가 없습니다."),
     
     // YouTube API 관련
-    YOUTUBE_API_ERROR("ANALYTICS-201", "YouTube API error occurred"),
-    YOUTUBE_QUOTA_EXCEEDED("ANALYTICS-202", "YouTube API quota exceeded"),
-    YOUTUBE_VIDEO_NOT_FOUND("ANALYTICS-203", "YouTube video not found"),
-    YOUTUBE_CHANNEL_NOT_FOUND("ANALYTICS-204", "YouTube channel not found"),
+    YOUTUBE_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "YouTube API 오류가 발생했습니다."),
+    YOUTUBE_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, false, "YouTube API 할당량이 초과되었습니다."),
+    YOUTUBE_VIDEO_NOT_FOUND(HttpStatus.NOT_FOUND, false, "YouTube 비디오를 찾을 수 없습니다."),
+    YOUTUBE_CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND, false, "YouTube 채널을 찾을 수 없습니다."),
     
     // AI 분석 관련
-    AI_ANALYSIS_ERROR("ANALYTICS-301", "AI analysis service error occurred"),
-    EMOTION_ANALYSIS_ERROR("ANALYTICS-302", "Emotion analysis failed"),
+    AI_ANALYSIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "AI 분석 서비스 오류가 발생했습니다."),
+    EMOTION_ANALYSIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "감정 분석에 실패했습니다."),
     
     // 권한 관련
-    UNAUTHORIZED_ACCESS("ANALYTICS-401", "Unauthorized access to data"),
-    USER_MISMATCH("ANALYTICS-402", "User ID mismatch"),
+    UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, false, "데이터에 대한 권한이 없습니다."),
+    USER_MISMATCH(HttpStatus.FORBIDDEN, false, "사용자 ID가 일치하지 않습니다."),
     
     // 시스템 관련
-    INTERNAL_ERROR("ANALYTICS-500", "Internal server error"),
-    DATABASE_ERROR("ANALYTICS-501", "Database operation failed"),
-    CACHE_ERROR("ANALYTICS-502", "Cache operation failed");
-    
-    private final String code;
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "내부 서버 오류가 발생했습니다."),
+    DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "데이터베이스 작업에 실패했습니다."),
+    CACHE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "캐시 작업에 실패했습니다.");
+
+    private final HttpStatus httpStatus;
+    private final boolean success;
     private final String message;
+
+    @Override
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
+
+    @Override
+    public boolean isSuccess() {
+        return success;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
 }

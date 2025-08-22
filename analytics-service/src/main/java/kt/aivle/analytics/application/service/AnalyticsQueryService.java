@@ -33,7 +33,7 @@ import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -169,7 +169,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         // 게시물 존재 여부 확인
         snsPostRepositoryPort.findById(postId)
-            .orElseThrow(() -> new AnalyticsException("Post not found: " + postId));
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         // 감정분석 결과 조회
         List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostId(postId);
@@ -220,7 +220,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("Getting realtime post metrics for userId: {}, postId: {}", userId, request.getPostId());
         
         if (request.getPostId() == null) {
-            throw new AnalyticsException("PostId is required for realtime metrics");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         return externalApiPort.getRealtimePostMetrics(Long.parseLong(request.getPostId()));
@@ -231,7 +231,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("Getting realtime account metrics for userId: {}, accountId: {}", userId, request.getAccountId());
         
         if (request.getAccountId() == null) {
-            throw new AnalyticsException("AccountId is required for realtime metrics");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         return externalApiPort.getRealtimeAccountMetrics(Long.parseLong(request.getAccountId()));
@@ -242,12 +242,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("Getting realtime post comments for userId: {}, postId: {}", userId, request.getPostId());
         
         if (request.getPostId() == null) {
-            throw new AnalyticsException("PostId is required for realtime comments");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         // 로컬 postId로 DB에서 snsPostId 조회
         SnsPost post = snsPostRepositoryPort.findById(Long.parseLong(request.getPostId()))
-            .orElseThrow(() -> new AnalyticsException(AnalyticsErrorCode.POST_NOT_FOUND, "Post not found: " + request.getPostId()));
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         return externalApiPort.getVideoComments(post.getSnsPostId());
     }

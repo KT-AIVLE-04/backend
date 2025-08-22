@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"kt.aivle.analytics", "kt.aivle.common"})
 @EnableScheduling
 @EnableRetry
 public class AnalyticsServiceApplication {

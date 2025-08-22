@@ -5,7 +5,8 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
+import kt.aivle.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -39,35 +40,35 @@ public class AnalyticsDomainService implements ValidationPort {
     @Override
     public void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new AnalyticsException("Start date and end date cannot be null");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         if (startDate.isAfter(endDate)) {
-            throw new AnalyticsException("Start date cannot be after end date");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         if (startDate.isAfter(LocalDate.now())) {
-            throw new AnalyticsException("Start date cannot be in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         if (endDate.isAfter(LocalDate.now())) {
-            throw new AnalyticsException("End date cannot be in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         // 최대 1년 범위 제한
         if (startDate.plusYears(1).isBefore(endDate)) {
-            throw new AnalyticsException("Date range cannot exceed 1 year");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
     }
     
     @Override
     public void validateUserAccess(Long userId, Long accountId) {
         if (userId == null || accountId == null) {
-            throw new AnalyticsException("User ID and Account ID cannot be null");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (userId <= 0 || accountId <= 0) {
-            throw new AnalyticsException("User ID and Account ID must be positive");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         // 실제 구현에서는 사용자가 해당 계정에 접근 권한이 있는지 확인
@@ -79,7 +80,7 @@ public class AnalyticsDomainService implements ValidationPort {
     public void validateSubscriberCount(Long count, Long accountId) {
         if (!isValidMetric(count, MAX_REASONABLE_SUBSCRIBERS)) {
             log.warn("Invalid subscriber count for accountId: {}, value: {}", accountId, count);
-            throw new AnalyticsException("Invalid subscriber count for accountId: " + accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
     }
     
@@ -87,7 +88,7 @@ public class AnalyticsDomainService implements ValidationPort {
     public void validateViewCount(Long count, Long id, String type) {
         if (!isValidMetric(count, MAX_REASONABLE_VIEWS)) {
             log.warn("Invalid view count for {}: {}, value: {}", type, id, count);
-            throw new AnalyticsException("Invalid view count for " + type + ": " + id);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
     }
     
@@ -95,7 +96,7 @@ public class AnalyticsDomainService implements ValidationPort {
     public void validateLikeCount(Long count, Long id) {
         if (!isValidMetric(count, MAX_REASONABLE_LIKES)) {
             log.warn("Invalid like count for postId: {}, value: {}", id, count);
-            throw new AnalyticsException("Invalid like count for postId: " + id);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
     }
     
@@ -103,7 +104,7 @@ public class AnalyticsDomainService implements ValidationPort {
     public void validateCommentCount(Long count, Long id) {
         if (!isValidMetric(count, MAX_REASONABLE_COMMENTS)) {
             log.warn("Invalid comment count for postId: {}, value: {}", id, count);
-            throw new AnalyticsException("Invalid comment count for postId: " + id);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
     }
     

@@ -17,7 +17,7 @@ import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,16 +71,16 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             // AI 분석 서버 호출
             AiAnalysisResponse response = restTemplate.postForObject(aiAnalysisUrl, entity, AiAnalysisResponse.class);
             
-            if (response == null) {
-                throw new AnalyticsException(AnalyticsErrorCode.AI_ANALYSIS_ERROR, "AI analysis response is null");
-            }
+                    if (response == null) {
+            throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+        }
             
             log.info("AI analysis completed successfully for {} comments", comments.size());
             return response;
             
         } catch (Exception e) {
             log.error("Failed to analyze comments with AI service", e);
-            throw new AnalyticsException(AnalyticsErrorCode.AI_ANALYSIS_ERROR, "Failed to analyze comments", e);
+            throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
         }
     }
 }

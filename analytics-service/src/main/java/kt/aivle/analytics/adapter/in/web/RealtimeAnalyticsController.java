@@ -23,7 +23,8 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.exception.AnalyticsValidationException;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -46,16 +47,16 @@ public class RealtimeAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidPostId(postId)) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         PostMetricsQueryRequest request = PostMetricsQueryRequest.forCurrentDate(postId);
         if (!request.isValidIds()) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         List<RealtimePostMetricsResponse> response = analyticsQueryUseCase.getRealtimePostMetrics(userId, request);
@@ -71,16 +72,16 @@ public class RealtimeAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidAccountId(accountId)) {
-            throw AnalyticsValidationException.invalidAccountId(accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         AccountMetricsQueryRequest request = AccountMetricsQueryRequest.forCurrentDate(accountId);
         if (!request.isValidAccountId()) {
-            throw AnalyticsValidationException.invalidAccountId(accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         List<RealtimeAccountMetricsResponse> response = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, request);
@@ -98,20 +99,20 @@ public class RealtimeAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidPostId(postId)) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (!validator.isValidPagination(page, size)) {
-            throw AnalyticsValidationException.invalidPagination(page, size);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_PAGINATION);
         }
         
         PostCommentsQueryRequest request = PostCommentsQueryRequest.forCurrentDate(postId, page, size);
         if (!request.isValidRequest()) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         List<PostCommentsQueryResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, request);
@@ -127,11 +128,11 @@ public class RealtimeAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidPostId(postId)) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         EmotionAnalysisResponse response = analyticsQueryUseCase.getEmotionAnalysis(userId, Long.parseLong(postId));

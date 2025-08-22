@@ -14,7 +14,7 @@ import kt.aivle.analytics.domain.entity.PostCommentKeyword;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +45,7 @@ public class EmotionAnalysisService {
             
         } catch (Exception e) {
             log.error("Failed to analyze and save emotions for postId: {}", postId, e);
-            throw new AnalyticsException(AnalyticsErrorCode.EMOTION_ANALYSIS_ERROR, "Failed to analyze emotions", e);
+            throw new BusinessException(AnalyticsErrorCode.EMOTION_ANALYSIS_ERROR);
         }
     }
     

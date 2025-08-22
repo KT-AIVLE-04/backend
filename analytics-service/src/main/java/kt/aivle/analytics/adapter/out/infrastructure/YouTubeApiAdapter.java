@@ -28,8 +28,7 @@ import kt.aivle.analytics.domain.entity.SnsAccount;
 import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.model.SnsType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import kt.aivle.analytics.exception.AnalyticsException;
-import kt.aivle.analytics.exception.AnalyticsQuotaExceededException;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -133,7 +132,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     public List<RealtimePostMetricsResponse> getRealtimePostMetrics(Long postId) {
         try {
             SnsPost post = snsPostRepositoryPort.findById(postId)
-                .orElseThrow(() -> new AnalyticsException(AnalyticsErrorCode.POST_NOT_FOUND, "Post not found: " + postId));
+                .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
             
             VideoStatistics statistics = getVideoStatistics(post.getSnsPostId());
             
@@ -164,7 +163,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     public List<RealtimeAccountMetricsResponse> getRealtimeAccountMetrics(Long accountId) {
         try {
             SnsAccount account = snsAccountRepositoryPort.findById(accountId)
-                .orElseThrow(() -> new AnalyticsException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND, "Account not found: " + accountId));
+                .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
             
             ChannelStatistics statistics = getChannelStatistics(account.getSnsAccountId());
             
@@ -217,20 +216,20 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                     errorMessage.toLowerCase().contains("exceeded")) {
                     
                     log.warn("YouTube API quota exceeded detected: {}", errorMessage);
-                    throw new AnalyticsQuotaExceededException("YouTube API quota exceeded: " + errorMessage, e);
+                    throw new BusinessException(AnalyticsErrorCode.YOUTUBE_QUOTA_EXCEEDED);
                 }
             }
             
             if (statusCode == 404) {
                 if (operation.contains("video")) {
-                    throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_VIDEO_NOT_FOUND, "YouTube video not found", e);
+                    throw new BusinessException(AnalyticsErrorCode.YOUTUBE_VIDEO_NOT_FOUND);
                 } else if (operation.contains("channel")) {
-                    throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_CHANNEL_NOT_FOUND, "YouTube channel not found", e);
+                    throw new BusinessException(AnalyticsErrorCode.YOUTUBE_CHANNEL_NOT_FOUND);
                 }
             }
         }
         
-        throw new AnalyticsException(AnalyticsErrorCode.YOUTUBE_API_ERROR, "YouTube API error: " + e.getMessage(), e);
+        throw new BusinessException(AnalyticsErrorCode.YOUTUBE_API_ERROR);
     }
     
     private YouTube getYouTubeClient() {

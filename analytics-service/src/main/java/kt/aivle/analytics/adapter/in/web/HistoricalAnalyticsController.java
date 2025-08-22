@@ -25,8 +25,9 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.exception.AnalyticsValidationException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
+import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -49,20 +50,20 @@ public class HistoricalAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidPostId(postId)) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (date == null || date.isAfter(LocalDate.now())) {
-            throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         PostMetricsQueryRequest request = PostMetricsQueryRequest.forDate(date, null, postId);
         if (!request.isValidIds() || !request.isValidDate()) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         List<PostMetricsQueryResponse> response = analyticsQueryUseCase.getPostMetrics(userId, request);
@@ -79,20 +80,20 @@ public class HistoricalAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidAccountId(accountId)) {
-            throw AnalyticsValidationException.invalidAccountId(accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (date == null || date.isAfter(LocalDate.now())) {
-            throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         AccountMetricsQueryRequest request = AccountMetricsQueryRequest.forDate(date, accountId);
         if (!request.isValidAccountId() || !request.isValidDate()) {
-            throw AnalyticsValidationException.invalidAccountId(accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         List<AccountMetricsQueryResponse> response = analyticsQueryUseCase.getAccountMetrics(userId, request);
@@ -111,24 +112,24 @@ public class HistoricalAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidPostId(postId)) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (date == null || date.isAfter(LocalDate.now())) {
-            throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         if (!validator.isValidPagination(page, size)) {
-            throw AnalyticsValidationException.invalidPagination(page, size);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_PAGINATION);
         }
         
         PostCommentsQueryRequest request = PostCommentsQueryRequest.forDate(date, postId, page, size);
         if (!request.isValidRequest()) {
-            throw AnalyticsValidationException.invalidPostId(postId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         List<PostCommentsQueryResponse> response = analyticsQueryUseCase.getPostComments(userId, request);
@@ -145,15 +146,15 @@ public class HistoricalAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidAccountId(accountId)) {
-            throw AnalyticsValidationException.invalidAccountId(accountId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
         
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (date == null || date.isAfter(LocalDate.now())) {
-            throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         PostMetricsQueryRequest request = PostMetricsQueryRequest.forAccount(date, accountId);
@@ -171,15 +172,15 @@ public class HistoricalAnalyticsController {
         
         // 입력 검증
         if (!validator.isValidUserId(userId)) {
-            throw AnalyticsValidationException.invalidUserId(userId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (!validator.isValidUserId(currentUserId)) {
-            throw AnalyticsValidationException.invalidUserId(currentUserId);
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
         if (date == null || date.isAfter(LocalDate.now())) {
-            throw AnalyticsValidationException.invalidDate("Date cannot be null or in the future");
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
         // 사용자 본인의 데이터만 조회 가능하도록 검증

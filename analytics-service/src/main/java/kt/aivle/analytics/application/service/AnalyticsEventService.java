@@ -10,7 +10,8 @@ import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPo
 import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccount;
 import kt.aivle.analytics.domain.entity.SnsPost;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +45,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             
         } catch (Exception e) {
             log.error("Failed to process post created event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to process post created event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -67,7 +68,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             
         } catch (Exception e) {
             log.error("Failed to process post deleted event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to process post deleted event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -92,7 +93,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             
         } catch (Exception e) {
             log.error("Failed to process SNS account connected event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to process SNS account connected event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -114,7 +115,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             
         } catch (Exception e) {
             log.error("Failed to process SNS account disconnected event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to process SNS account disconnected event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
 }

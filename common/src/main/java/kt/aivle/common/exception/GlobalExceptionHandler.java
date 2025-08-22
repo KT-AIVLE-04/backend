@@ -1,9 +1,12 @@
 package kt.aivle.common.exception;
 
-import kt.aivle.common.response.ApiResponse;
-import kt.aivle.common.response.ResponseUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import static kt.aivle.common.code.CommonResponseCode.BAD_REQUEST;
+import static kt.aivle.common.code.CommonResponseCode.BAD_REQUEST_MESSAGE;
+import static kt.aivle.common.code.CommonResponseCode.BAD_REQUEST_UPLOAD;
+import static kt.aivle.common.code.CommonResponseCode.INTERNAL_SERVER_ERROR;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,9 +14,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import java.util.List;
-
-import static kt.aivle.common.code.CommonResponseCode.*;
+import kt.aivle.common.response.ApiResponse;
+import kt.aivle.common.response.ResponseUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor

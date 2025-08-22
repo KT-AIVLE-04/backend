@@ -15,7 +15,8 @@ import kt.aivle.analytics.adapter.in.web.dto.BatchJobStatusResponse;
 import kt.aivle.analytics.adapter.in.web.dto.BatchOperationResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.service.BatchJobMonitor;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +46,8 @@ public class BatchController {
                 .build();
             
             return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-        } catch (AnalyticsException e) {
-            log.error("Analytics error during {}: {}", operationName, e.getMessage(), e);
+        } catch (BusinessException e) {
+            log.error("Business error during {}: {}", operationName, e.getMessage(), e);
             BatchOperationResponse response = BatchOperationResponse.builder()
                 .operationName(operationName)
                 .status("FAILED")

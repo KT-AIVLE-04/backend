@@ -2,7 +2,8 @@ package kt.aivle.analytics.adapter.in.event.consumer;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -25,7 +26,7 @@ public class SnsAccountEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle SNS account connected event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to handle SNS account connected event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -39,7 +40,7 @@ public class SnsAccountEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle SNS account disconnected event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to handle SNS account disconnected event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
 }

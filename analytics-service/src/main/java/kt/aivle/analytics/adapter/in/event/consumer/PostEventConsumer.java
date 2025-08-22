@@ -5,7 +5,8 @@ import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.exception.AnalyticsException;
+import kt.aivle.common.exception.BusinessException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +27,7 @@ public class PostEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle post created event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to handle post created event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -40,7 +41,7 @@ public class PostEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle post deleted event: {}", e.getMessage(), e);
-            throw new AnalyticsException("Failed to handle post deleted event", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
 }

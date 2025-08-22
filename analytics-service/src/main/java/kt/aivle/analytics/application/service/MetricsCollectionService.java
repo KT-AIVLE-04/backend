@@ -27,8 +27,8 @@ import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SnsType;
-import kt.aivle.analytics.exception.AnalyticsException;
-import kt.aivle.analytics.exception.AnalyticsQuotaExceededException;
+import kt.aivle.analytics.exception.AnalyticsErrorCode;
+import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -125,21 +125,18 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                         totalProcessed++;
                         batchJobMonitor.recordJobProgress(jobName, totalProcessed, (int) totalItems);
                         
-                    } catch (AnalyticsQuotaExceededException e) {
-                        log.warn("YouTube API quota exceeded during {} collection. Stopping batch.", itemType);
-                        // 할당량 초과 시 배치 작업 중단
-                        break;
-                        
-                    } catch (Exception e) {
-                        // YouTube API 할당량 초과 에러도 처리
-                        if (e.getCause() instanceof AnalyticsQuotaExceededException) {
-                            log.warn("YouTube API quota exceeded during {} collection (from API). Stopping batch.", itemType);
+                    } catch (BusinessException e) {
+                        if (e.getMessage().contains("할당량")) {
+                            log.warn("YouTube API quota exceeded during {} collection. Stopping batch.", itemType);
                             // 할당량 초과 시 배치 작업 중단
                             break;
                         } else {
                             failedIds.add(idExtractor.apply(item));
                             log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
                         }
+                    } catch (Exception e) {
+                        failedIds.add(idExtractor.apply(item));
+                        log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
                     }
                 }
                 page++;
@@ -155,7 +152,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         } catch (Exception e) {
             batchJobMonitor.recordJobFailure(jobName, e.getMessage());
             log.error("Failed to collect {}", itemType, e);
-            throw new AnalyticsException("Failed to collect " + itemType, e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -165,7 +162,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         log.info("Collecting account metrics for accountId: {}", accountId);
         
         SnsAccount snsAccount = snsAccountRepositoryPort.findById(accountId)
-            .orElseThrow(() -> new AnalyticsException("SNS Account not found: " + accountId));
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
         
         if (snsAccount.getType() != SnsType.YOUTUBE) {
             log.warn("Skipping non-YouTube account: {}", accountId);
@@ -211,7 +208,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             
         } catch (Exception e) {
             log.error("Failed to collect account metrics for accountId: {}", accountId, e);
-            throw new AnalyticsException("Failed to collect account metrics", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -221,7 +218,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         log.info("Collecting post metrics for postId: {}", postId);
         
         SnsPost post = snsPostRepositoryPort.findById(postId)
-            .orElseThrow(() -> new AnalyticsException("Post not found: " + postId));
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         try {
             // 비디오 정보 조회
@@ -266,7 +263,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             
         } catch (Exception e) {
             log.error("Failed to collect post metrics for postId: {}", postId, e);
-            throw new AnalyticsException("Failed to collect post metrics", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
@@ -276,7 +273,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         log.info("Collecting post comments for postId: {}", postId);
         
         SnsPost post = snsPostRepositoryPort.findById(postId)
-            .orElseThrow(() -> new AnalyticsException("Post not found: " + postId));
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         try {
             // 1. API 호출로 댓글 데이터 수집 (트랜잭션 외부)
@@ -289,7 +286,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             
         } catch (IOException e) {
             log.error("Failed to collect comments for postId: {}", postId, e);
-            throw new AnalyticsException("Failed to collect comments", e);
+            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
     
