@@ -10,9 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.CachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class RedisCacheAdapter implements CachePort {
     private static final String CACHE_PREFIX = "analytics:";
     
     @Override
-    public void cacheRealtimePostMetrics(Long postId, List<RealtimePostMetricsResponse> metrics) {
+    public void cacheRealtimePostMetrics(Long postId, List<PostMetricsResponse> metrics) {
         try {
             String key = generatePostMetricsKey(postId);
             String value = objectMapper.writeValueAsString(metrics);
@@ -45,15 +45,15 @@ public class RedisCacheAdapter implements CachePort {
     }
     
     @Override
-    public Optional<List<RealtimePostMetricsResponse>> getCachedRealtimePostMetrics(Long postId) {
+    public Optional<List<PostMetricsResponse>> getCachedRealtimePostMetrics(Long postId) {
         try {
             String key = generatePostMetricsKey(postId);
             Object cached = redisTemplate.opsForValue().get(key);
             
             if (cached != null) {
-                List<RealtimePostMetricsResponse> metrics = objectMapper.readValue(
+                List<PostMetricsResponse> metrics = objectMapper.readValue(
                     cached.toString(), 
-                    new TypeReference<List<RealtimePostMetricsResponse>>() {}
+                    new TypeReference<List<PostMetricsResponse>>() {}
                 );
                 log.debug("Retrieved cached realtime post metrics for postId: {}", postId);
                 return Optional.of(metrics);
@@ -66,7 +66,7 @@ public class RedisCacheAdapter implements CachePort {
     }
     
     @Override
-    public void cacheRealtimeAccountMetrics(Long accountId, List<RealtimeAccountMetricsResponse> metrics) {
+    public void cacheRealtimeAccountMetrics(Long accountId, List<AccountMetricsResponse> metrics) {
         try {
             String key = generateAccountMetricsKey(accountId);
             String value = objectMapper.writeValueAsString(metrics);
@@ -78,15 +78,15 @@ public class RedisCacheAdapter implements CachePort {
     }
     
     @Override
-    public Optional<List<RealtimeAccountMetricsResponse>> getCachedRealtimeAccountMetrics(Long accountId) {
+    public Optional<List<AccountMetricsResponse>> getCachedRealtimeAccountMetrics(Long accountId) {
         try {
             String key = generateAccountMetricsKey(accountId);
             Object cached = redisTemplate.opsForValue().get(key);
             
             if (cached != null) {
-                List<RealtimeAccountMetricsResponse> metrics = objectMapper.readValue(
+                List<AccountMetricsResponse> metrics = objectMapper.readValue(
                     cached.toString(), 
-                    new TypeReference<List<RealtimeAccountMetricsResponse>>() {}
+                    new TypeReference<List<AccountMetricsResponse>>() {}
                 );
                 log.debug("Retrieved cached realtime account metrics for accountId: {}", accountId);
                 return Optional.of(metrics);
@@ -99,7 +99,7 @@ public class RedisCacheAdapter implements CachePort {
     }
     
     @Override
-    public void cachePostComments(Long postId, List<PostCommentsQueryResponse> comments) {
+    public void cachePostComments(Long postId, List<PostCommentsResponse> comments) {
         try {
             String key = generateCommentsKey(postId);
             String value = objectMapper.writeValueAsString(comments);
@@ -111,15 +111,15 @@ public class RedisCacheAdapter implements CachePort {
     }
     
     @Override
-    public Optional<List<PostCommentsQueryResponse>> getCachedPostComments(Long postId) {
+    public Optional<List<PostCommentsResponse>> getCachedPostComments(Long postId) {
         try {
             String key = generateCommentsKey(postId);
             Object cached = redisTemplate.opsForValue().get(key);
             
             if (cached != null) {
-                List<PostCommentsQueryResponse> comments = objectMapper.readValue(
+                List<PostCommentsResponse> comments = objectMapper.readValue(
                     cached.toString(), 
-                    new TypeReference<List<PostCommentsQueryResponse>>() {}
+                    new TypeReference<List<PostCommentsResponse>>() {}
                 );
                 log.debug("Retrieved cached post comments for postId: {}", postId);
                 return Optional.of(comments);

@@ -18,9 +18,9 @@ import com.google.api.services.youtube.model.VideoListResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
@@ -102,7 +102,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     }
     
     @Override
-    public List<PostCommentsQueryResponse> getVideoComments(String videoId) {
+    public List<PostCommentsResponse> getVideoComments(String videoId) {
         try {
             YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
                 .list(List.of("snippet"))
@@ -117,7 +117,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             }
             
             return response.getItems().stream()
-                .map(this::toPostCommentsQueryResponse)
+                .map(this::toPostCommentsResponse)
                 .collect(Collectors.toList());
             
         } catch (IOException e) {
@@ -129,7 +129,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     // AI 분석은 별도 AiAnalysisAdapter에서 처리
     
     @Override
-    public List<RealtimePostMetricsResponse> getRealtimePostMetrics(Long postId) {
+    public List<PostMetricsResponse> getRealtimePostMetrics(Long postId) {
         try {
             SnsPost post = snsPostRepositoryPort.findById(postId)
                 .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
@@ -157,11 +157,11 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         }
     }
     
-    private List<RealtimePostMetricsResponse> getYouTubePostMetrics(Long postId, SnsPost post) {
+    private List<PostMetricsResponse> getYouTubePostMetrics(Long postId, SnsPost post) {
         VideoStatistics statistics = getVideoStatistics(post.getSnsPostId());
         
         if (statistics != null) {
-            RealtimePostMetricsResponse response = RealtimePostMetricsResponse.builder()
+            PostMetricsResponse response = PostMetricsResponse.builder()
                 .postId(postId)
                 .accountId(post.getAccountId())
                 .views(statistics.getViewCount())
@@ -178,20 +178,20 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         return List.of();
     }
     
-    private List<RealtimePostMetricsResponse> getInstagramPostMetrics(Long postId, SnsPost post) {
+    private List<PostMetricsResponse> getInstagramPostMetrics(Long postId, SnsPost post) {
         // Instagram API 구현 전까지는 빈 응답 반환
         log.info("Instagram post metrics not implemented yet for postId: {}", postId);
         return List.of();
     }
     
-    private List<RealtimePostMetricsResponse> getTikTokPostMetrics(Long postId, SnsPost post) {
+    private List<PostMetricsResponse> getTikTokPostMetrics(Long postId, SnsPost post) {
         // TikTok API 구현 전까지는 빈 응답 반환
         log.info("TikTok post metrics not implemented yet for postId: {}", postId);
         return List.of();
     }
     
     @Override
-    public List<RealtimeAccountMetricsResponse> getRealtimeAccountMetrics(Long accountId) {
+    public List<AccountMetricsResponse> getRealtimeAccountMetrics(Long accountId) {
         try {
             SnsAccount account = snsAccountRepositoryPort.findById(accountId)
                 .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
@@ -217,11 +217,11 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         }
     }
     
-    private List<RealtimeAccountMetricsResponse> getYouTubeAccountMetrics(Long accountId, SnsAccount account) {
+    private List<AccountMetricsResponse> getYouTubeAccountMetrics(Long accountId, SnsAccount account) {
         ChannelStatistics statistics = getChannelStatistics(account.getSnsAccountId());
         
         if (statistics != null) {
-            RealtimeAccountMetricsResponse response = RealtimeAccountMetricsResponse.builder()
+            AccountMetricsResponse response = AccountMetricsResponse.builder()
                 .accountId(accountId)
                 .followers(statistics.getSubscriberCount())
                 .views(statistics.getViewCount())
@@ -236,22 +236,22 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         return List.of();
     }
     
-    private List<RealtimeAccountMetricsResponse> getInstagramAccountMetrics(Long accountId, SnsAccount account) {
+    private List<AccountMetricsResponse> getInstagramAccountMetrics(Long accountId, SnsAccount account) {
         // Instagram API 구현 전까지는 빈 응답 반환
         log.info("Instagram account metrics not implemented yet for accountId: {}", accountId);
         return List.of();
     }
     
-    private List<RealtimeAccountMetricsResponse> getTikTokAccountMetrics(Long accountId, SnsAccount account) {
+    private List<AccountMetricsResponse> getTikTokAccountMetrics(Long accountId, SnsAccount account) {
         // TikTok API 구현 전까지는 빈 응답 반환
         log.info("TikTok account metrics not implemented yet for accountId: {}", accountId);
         return List.of();
     }
     
-    private PostCommentsQueryResponse toPostCommentsQueryResponse(CommentThread commentThread) {
+    private PostCommentsResponse toPostCommentsResponse(CommentThread commentThread) {
         var snippet = commentThread.getSnippet().getTopLevelComment().getSnippet();
         
-        return PostCommentsQueryResponse.builder()
+        return PostCommentsResponse.builder()
             .commentId(commentThread.getId())  // YouTube comment ID
             .authorId(snippet.getAuthorChannelId() != null ? snippet.getAuthorChannelId().getValue() : null)
             .text(snippet.getTextDisplay())

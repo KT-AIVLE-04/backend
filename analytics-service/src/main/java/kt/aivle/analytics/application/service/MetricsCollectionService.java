@@ -4,14 +4,16 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
@@ -295,9 +297,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         List<SnsPostCommentMetric> newComments = new ArrayList<>();
         
         // ExternalApiPort를 통해 댓글 조회
-        List<PostCommentsQueryResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        List<PostCommentsResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
         
-        for (PostCommentsQueryResponse comment : comments) {
+        for (PostCommentsResponse comment : comments) {
             try {
                 // 이미 DB에 있는 댓글인지 확인
                 try {
@@ -367,30 +369,15 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         
         log.info("Successfully saved {} out of {} comments for postId: {}", savedCount, newComments.size(), postId);
         
-        // 새로운 댓글이 있으면 감정분석 수행 (AI 서버 미사용으로 주석 처리)
+        // 새로운 댓글이 있으면 감정분석을 비동기로 수행
         if (savedCount > 0) {
-            try {
-                log.info("AI emotion analysis skipped for {} saved comments in postId: {} (AI server not available)", savedCount, postId);
-                
-                // 댓글을 PostCommentsQueryResponse로 변환
-                List<PostCommentsQueryResponse> commentsForAnalysis = newComments.stream()
-                    .map(comment -> PostCommentsQueryResponse.builder()
-                        .commentId(comment.getSnsCommentId())
-                        .authorId(comment.getAuthorId())
-                        .text(comment.getContent())  // content -> text로 매핑
-                        .likeCount(comment.getLikeCount())
-                        .publishedAt(comment.getPublishedAt())
-                        .build())
-                    .collect(java.util.stream.Collectors.toList());
-                
-                // 감정분석 수행 (주석 처리)
-                // emotionAnalysisService.analyzeAndSaveEmotions(postId, commentsForAnalysis);
-                
-                log.info("Emotion analysis skipped for postId: {} (AI server disabled)", postId);
-                
-            } catch (Exception e) {
-                log.error("Failed to perform emotion analysis for postId: {}", postId, e);
-                // 감정분석 실패는 댓글 수집을 중단시키지 않음
+            // DB에서 실제 저장된 댓글들을 조회 (ID 포함)
+            List<SnsPostCommentMetric> savedComments = getSavedCommentsWithIds(newComments, postId);
+            
+            if (!savedComments.isEmpty()) {
+                // 비동기로 감정분석 수행 (응답을 기다리지 않음)
+                performEmotionAnalysisAsync(postId, savedComments);
+                log.info("Started async emotion analysis for {} saved comments in postId: {}", savedComments.size(), postId);
             }
         }
     }
@@ -401,6 +388,46 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     @Transactional
     private SnsPostCommentMetric saveCommentInTransaction(SnsPostCommentMetric commentMetric) {
         return snsPostCommentMetricRepositoryPort.save(commentMetric);
+    }
+    
+    /**
+     * DB에서 실제 저장된 댓글들을 조회 (ID 포함)
+     */
+    private List<SnsPostCommentMetric> getSavedCommentsWithIds(List<SnsPostCommentMetric> newComments, Long postId) {
+        List<SnsPostCommentMetric> savedComments = new ArrayList<>();
+        
+        for (SnsPostCommentMetric comment : newComments) {
+            try {
+                // SNS 댓글 ID로 DB에서 조회하여 실제 DB ID를 가져옴
+                var savedComment = snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getSnsCommentId());
+                if (savedComment.isPresent()) {
+                    savedComments.add(savedComment.get());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to find saved comment for snsCommentId: {}", comment.getSnsCommentId(), e);
+            }
+        }
+        
+        log.info("Found {} saved comments with IDs for postId: {}", savedComments.size(), postId);
+        return savedComments;
+    }
+    
+    /**
+     * 비동기로 감정분석 수행
+     */
+    @Async
+    public CompletableFuture<Void> performEmotionAnalysisAsync(Long postId, List<SnsPostCommentMetric> comments) {
+        try {
+            log.info("Starting async emotion analysis for postId: {} with {} comments", postId, comments.size());
+            emotionAnalysisService.analyzeAndSaveEmotions(postId, comments);
+            log.info("Completed async emotion analysis for postId: {}", postId);
+            return CompletableFuture.completedFuture(null);
+            
+        } catch (Exception e) {
+            log.error("Failed to perform async emotion analysis for postId: {}", postId, e);
+            // 감정분석 실패는 전체 프로세스를 중단시키지 않음
+            return CompletableFuture.completedFuture(null);
+        }
     }
 }
 

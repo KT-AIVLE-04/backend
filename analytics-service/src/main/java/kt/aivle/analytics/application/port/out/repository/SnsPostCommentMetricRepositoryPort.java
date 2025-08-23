@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
+import kt.aivle.analytics.domain.model.SentimentType;
 
 public interface SnsPostCommentMetricRepositoryPort {
     SnsPostCommentMetric save(SnsPostCommentMetric snsPostCommentMetric);
@@ -16,4 +17,5 @@ public interface SnsPostCommentMetricRepositoryPort {
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     void deleteById(Long id);
     void saveAll(List<SnsPostCommentMetric> metrics);
+    void updateSentimentById(Long id, SentimentType sentiment);
 }

@@ -12,12 +12,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.EmotionAnalysisResponse;
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
@@ -56,7 +54,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "post-metrics", key = "#userId + '-' + #request.postId + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
-    public List<PostMetricsQueryResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
+    public List<PostMetricsResponse> getPostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, postId: {}, snsType: {}", 
                 userId, request.getDate(), request.getPostId(), request.getSnsType());
         
@@ -108,17 +106,17 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         }
         
         // N+1 문제 해결: 중복 제거 후 배치 조회
-        return toSnsPostMetricsQueryResponseBatch(metrics);
+        return toSnsPostMetricsResponseBatch(metrics);
     }
     
     @Async
-    public CompletableFuture<List<PostMetricsQueryResponse>> getPostMetricsAsync(String userId, PostMetricsQueryRequest request) {
+    public CompletableFuture<List<PostMetricsResponse>> getPostMetricsAsync(String userId, PostMetricsQueryRequest request) {
         return CompletableFuture.completedFuture(getPostMetrics(userId, request));
     }
     
     @Override
     @Cacheable(value = "account-metrics", key = "#userId + '-' + #request.snsType + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
-    public List<AccountMetricsQueryResponse> getAccountMetrics(String userId, AccountMetricsQueryRequest request) {
+    public List<AccountMetricsResponse> getAccountMetrics(String userId, AccountMetricsQueryRequest request) {
         log.info("Getting account metrics for userId: {}, date: {}, snsType: {}", 
                 userId, request.getDate(), request.getSnsType());
         
@@ -148,13 +146,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         }
         
         return metrics.stream()
-            .map(this::toSnsAccountMetricsQueryResponse)
+            .map(this::toSnsAccountMetricsResponse)
             .collect(Collectors.toList());
     }
     
     @Override
     @Cacheable(value = "comments", key = "#request.postId + '-' + #request.snsType + '-' + #request.page + '-' + #request.size")
-    public List<PostCommentsQueryResponse> getPostComments(String userId, PostCommentsQueryRequest request) {
+    public List<PostCommentsResponse> getPostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting post comments for userId: {}, postId: {}, snsType: {}, page: {}, size: {}", 
                 userId, request.getPostId(), request.getSnsType(), request.getPage(), request.getSize());
         
@@ -198,7 +196,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         }
         
         return comments.subList(start, end).stream()
-            .map(this::toSnsPostCommentsQueryResponse)
+            .map(this::toSnsPostCommentsResponse)
             .collect(Collectors.toList());
     }
     
@@ -369,7 +367,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 실시간 데이터 조회 메서드들
     @Override
-    public List<RealtimePostMetricsResponse> getRealtimePostMetrics(String userId, PostMetricsQueryRequest request) {
+    public List<PostMetricsResponse> getRealtimePostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting realtime post metrics for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
         
         Long targetPostId;
@@ -407,7 +405,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    public List<RealtimeAccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request) {
+    public List<AccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request) {
         log.info("Getting realtime account metrics for userId: {}, snsType: {}", userId, request.getSnsType());
         
         if (request.getSnsType() != null && request.getUserId() != null) {
@@ -426,7 +424,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    public List<PostCommentsQueryResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request) {
+    public List<PostCommentsResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting realtime post comments for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
         
         Long targetPostId;
@@ -475,7 +473,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
      * N+1 문제 해결을 위한 배치 변환 메서드
      * postId가 같으면 accountId도 같으므로 중복 조회를 피함
      */
-    private List<PostMetricsQueryResponse> toSnsPostMetricsQueryResponseBatch(List<SnsPostMetric> metrics) {
+    private List<PostMetricsResponse> toSnsPostMetricsResponseBatch(List<SnsPostMetric> metrics) {
         if (metrics.isEmpty()) {
             return List.of();
         }
@@ -507,7 +505,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 SnsAccount account = post != null ? accounts.get(post.getAccountId()) : null;
                 SnsType snsType = account != null ? account.getType() : null;
                 
-                return PostMetricsQueryResponse.builder()
+                return PostMetricsResponse.builder()
                     .postId(metric.getPostId())
                     .accountId(post != null ? post.getAccountId() : null)
                     .likes(metric.getLikes())
@@ -515,7 +513,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                     .comments(metric.getComments())
                     .shares(metric.getShares())
                     .views(metric.getViews())
-                    .crawledAt(metric.getCreatedAt())
+                    .fetchedAt(metric.getCreatedAt())
                     .snsType(snsType)
                     .build();
             })
@@ -525,7 +523,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 기존 개별 변환 메서드 (단일 메트릭용)
      */
-    private PostMetricsQueryResponse toSnsPostMetricsQueryResponse(SnsPostMetric metric) {
+    private PostMetricsResponse toSnsPostMetricsResponse(SnsPostMetric metric) {
         // Post 정보를 통해 Account 정보와 SNS 타입 조회
         SnsPost post = snsPostRepositoryPort.findById(metric.getPostId())
             .orElse(null);
@@ -539,7 +537,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             }
         }
         
-        return PostMetricsQueryResponse.builder()
+        return PostMetricsResponse.builder()
             .postId(metric.getPostId())
             .accountId(post != null ? post.getAccountId() : null)
             .likes(metric.getLikes())  // Long 타입으로 일관성 유지
@@ -547,28 +545,28 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .comments(metric.getComments())
             .shares(metric.getShares())
             .views(metric.getViews())
-            .crawledAt(metric.getCreatedAt())
+            .fetchedAt(metric.getCreatedAt())
             .snsType(snsType)
             .build();
     }
     
-    private AccountMetricsQueryResponse toSnsAccountMetricsQueryResponse(SnsAccountMetric metric) {
+    private AccountMetricsResponse toSnsAccountMetricsResponse(SnsAccountMetric metric) {
         // Account 정보를 통해 SNS 타입 조회
         SnsAccount account = snsAccountRepositoryPort.findById(metric.getAccountId())
             .orElse(null);
         SnsType snsType = account != null ? account.getType() : null;
         
-        return AccountMetricsQueryResponse.builder()
+        return AccountMetricsResponse.builder()
             .accountId(metric.getAccountId())
             .followers(metric.getFollowers())
             .views(metric.getViews())
-            .crawledAt(metric.getCreatedAt())
+            .fetchedAt(metric.getCreatedAt())
             .snsType(snsType)
             .build();
     }
     
-    private PostCommentsQueryResponse toSnsPostCommentsQueryResponse(SnsPostCommentMetric comment) {
-        return PostCommentsQueryResponse.builder()
+    private PostCommentsResponse toSnsPostCommentsResponse(SnsPostCommentMetric comment) {
+        return PostCommentsResponse.builder()
             .commentId(comment.getSnsCommentId())  // SNS ID 사용
             .authorId(comment.getAuthorId())
             .text(comment.getContent())

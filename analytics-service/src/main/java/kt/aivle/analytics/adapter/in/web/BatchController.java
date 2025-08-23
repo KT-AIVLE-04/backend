@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import kt.aivle.analytics.adapter.in.web.dto.BatchJobStatusResponse;
-import kt.aivle.analytics.adapter.in.web.dto.BatchOperationResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.BatchJobStatusResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.BatchOperationResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.service.BatchJobMonitor;
 import kt.aivle.common.exception.BusinessException;

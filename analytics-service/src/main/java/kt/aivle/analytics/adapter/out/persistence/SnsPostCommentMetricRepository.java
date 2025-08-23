@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import kt.aivle.analytics.adapter.out.persistence.repository.SnsPostCommentMetricJpaRepository;
 import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
+import kt.aivle.analytics.domain.model.SentimentType;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -64,5 +65,10 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     @Override
     public void saveAll(List<SnsPostCommentMetric> metrics) {
         snsPostCommentMetricJpaRepository.saveAll(metrics);
+    }
+    
+    @Override
+    public void updateSentimentById(Long id, SentimentType sentiment) {
+        snsPostCommentMetricJpaRepository.updateSentimentById(id, sentiment);
     }
 }

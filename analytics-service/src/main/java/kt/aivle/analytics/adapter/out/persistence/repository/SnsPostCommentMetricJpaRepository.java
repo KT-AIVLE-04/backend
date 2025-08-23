@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
+import kt.aivle.analytics.domain.model.SentimentType;
 
 @Repository
 public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<SnsPostCommentMetric, Long> {
@@ -26,4 +29,9 @@ public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<Sns
         PageRequest pageRequest);
     
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE SnsPostCommentMetric c SET c.sentiment = :sentiment WHERE c.id = :id")
+    void updateSentimentById(@Param("id") Long id, @Param("sentiment") SentimentType sentiment);
 }

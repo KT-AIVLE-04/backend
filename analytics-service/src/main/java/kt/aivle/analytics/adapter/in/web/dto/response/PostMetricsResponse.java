@@ -1,4 +1,4 @@
-package kt.aivle.analytics.adapter.in.web.dto;
+package kt.aivle.analytics.adapter.in.web.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RealtimePostMetricsResponse {
+public class PostMetricsResponse {
     private Long postId;           // Local DB ID
     private Long accountId;        // Local Account ID
     private Long likes;            // 실시간 좋아요 수

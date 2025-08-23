@@ -2,9 +2,9 @@ package kt.aivle.analytics.application.port.out.infrastructure;
 
 import java.util.List;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 
 /**
  * 외부 API 통신을 위한 Port 인터페이스
@@ -25,17 +25,17 @@ public interface ExternalApiPort {
     /**
      * YouTube 비디오 댓글 조회
      */
-    List<PostCommentsQueryResponse> getVideoComments(String videoId);
+    List<PostCommentsResponse> getVideoComments(String videoId);
     
     /**
      * 실시간 게시물 메트릭 조회
      */
-    List<RealtimePostMetricsResponse> getRealtimePostMetrics(Long postId);
+    List<PostMetricsResponse> getRealtimePostMetrics(Long postId);
     
     /**
      * 실시간 계정 메트릭 조회
      */
-    List<RealtimeAccountMetricsResponse> getRealtimeAccountMetrics(Long accountId);
+    List<AccountMetricsResponse> getRealtimeAccountMetrics(Long accountId);
     
     /**
      * YouTube 채널 통계 DTO

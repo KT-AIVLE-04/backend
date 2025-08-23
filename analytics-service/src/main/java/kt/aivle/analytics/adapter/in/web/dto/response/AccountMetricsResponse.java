@@ -1,4 +1,4 @@
-package kt.aivle.analytics.adapter.in.web.dto;
+package kt.aivle.analytics.adapter.in.web.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RealtimeAccountMetricsResponse {
+public class AccountMetricsResponse {
     private Long accountId;        // Local DB ID
     private Long followers;        // 실시간 구독자 수
     private Long views;            // 실시간 총 조회 수

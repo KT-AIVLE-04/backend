@@ -16,16 +16,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiAnalysisRequest {
-    private List<CommentData> data;
-    private Keywords keyword;
+    private List<CommentData> comments;
+    private Keywords keywords;
     
     @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CommentData {
-        private String id;        // 댓글 ID
-        private String result;    // 댓글 내용
+        private Long id;                    // 댓글 ID (DB ID)
+        private String created_at;          // 생성 시간
+        private String author_id;           // 작성자 ID
+        private String content;             // 댓글 내용
+        private Integer like_count;         // 좋아요 수
+        private Long post_id;               // 게시물 ID
+        private String published_at;        // 발행 시간
+        private String sns_comment_id;      // SNS 댓글 ID
     }
     
     @Getter

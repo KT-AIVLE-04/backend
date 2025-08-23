@@ -11,10 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.application.port.out.dto.AiAnalysisRequest;
+import kt.aivle.analytics.application.port.out.dto.AiAnalysisResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
+import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.exception.BusinessException;
@@ -33,7 +34,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     private String aiAnalysisUrl;
     
     @Override
-    public AiAnalysisResponse analyzeComments(List<PostCommentsQueryResponse> comments, Long postId) {
+    public AiAnalysisResponse analyzeComments(List<SnsPostCommentMetric> comments, Long postId) {
         try {
             // 기존 키워드를 감정별로 그룹화하여 조회
             Map<SentimentType, List<String>> groupedKeywords = keywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
@@ -44,8 +45,14 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             // 요청 데이터 구성
             List<AiAnalysisRequest.CommentData> commentDataList = comments.stream()
                 .map(comment -> AiAnalysisRequest.CommentData.builder()
-                    .id(comment.getCommentId())
-                    .result(comment.getText())
+                    .id(comment.getId())
+                    .created_at(comment.getCreatedAt().toString())
+                    .author_id(comment.getAuthorId())
+                    .content(comment.getContent())
+                    .like_count(comment.getLikeCount().intValue())
+                    .post_id(comment.getPostId())
+                    .published_at(comment.getPublishedAt().toString())
+                    .sns_comment_id(comment.getSnsCommentId())
                     .build())
                 .collect(Collectors.toList());
             
@@ -55,8 +62,8 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
                 .build();
             
             AiAnalysisRequest request = AiAnalysisRequest.builder()
-                .data(commentDataList)
-                .keyword(keywords)
+                .comments(commentDataList)
+                .keywords(keywords)
                 .build();
             
             // HTTP 헤더 설정

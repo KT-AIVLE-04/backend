@@ -1,4 +1,4 @@
-package kt.aivle.analytics.adapter.in.web.dto;
+package kt.aivle.analytics.adapter.in.web.dto.response;
 
 import java.util.List;
 import java.util.Map;

@@ -3,9 +3,9 @@ package kt.aivle.analytics.application.port.out.infrastructure;
 import java.util.List;
 import java.util.Optional;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimeAccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.RealtimePostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 
 /**
  * 캐시 관리를 위한 Port 인터페이스
@@ -16,32 +16,32 @@ public interface CachePort {
     /**
      * 실시간 게시물 메트릭 캐시 저장
      */
-    void cacheRealtimePostMetrics(Long postId, List<RealtimePostMetricsResponse> metrics);
+    void cacheRealtimePostMetrics(Long postId, List<PostMetricsResponse> metrics);
     
     /**
      * 캐시에서 실시간 게시물 메트릭 조회
      */
-    Optional<List<RealtimePostMetricsResponse>> getCachedRealtimePostMetrics(Long postId);
+    Optional<List<PostMetricsResponse>> getCachedRealtimePostMetrics(Long postId);
     
     /**
      * 실시간 계정 메트릭 캐시 저장
      */
-    void cacheRealtimeAccountMetrics(Long accountId, List<RealtimeAccountMetricsResponse> metrics);
+    void cacheRealtimeAccountMetrics(Long accountId, List<AccountMetricsResponse> metrics);
     
     /**
      * 캐시에서 실시간 계정 메트릭 조회
      */
-    Optional<List<RealtimeAccountMetricsResponse>> getCachedRealtimeAccountMetrics(Long accountId);
+    Optional<List<AccountMetricsResponse>> getCachedRealtimeAccountMetrics(Long accountId);
     
     /**
      * 댓글 데이터 캐시 저장
      */
-    void cachePostComments(Long postId, List<PostCommentsQueryResponse> comments);
+    void cachePostComments(Long postId, List<PostCommentsResponse> comments);
     
     /**
      * 캐시에서 댓글 데이터 조회
      */
-    Optional<List<PostCommentsQueryResponse>> getCachedPostComments(Long postId);
+    Optional<List<PostCommentsResponse>> getCachedPostComments(Long postId);
     
     /**
      * API 할당량 정보 캐시 저장

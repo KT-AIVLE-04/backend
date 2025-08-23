@@ -1,4 +1,4 @@
-package kt.aivle.analytics.adapter.in.web.dto;
+package kt.aivle.analytics.adapter.in.web.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostCommentsQueryResponse {
+public class PostCommentsResponse {
     private String commentId;      // YouTube에서 제공하는 실제 comment ID
     private String authorId;       // 댓글 작성자 ID (YouTube 채널 ID, null 가능)
     private String text;           // 댓글 내용

@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
+import kt.aivle.analytics.application.port.out.dto.AiAnalysisResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
@@ -30,10 +30,10 @@ public class EmotionAnalysisService {
     /**
      * 댓글 감정분석을 수행하고 결과를 저장합니다.
      */
-    public void analyzeAndSaveEmotions(Long postId, List<PostCommentsQueryResponse> comments) {
+    public void analyzeAndSaveEmotions(Long postId, List<SnsPostCommentMetric> comments) {
         try {
-            // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
-            AiAnalysisPort.AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
+                    // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
+        AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
             
             // 감정분석 결과 저장
             saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
@@ -50,41 +50,46 @@ public class EmotionAnalysisService {
     }
     
     /**
-     * 댓글 메트릭을 저장합니다.
+     * 댓글의 sentiment를 업데이트합니다.
      */
-    private void saveCommentMetrics(Long postId, List<PostCommentsQueryResponse> comments, 
-                                  List<AiAnalysisPort.AiAnalysisResponse.IndividualResult> analysisResults) {
+    private void saveCommentMetrics(Long postId, List<SnsPostCommentMetric> comments, 
+                                  List<AiAnalysisResponse.IndividualResult> analysisResults) {
         
-        Map<String, SentimentType> resultMap = analysisResults.stream()
+        // AI 응답을 DB ID 기준으로 매핑 (AI 서버가 DB ID를 기준으로 응답함)
+        Map<Long, SentimentType> resultMap = analysisResults.stream()
             .collect(Collectors.toMap(
-                AiAnalysisPort.AiAnalysisResponse.IndividualResult::getId,
-                AiAnalysisPort.AiAnalysisResponse.IndividualResult::getResult
+                result -> Long.valueOf(result.getId()), // AI 서버에서 받은 ID는 DB ID
+                AiAnalysisResponse.IndividualResult::getResult
             ));
         
-        List<SnsPostCommentMetric> metrics = comments.stream()
-            .map(comment -> {
-                SentimentType sentiment = resultMap.get(comment.getCommentId());
-                // sentiment가 null이어도 허용
+        int updatedCount = 0;
+        for (SnsPostCommentMetric comment : comments) {
+            try {
+                // AI 분석 결과에서 해당 댓글의 sentiment 조회
+                SentimentType sentiment = resultMap.get(comment.getId());
                 
-                return SnsPostCommentMetric.builder()
-                    .snsCommentId(comment.getCommentId())
-                    .postId(postId)
-                    .authorId(comment.getAuthorId())
-                    .content(comment.getText())  // text 필드 사용
-                    .likeCount(comment.getLikeCount())
-                    .publishedAt(comment.getPublishedAt())
-                    .sentiment(sentiment)  // null 허용
-                    .build();
-            })
-            .collect(Collectors.toList());
+                if (sentiment != null) {
+                    // 기존 댓글의 sentiment 필드만 업데이트
+                    commentMetricRepository.updateSentimentById(comment.getId(), sentiment);
+                    updatedCount++;
+                    log.debug("Updated sentiment for comment ID: {}, sentiment: {}", comment.getId(), sentiment);
+                } else {
+                    log.warn("No sentiment result found for comment ID: {}", comment.getId());
+                }
+                
+            } catch (Exception e) {
+                log.error("Failed to update sentiment for comment ID: {}", comment.getId(), e);
+                // 개별 댓글 업데이트 실패는 다른 댓글에 영향을 주지 않음
+            }
+        }
         
-        commentMetricRepository.saveAll(metrics);
+        log.info("Updated sentiment for {} out of {} comments in postId: {}", updatedCount, comments.size(), postId);
     }
     
     /**
      * 키워드를 저장합니다.
      */
-    private void saveKeywords(Long postId, AiAnalysisPort.AiAnalysisResponse.Keywords keywords) {
+    private void saveKeywords(Long postId, AiAnalysisResponse.Keywords keywords) {
         // 기존 키워드 삭제
         keywordRepository.deleteByPostId(postId);
         
