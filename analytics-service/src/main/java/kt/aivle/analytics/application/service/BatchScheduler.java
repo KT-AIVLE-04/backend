@@ -2,6 +2,7 @@ package kt.aivle.analytics.application.service;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
@@ -22,13 +23,15 @@ public class BatchScheduler {
     /**
      * 매일 오전 7시에 메트릭 수집 배치 작업을 실행합니다.
      */
-    @Scheduled(cron = "0 0 7 * * ?", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 17 * * ?", zone = "Asia/Seoul")
     public void runDailyMetricsCollectionJob() {
         log.info("🚀 Daily metrics collection batch job started");
         
         try {
-            // YAML 설정으로 중복 실행 방지 및 재시작 설정이 처리됨
-            jobLauncher.run(dailyMetricsCollectionJob, new JobParameters());
+            JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+            jobLauncher.run(dailyMetricsCollectionJob, jobParameters);
             log.info("✅ Daily metrics collection completed");
             
         } catch (JobExecutionAlreadyRunningException e) {
@@ -45,15 +48,15 @@ public class BatchScheduler {
      */
     // @Scheduled(cron = "0 */5 * * * ?", zone = "Asia/Seoul")
     // @org.springframework.context.annotation.Profile("dev")
-    public void runTestMetricsCollectionJob() {
-        log.info("🧪 Test metrics collection started");
+    // public void runTestMetricsCollectionJob() {
+    //     log.info("🧪 Test metrics collection started");
         
-        try {
-            jobLauncher.run(dailyMetricsCollectionJob, new JobParameters());
-            log.info("✅ Test metrics collection completed");
+    //     try {
+    //         jobLauncher.run(dailyMetricsCollectionJob, new JobParameters());
+    //         log.info("✅ Test metrics collection completed");
             
-        } catch (Exception e) {
-            log.error("❌ Test metrics collection failed: {}", e.getMessage());
-        }
-    }
+    //     } catch (Exception e) {
+    //         log.error("❌ Test metrics collection failed: {}", e.getMessage());
+    //     }
+    // }
 }
