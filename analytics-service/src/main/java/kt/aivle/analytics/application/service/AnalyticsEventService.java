@@ -2,11 +2,12 @@ package kt.aivle.analytics.application.service;
 
 import java.util.Optional;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.event.dto.*;
+import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
+import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.application.port.out.infrastructure.CachePort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccount;
@@ -23,9 +24,9 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
 
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
-    private final CachePort cachePort;
     
     @Override
+    @CacheEvict(value = {"post-metrics", "comments"}, allEntries = true)
     public void handlePostCreated(SnsPostEvent event) {
         try {
             log.info("Processing post created event: postId={}, accountId={}, snsPostId={}", 
@@ -50,10 +51,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                 snsPostRepositoryPort.save(post);
             }
             
-            // 관련 캐시 무효화
-            cachePort.evictPostCache(event.getPostId());
-            cachePort.evictAccountCache(event.getAccountId());
-            
             log.info("Post processed successfully: postId={}", event.getPostId());
             
         } catch (Exception e) {
@@ -63,6 +60,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
+    @CacheEvict(value = {"post-metrics", "comments"}, allEntries = true)
     public void handlePostDeleted(SnsPostEvent event) {
         try {
             log.info("Processing post deleted event: postId={}, accountId={}, snsPostId={}", 
@@ -71,10 +69,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             snsPostRepositoryPort.findBySnsPostId(event.getSnsPostId())
                 .ifPresent(post -> {
                     snsPostRepositoryPort.deleteById(post.getId());
-                    
-                    // 관련 캐시 무효화
-                    cachePort.evictPostCache(post.getId());
-                    cachePort.evictAccountCache(event.getAccountId());
                 });
             
             log.info("Post deleted successfully: postId={}", event.getPostId());
@@ -86,6 +80,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
+    @CacheEvict(value = {"account-metrics"}, allEntries = true)
     public void handleSnsAccountConnected(SnsAccountEvent event) {
         try {
             log.info("Processing SNS account connected event: accountId={}, userId={}, snsAccountId={}, type={}", 
@@ -110,9 +105,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
                 snsAccountRepositoryPort.save(snsAccount);
             }
             
-            // 관련 캐시 무효화
-            cachePort.evictAccountCache(event.getAccountId());
-            
             log.info("SNS account processed successfully: accountId={}", event.getAccountId());
             
         } catch (Exception e) {
@@ -122,6 +114,7 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
+    @CacheEvict(value = {"account-metrics"}, allEntries = true)
     public void handleSnsAccountDisconnected(SnsAccountEvent event) {
         try {
             log.info("Processing SNS account disconnected event: accountId={}, userId={}, snsAccountId={}, type={}", 
@@ -130,9 +123,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             snsAccountRepositoryPort.findById(event.getAccountId())
                 .ifPresent(account -> {
                     snsAccountRepositoryPort.deleteById(account.getId());
-                    
-                    // 관련 캐시 무효화
-                    cachePort.evictAccountCache(account.getId());
                 });
             
             log.info("SNS account deleted successfully: accountId={}", event.getAccountId());

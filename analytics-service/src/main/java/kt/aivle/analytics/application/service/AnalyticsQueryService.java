@@ -1,7 +1,10 @@
 package kt.aivle.analytics.application.service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
@@ -197,6 +200,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 실시간 데이터 조회 메서드들
     @Override
+    @Cacheable(value = "realtime-post-metrics", key = "#userId + '-' + #request.postId + '-' + #request.snsType")
     public List<PostMetricsResponse> getRealtimePostMetrics(String userId, PostMetricsQueryRequest request) {
         log.info("Getting realtime post metrics for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
         
@@ -205,6 +209,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "realtime-account-metrics", key = "#userId + '-' + #request.snsType + '-' + #request.userId")
     public List<AccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request) {
         log.info("Getting realtime account metrics for userId: {}, snsType: {}", userId, request.getSnsType());
         
@@ -221,6 +226,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "comments", key = "#targetPostId")
     public List<PostCommentsResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request) {
         log.info("Getting realtime post comments for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
         
@@ -230,7 +236,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         SnsPost post = snsPostRepositoryPort.findById(targetPostId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
-        return externalApiPort.getVideoComments(post.getSnsPostId());
+        // 외부 API에서 댓글 조회
+        List<PostCommentsResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
+        
+        return comments;
     }
     
     // 헬퍼 메서드들
