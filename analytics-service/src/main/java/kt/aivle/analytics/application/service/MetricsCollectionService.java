@@ -134,11 +134,11 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                             break;
                         } else {
                             failedIds.add(idExtractor.apply(item));
-                            log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
+                            log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e.getMessage());
                         }
                     } catch (Exception e) {
                         failedIds.add(idExtractor.apply(item));
-                        log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e);
+                        log.error("Failed to collect {} for {}: {}", itemType, idExtractor.apply(item), e.getMessage());
                     }
                 }
                 page++;
@@ -153,7 +153,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             
         } catch (Exception e) {
             batchJobMonitor.recordJobFailure(jobName, e.getMessage());
-            log.error("Failed to collect {}", itemType, e);
+            log.error("Failed to collect {}: {}", itemType, e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
@@ -209,7 +209,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 accountId, subscriberCount, viewCount);
             
         } catch (Exception e) {
-            log.error("Failed to collect account metrics for accountId: {}", accountId, e);
+            log.error("Failed to collect account metrics for accountId: {}: {}", accountId, e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
@@ -264,7 +264,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             }
             
         } catch (Exception e) {
-            log.error("Failed to collect post metrics for postId: {}", postId, e);
+            log.error("Failed to collect post metrics for postId: {}: {}", postId, e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
@@ -287,7 +287,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             }
             
         } catch (IOException e) {
-            log.error("Failed to collect comments for postId: {}", postId, e);
+            log.error("Failed to collect comments for postId: {}: {}", postId, e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
         }
     }
@@ -298,54 +298,69 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         
         log.info("🔍 댓글 수집 시작 - postId: {}, snsPostId: {}", postId, post.getSnsPostId());
         
-        // ExternalApiPort를 통해 댓글 조회
-        List<PostCommentsResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        // 페이지네이션을 통한 댓글 수집
+        String pageToken = null;
+        int pageCount = 0;
+        int totalCommentsFetched = 0;
         
-        log.info("📊 외부 API에서 {}개의 댓글 조회 완료", comments.size());
-        
-        for (PostCommentsResponse comment : comments) {
-            try {
-                // 이미 DB에 있는 댓글인지 확인
+        do {
+            pageCount++;
+            log.info("📄 댓글 수집 중 - postId: {}, 페이지: {}, pageToken: {}", 
+                postId, pageCount, pageToken != null ? "있음" : "없음");
+            
+            // ExternalApiPort를 통해 댓글 조회 (페이지네이션 지원)
+            List<PostCommentsResponse> pageComments = externalApiPort.getVideoCommentsWithPagination(post.getSnsPostId(), pageToken);
+            
+            if (pageComments.isEmpty()) {
+                log.info("📄 빈 페이지 - postId: {}, 페이지: {}", postId, pageCount);
+                break;
+            }
+            
+            totalCommentsFetched += pageComments.size();
+            log.info("📄 페이지 댓글 수집 완료 - postId: {}, 페이지: {}, 댓글 수: {}, 누적: {}", 
+                postId, pageCount, pageComments.size(), totalCommentsFetched);
+            
+            // 페이지의 댓글들을 처리
+            for (PostCommentsResponse comment : pageComments) {
                 try {
+                    // 이미 DB에 있는 댓글인지 확인
                     if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getCommentId()).isPresent()) {
-                        log.info("Comment already exists in DB - commentId: {}, stopping collection. Total processed: {}", 
-                            comment.getCommentId(), newComments.size());
+                        log.info("🛑 기존 댓글 발견 - postId: {}, 페이지: {}, commentId: {}, 수집 중단. 총 수집: {}", 
+                            postId, pageCount, comment.getCommentId(), newComments.size());
                         return newComments; // 이미 있는 댓글을 만나면 수집 중단
                     }
+                    
+                    // 새로운 댓글 처리
+                    String content = comment.getText();
+                    // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
+                    if (content != null && content.length() > 1000) {
+                        content = content.substring(0, 1000);
+                        log.debug("댓글 내용 잘림 - commentId: {}, 길이: 1000자로 제한", comment.getCommentId());
+                    }
+                    
+                    SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
+                        .snsCommentId(comment.getCommentId())
+                        .postId(post.getId())
+                        .authorId(comment.getAuthorId())  // null 가능
+                        .content(content)
+                        .likeCount(comment.getLikeCount())
+                        .publishedAt(comment.getPublishedAt())
+                        .build();
+                    
+                    newComments.add(commentMetric);
+                    
                 } catch (Exception e) {
-                    log.warn("Failed to check existing comment for commentId: {}, continuing with collection", comment.getCommentId());
-                    // 기존 댓글 확인 실패 시 계속 진행
+                    log.error("댓글 처리 실패 - postId: {}, commentId: {}: {}", postId, comment.getCommentId(), e.getMessage());
                 }
-                
-                // 새로운 댓글 처리
-                String content = comment.getText();
-                // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
-                if (content != null && content.length() > 1000) {
-                    content = content.substring(0, 1000);
-                    log.warn("Comment content truncated to 1000 characters for commentId: {}", comment.getCommentId());
-                }
-                
-                log.info("💬 새 댓글 수집 - commentId: {}, publishedAt: {}, content: {}", 
-                    comment.getCommentId(), comment.getPublishedAt(), content);
-                
-                SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
-                    .snsCommentId(comment.getCommentId())
-                    .postId(post.getId())
-                    .authorId(comment.getAuthorId())  // null 가능
-                    .content(content)
-                    .likeCount(comment.getLikeCount())
-                    .publishedAt(comment.getPublishedAt())
-                    .build();
-                
-                newComments.add(commentMetric);
-                
-            } catch (Exception e) {
-                log.error("Failed to process comment for postId: {}", postId, e);
             }
-        }
+            
+            // 다음 페이지 토큰 가져오기
+            pageToken = externalApiPort.getNextPageToken(post.getSnsPostId(), pageToken);
+            
+        } while (pageToken != null);
         
-        log.info("✅ 댓글 수집 완료 - postId: {}, 전체 처리: {}, 새 댓글: {}", 
-            postId, comments.size(), newComments.size());
+        log.info("✅ 댓글 수집 완료 - postId: {}, 총 페이지: {}, 총 조회: {}, 새 댓글: {}", 
+            postId, pageCount, totalCommentsFetched, newComments.size());
         
         return newComments;
     }
@@ -366,7 +381,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     log.warn("Failed to save comment - saved entity is null or has no ID for commentId: {}", commentMetric.getSnsCommentId());
                 }
             } catch (Exception e) {
-                log.error("Failed to save comment for commentId: {}", commentMetric.getSnsCommentId(), e);
+                log.error("Failed to save comment for commentId: {}: {}", commentMetric.getSnsCommentId(), e.getMessage());
                 // 개별 댓글 저장 실패는 다른 댓글 저장에 영향을 주지 않음
             }
         }
@@ -428,9 +443,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             return CompletableFuture.completedFuture(null);
             
         } catch (Exception e) {
-            log.error("Failed to perform async emotion analysis for postId: {}", postId, e);
-            // 감정분석 실패는 전체 프로세스를 중단시키지 않음
-            return CompletableFuture.completedFuture(null);
+            log.error("Failed to perform async emotion analysis for postId: {}: {}", postId, e.getMessage());
         }
     }
 }

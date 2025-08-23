@@ -93,7 +93,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             return response;
             
         } catch (Exception e) {
-            log.error("Failed to analyze comments with AI service", e);
+            log.error("Failed to analyze comments with AI service: {}", e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
         }
     }
