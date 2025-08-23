@@ -201,6 +201,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "emotion-analysis", key = "#userId + '-' + #postId")
     public EmotionAnalysisResponse getEmotionAnalysis(String userId, Long postId) {
         log.info("Getting emotion analysis for userId: {}, postId: {}", userId, postId);
         
@@ -287,6 +288,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
+    @Cacheable(value = "emotion-analysis", key = "#userId + '-' + #postId + '-' + #snsType + '-' + #date")
     public EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String postId, SnsType snsType, LocalDate date) {
         log.info("Getting historical emotion analysis for userId: {}, postId: {}, snsType: {}, date: {}", userId, postId, snsType, date);
         
