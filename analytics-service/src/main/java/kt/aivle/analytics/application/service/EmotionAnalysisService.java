@@ -37,6 +37,12 @@ public class EmotionAnalysisService {
             // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
             AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
             
+            // null 체크 추가
+            if (aiResponse == null || aiResponse.getEmotionAnalysis() == null || aiResponse.getEmotionAnalysis().getIndividualResults() == null) {
+                log.error("❌ AI 분석 응답이 유효하지 않습니다 - postId: {}", postId);
+                throw new BusinessException(AnalyticsErrorCode.EMOTION_ANALYSIS_ERROR);
+            }
+            
             // 감정분석 결과 저장
             saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
             

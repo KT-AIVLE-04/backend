@@ -84,7 +84,12 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
                 throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
             }
             
-            log.info("✅ AI 분석 완료 - 댓글 수: {}, 응답 상태: {}", comments.size(), response.getEmotionAnalysis() != null ? "성공" : "실패");
+            if (response.getEmotionAnalysis() == null) {
+                log.error("❌ AI 서버 응답의 emotionAnalysis가 null입니다");
+                throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+            }
+            
+            log.info("✅ AI 분석 완료 - 댓글 수: {}, 응답 상태: 성공", comments.size());
             return response;
             
         } catch (Exception e) {
