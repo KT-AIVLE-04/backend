@@ -29,16 +29,6 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
     }
 
     @Override
-    public List<SnsAccountMetric> findAll() {
-        return snsAccountMetricJpaRepository.findAll();
-    }
-
-    @Override
-    public List<SnsAccountMetric> findByAccountId(Long accountId) {
-        return snsAccountMetricJpaRepository.findByAccountId(accountId);
-    }
-
-    @Override
     public List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, LocalDate date) {
         // LocalDate를 direct 사용 (JpaRepository에서 타임존 처리)
         return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtDate(accountId, date);

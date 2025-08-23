@@ -30,11 +30,6 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
     }
 
     @Override
-    public List<SnsAccount> findAll() {
-        return snsAccountJpaRepository.findAll();
-    }
-
-    @Override
     public long countAll() {
         return snsAccountJpaRepository.count();
     }
@@ -47,11 +42,6 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
     @Override
     public List<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType) {
         return snsAccountJpaRepository.findByUserIdAndType(userId, snsType);
-    }
-
-    @Override
-    public Optional<SnsAccount> findBySnsAccountId(String snsAccountId) {
-        return snsAccountJpaRepository.findBySnsAccountId(snsAccountId);
     }
 
     @Override

@@ -10,8 +10,6 @@ import kt.aivle.analytics.domain.entity.SnsPostMetric;
 public interface SnsPostMetricRepositoryPort {
     SnsPostMetric save(SnsPostMetric snsPostMetric);
     Optional<SnsPostMetric> findById(Long id);
-    List<SnsPostMetric> findAll();
-    List<SnsPostMetric> findByPostId(Long postId);
     List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
     boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     void deleteById(Long id);

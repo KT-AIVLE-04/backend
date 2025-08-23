@@ -9,7 +9,6 @@ import kt.aivle.analytics.domain.entity.SnsPost;
 public interface SnsPostRepositoryPort {
     SnsPost save(SnsPost snsPost);
     Optional<SnsPost> findById(Long id);
-    List<SnsPost> findAll();
     long countAll();
     List<SnsPost> findByAccountId(Long accountId);
     Optional<SnsPost> findBySnsPostId(String snsPostId);

@@ -31,17 +31,4 @@ public class AccountMetricsQueryRequest extends BaseQueryRequest {
         this.snsType = snsType;
         this.userId = userId;
     }
-    
-    // 검증 메서드
-    public boolean isValidRequest() {
-        if (snsType != null && userId != null) {
-            return userId.matches("\\d+");
-        }
-        return true; // 히스토리 API에서는 snsType이 선택사항이므로
-    }
-    
-    // 실시간 API용 검증 (snsType과 userId가 필수)
-    public boolean isValidRealtimeRequest() {
-        return snsType != null && userId != null && userId.matches("\\d+");
-    }
 }

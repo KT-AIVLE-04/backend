@@ -217,10 +217,10 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             var statistics = externalApiPort.getVideoStatistics(post.getSnsPostId());
             
             if (statistics != null) {
-                Long likeCount = statistics.getLikeCount();
+                Long likeCount = statistics.likeCount();
                 Long dislikeCount = 0L; // YouTube API v3에서는 dislike count를 제공하지 않음
-                Long commentCount = statistics.getCommentCount();
-                Long viewCount = statistics.getViewCount();
+                Long commentCount = statistics.commentCount();
+                Long viewCount = statistics.viewCount();
                 
                 // 데이터 유효성 검증
                 MetricsData metricsData = new MetricsData(null, viewCount, likeCount, commentCount, "post", postId);

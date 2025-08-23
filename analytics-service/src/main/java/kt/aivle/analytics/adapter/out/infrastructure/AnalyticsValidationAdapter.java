@@ -20,61 +20,23 @@ public class AnalyticsValidationAdapter implements ValidationPort {
     
     @Override
     public void validateMetrics(MetricsData metricsData) {
-        if (metricsData.getSubscriberCount() != null) {
-            validateSubscriberCount(metricsData.getSubscriberCount(), metricsData.getId());
+        if (metricsData.subscriberCount() != null) {
+            validateSubscriberCount(metricsData.subscriberCount(), metricsData.id());
         }
         
-        if (metricsData.getViewCount() != null) {
-            validateViewCount(metricsData.getViewCount(), metricsData.getId(), metricsData.getType());
+        if (metricsData.viewCount() != null) {
+            validateViewCount(metricsData.viewCount(), metricsData.id(), metricsData.type());
         }
         
-        if (metricsData.getLikeCount() != null) {
-            validateLikeCount(metricsData.getLikeCount(), metricsData.getId());
+        if (metricsData.likeCount() != null) {
+            validateLikeCount(metricsData.likeCount(), metricsData.id());
         }
         
-        if (metricsData.getCommentCount() != null) {
-            validateCommentCount(metricsData.getCommentCount(), metricsData.getId());
+        if (metricsData.commentCount() != null) {
+            validateCommentCount(metricsData.commentCount(), metricsData.id());
         }
     }
-    
-    @Override
-    public void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        if (startDate.isAfter(endDate)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        if (startDate.isAfter(LocalDate.now())) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        if (endDate.isAfter(LocalDate.now())) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        // 최대 1년 범위 제한
-        if (startDate.plusYears(1).isBefore(endDate)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-    }
-    
-    @Override
-    public void validateUserAccess(Long userId, Long accountId) {
-        if (userId == null || accountId == null) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
-        }
-        
-        if (userId <= 0 || accountId <= 0) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
-        }
-        
-        // 실제 구현에서는 사용자가 해당 계정에 접근 권한이 있는지 확인
-        // 예: 데이터베이스에서 사용자-계정 관계 조회
-        log.debug("Validating user access: userId={}, accountId={}", userId, accountId);
-    }
+
     
     @Override
     public void validateSubscriberCount(Long count, Long accountId) {

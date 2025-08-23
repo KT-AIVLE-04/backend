@@ -29,13 +29,7 @@ public interface AnalyticsQueryUseCase {
     List<AccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request);
     
     List<PostCommentsResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request);
-    
-    // 감정분석 데이터 조회
-    EmotionAnalysisResponse getEmotionAnalysis(String userId, Long postId);
-    
-    // 감정분석 데이터 조회 (postId가 null이면 최근 게시물)
-    EmotionAnalysisResponse getEmotionAnalysis(String userId, String postId, SnsType snsType);
-    
+
     // 히스토리 감정분석 데이터 조회 (날짜 기반)
     EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String postId, SnsType snsType, LocalDate date);
 }

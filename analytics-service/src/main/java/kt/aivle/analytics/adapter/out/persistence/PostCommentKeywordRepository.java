@@ -17,11 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class PostCommentKeywordRepository implements PostCommentKeywordRepositoryPort {
     
     private final PostCommentKeywordJpaRepository postCommentKeywordJpaRepository;
-    
-    @Override
-    public List<PostCommentKeyword> findByPostId(Long postId) {
-        return postCommentKeywordJpaRepository.findByPostId(postId);
-    }
+
     
     @Override
     public Map<SentimentType, List<String>> findKeywordsByPostIdGroupedBySentiment(Long postId) {

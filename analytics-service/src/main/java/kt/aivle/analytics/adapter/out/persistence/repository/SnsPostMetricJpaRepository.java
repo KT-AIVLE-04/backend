@@ -12,7 +12,6 @@ import kt.aivle.analytics.domain.entity.SnsPostMetric;
 
 @Repository
 public interface SnsPostMetricJpaRepository extends BaseJpaRepository<SnsPostMetric, Long> {
-    List<SnsPostMetric> findByPostId(Long postId);
     boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     
     // 날짜만 비교하는 메서드

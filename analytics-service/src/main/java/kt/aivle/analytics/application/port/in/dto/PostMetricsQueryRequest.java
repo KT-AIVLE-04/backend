@@ -47,12 +47,4 @@ public class PostMetricsQueryRequest extends BaseQueryRequest {
         this.snsType = snsType;
         this.userId = userId;
     }
-    
-    // 검증 메서드
-    public boolean isValidRequest() {
-        if (snsType != null && userId != null) {
-            return userId.matches("\\d+");
-        }
-        return postId == null || postId.matches("\\d+");
-    }
 }

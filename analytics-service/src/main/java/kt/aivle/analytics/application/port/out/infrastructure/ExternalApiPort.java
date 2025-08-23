@@ -62,23 +62,10 @@ public interface ExternalApiPort {
         public Long getSubscriberCount() { return subscriberCount; }
         public Long getViewCount() { return viewCount; }
     }
-    
+
     /**
-     * YouTube 비디오 통계 DTO
-     */
-    class VideoStatistics {
-        private final Long viewCount;
-        private final Long likeCount;
-        private final Long commentCount;
-        
-        public VideoStatistics(Long viewCount, Long likeCount, Long commentCount) {
-            this.viewCount = viewCount;
-            this.likeCount = likeCount;
-            this.commentCount = commentCount;
-        }
-        
-        public Long getViewCount() { return viewCount; }
-        public Long getLikeCount() { return likeCount; }
-        public Long getCommentCount() { return commentCount; }
+         * YouTube 비디오 통계 DTO
+         */
+    record VideoStatistics(Long viewCount, Long likeCount, Long commentCount) {
     }
 }

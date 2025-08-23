@@ -30,20 +30,10 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
     
     private SnsType snsType; // SNS 타입
     private String userId; // 사용자 ID
-    
-    // 편의 메서드들
-    public static PostCommentsQueryRequest forCurrentDate(String postId) {
-        return new PostCommentsQueryRequest(null, postId, 0, 20, null, null);
-    }
-    
+
     public static PostCommentsQueryRequest forCurrentDate(String postId, Integer page, Integer size) {
         return new PostCommentsQueryRequest(null, postId, page, size, null, null);
     }
-    
-    public static PostCommentsQueryRequest forDate(LocalDate date, String postId) {
-        return new PostCommentsQueryRequest(date, postId, 0, 20, null, null);
-    }
-    
     public static PostCommentsQueryRequest forDate(LocalDate date, String postId, Integer page, Integer size) {
         return new PostCommentsQueryRequest(date, postId, page, size, null, null);
     }
@@ -51,18 +41,7 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
     public static PostCommentsQueryRequest forLatestPostBySnsType(String userId, SnsType snsType, Integer page, Integer size) {
         return new PostCommentsQueryRequest(null, null, page, size, snsType, userId);
     }
-    
-    public static PostCommentsQueryRequest forDateAndSnsType(LocalDate date, String userId, SnsType snsType, Integer page, Integer size) {
-        return new PostCommentsQueryRequest(date, null, page, size, snsType, userId);
-    }
-    
-    // 생성자
-    public PostCommentsQueryRequest(LocalDate date, String postId, Integer page, Integer size) {
-        super(date);
-        this.postId = postId;
-        this.page = page != null ? page : 0;
-        this.size = size != null ? size : 20;
-    }
+
     
     public PostCommentsQueryRequest(LocalDate date, String postId, Integer page, Integer size, SnsType snsType, String userId) {
         super(date);
@@ -71,11 +50,5 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
         this.size = size != null ? size : 20;
         this.snsType = snsType;
         this.userId = userId;
-    }
-    
-    // 검증 메서드
-    public boolean isValidRequest() {
-        return (postId == null || postId.matches("\\d+")) &&
-               page >= 0 && size > 0 && size <= 100;
     }
 }

@@ -21,13 +21,7 @@ public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<Sns
     // 날짜만 비교하는 메서드
     @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND DATE(c.createdAt) = DATE(:date) ORDER BY c.createdAt DESC")
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(@Param("postId") Long postId, @Param("date") LocalDate date);
-    
-    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND DATE(c.createdAt) = DATE(:date) ORDER BY c.createdAt DESC")
-    List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(
-        @Param("postId") Long postId, 
-        @Param("date") LocalDate date, 
-        PageRequest pageRequest);
-    
+
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     
     @Modifying

@@ -18,27 +18,10 @@ public abstract class BaseQueryRequest {
     protected BaseQueryRequest(LocalDate date) {
         this.date = date;
     }
-    
-    // 공통 편의 메서드
-    public boolean isCurrentDate() {
-        return date == null;
-    }
+
     
     public LocalDate getEffectiveDate() {
         return date != null ? date : LocalDate.now();
     }
-    
-    // 날짜 검증 메서드
-    public boolean isValidDate() {
-        return date == null || !date.isAfter(LocalDate.now());
-    }
-    
-    // 타임존 명시적 처리 메서드
-    public ZonedDateTime getStartOfDay(ZoneId zoneId) {
-        return getEffectiveDate().atStartOfDay(zoneId);
-    }
-    
-    public ZonedDateTime getEndOfDay(ZoneId zoneId) {
-        return getEffectiveDate().atStartOfDay(zoneId).plusDays(1).minusNanos(1);
-    }
+
 }

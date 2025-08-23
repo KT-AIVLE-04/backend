@@ -12,7 +12,6 @@ import kt.aivle.analytics.domain.entity.SnsAccountMetric;
 
 @Repository
 public interface SnsAccountMetricJpaRepository extends BaseJpaRepository<SnsAccountMetric, Long> {
-    List<SnsAccountMetric> findByAccountId(Long accountId);
     boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
     
     // 날짜만 비교하는 메서드

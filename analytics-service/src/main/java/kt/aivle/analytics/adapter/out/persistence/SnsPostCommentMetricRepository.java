@@ -30,11 +30,6 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     }
 
     @Override
-    public List<SnsPostCommentMetric> findAll() {
-        return snsPostCommentMetricJpaRepository.findAll();
-    }
-
-    @Override
     public List<SnsPostCommentMetric> findByPostId(Long postId) {
         return snsPostCommentMetricJpaRepository.findByPostId(postId);
     }
@@ -53,13 +48,6 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date) {
         // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
-    }
-
-    @Override
-    public List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, LocalDate date, Integer page, Integer size) {
-        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
-        PageRequest pageRequest = PageRequest.of(page, size);
-        return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDateWithPagination(postId, date, pageRequest);
     }
 
     @Override

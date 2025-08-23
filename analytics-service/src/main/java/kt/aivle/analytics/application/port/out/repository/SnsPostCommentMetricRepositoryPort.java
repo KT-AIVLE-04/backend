@@ -10,10 +10,8 @@ import kt.aivle.analytics.domain.model.SentimentType;
 public interface SnsPostCommentMetricRepositoryPort {
     SnsPostCommentMetric save(SnsPostCommentMetric snsPostCommentMetric);
     Optional<SnsPostCommentMetric> findById(Long id);
-    List<SnsPostCommentMetric> findAll();
     List<SnsPostCommentMetric> findByPostId(Long postId);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
-    List<SnsPostCommentMetric> findByPostIdAndCreatedAtDateWithPagination(Long postId, LocalDate date, Integer page, Integer size);
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     void deleteById(Long id);
     void saveAll(List<SnsPostCommentMetric> metrics);

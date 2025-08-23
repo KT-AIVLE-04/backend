@@ -29,16 +29,6 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     }
 
     @Override
-    public List<SnsPostMetric> findAll() {
-        return snsPostMetricJpaRepository.findAll();
-    }
-
-    @Override
-    public List<SnsPostMetric> findByPostId(Long postId) {
-        return snsPostMetricJpaRepository.findByPostId(postId);
-    }
-
-    @Override
     public List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date) {
         // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);

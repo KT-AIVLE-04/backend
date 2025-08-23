@@ -29,11 +29,6 @@ public class SnsPostRepository implements SnsPostRepositoryPort {
     }
 
     @Override
-    public List<SnsPost> findAll() {
-        return snsPostJpaRepository.findAll();
-    }
-
-    @Override
     public long countAll() {
         return snsPostJpaRepository.count();
     }

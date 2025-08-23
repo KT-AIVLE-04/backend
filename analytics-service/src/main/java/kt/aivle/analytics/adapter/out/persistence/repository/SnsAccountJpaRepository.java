@@ -12,5 +12,4 @@ import kt.aivle.analytics.domain.model.SnsType;
 public interface SnsAccountJpaRepository extends BaseJpaRepository<SnsAccount, Long> {
     List<SnsAccount> findByUserId(Long userId);
     List<SnsAccount> findByUserIdAndType(Long userId, SnsType type);
-    Optional<SnsAccount> findBySnsAccountId(String snsAccountId);
 }
