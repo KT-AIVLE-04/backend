@@ -11,7 +11,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
@@ -245,7 +244,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     .likes(likeCount)
                     .dislikes(dislikeCount)
                     .comments(commentCount)
-                    .shares(shareCount)
+                    .shares(null)
                     .views(viewCount)
                     .build();
                 
@@ -363,8 +362,8 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         int savedCount = 0;
         for (SnsPostCommentMetric commentMetric : newComments) {
             try {
-                // 개별 댓글을 별도 트랜잭션으로 저장
-                SnsPostCommentMetric savedComment = saveCommentInTransaction(commentMetric);
+                // 개별 댓글을 직접 저장 (트랜잭션은 Repository 레벨에서 처리)
+                SnsPostCommentMetric savedComment = snsPostCommentMetricRepositoryPort.save(commentMetric);
                 if (savedComment != null && savedComment.getId() != null) {
                     savedCount++;
                     log.debug("Saved new comment for postId: {}, commentId: {}", postId, commentMetric.getSnsCommentId());
@@ -392,13 +391,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         }
     }
     
-    /**
-     * 개별 댓글을 별도 트랜잭션으로 저장
-     */
-    @Transactional
-    public SnsPostCommentMetric saveCommentInTransaction(SnsPostCommentMetric commentMetric) {
-        return snsPostCommentMetricRepositoryPort.save(commentMetric);
-    }
+
     
     /**
      * DB에서 실제 저장된 댓글들을 조회 (ID 포함)
