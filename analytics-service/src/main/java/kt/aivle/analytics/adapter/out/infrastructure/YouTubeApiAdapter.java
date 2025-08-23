@@ -126,6 +126,57 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         }
     }
     
+    @Override
+    public List<PostCommentsResponse> getVideoCommentsWithPagination(String videoId, String pageToken) {
+        try {
+            YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
+                .list(List.of("snippet"))
+                .setKey(apiKey)
+                .setVideoId(videoId)
+                .setMaxResults(100L);
+            
+            if (pageToken != null) {
+                request.setPageToken(pageToken);
+            }
+            
+            CommentThreadListResponse response = request.execute();
+            
+            if (response.getItems() == null) {
+                return List.of();
+            }
+            
+            return response.getItems().stream()
+                .map(this::toPostCommentsResponse)
+                .collect(Collectors.toList());
+            
+        } catch (IOException e) {
+            handleYouTubeApiError(e, "video comments with pagination");
+            return List.of();
+        }
+    }
+    
+    @Override
+    public String getNextPageToken(String videoId, String currentPageToken) {
+        try {
+            YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
+                .list(List.of("snippet"))
+                .setKey(apiKey)
+                .setVideoId(videoId)
+                .setMaxResults(100L);
+            
+            if (currentPageToken != null) {
+                request.setPageToken(currentPageToken);
+            }
+            
+            CommentThreadListResponse response = request.execute();
+            return response.getNextPageToken();
+            
+        } catch (IOException e) {
+            handleYouTubeApiError(e, "get next page token");
+            return null;
+        }
+    }
+    
     // AI 분석은 별도 AiAnalysisAdapter에서 처리
     
     @Override
