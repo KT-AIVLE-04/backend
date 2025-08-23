@@ -6,13 +6,11 @@ import java.util.TimeZone;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import jakarta.annotation.PostConstruct;
 
 @Configuration
 @EnableJpaAuditing
-@EnableJpaRepositories(basePackages = "kt.aivle.analytics.adapter.out.persistence")
 public class JpaConfig {
     
     @PostConstruct
