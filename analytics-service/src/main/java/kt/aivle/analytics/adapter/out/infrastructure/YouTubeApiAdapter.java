@@ -134,29 +134,60 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             SnsPost post = snsPostRepositoryPort.findById(postId)
                 .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
             
-            VideoStatistics statistics = getVideoStatistics(post.getSnsPostId());
+            // SNS 타입별 처리 - accountId로 SnsAccount 조회
+            SnsAccount account = snsAccountRepositoryPort.findById(post.getAccountId())
+                .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
+            SnsType snsType = account.getType();
             
-            if (statistics != null) {
-                RealtimePostMetricsResponse response = RealtimePostMetricsResponse.builder()
-                    .postId(postId)
-                    .accountId(post.getAccountId())
-                    .views(statistics.getViewCount())
-                    .likes(statistics.getLikeCount())
-                    .comments(statistics.getCommentCount())
-                    .fetchedAt(LocalDateTime.now())
-                    .snsType(SnsType.YOUTUBE)
-                    .isCached(false)
-                    .build();
-                
-                return List.of(response);
+            switch (snsType) {
+                case YOUTUBE:
+                    return getYouTubePostMetrics(postId, post);
+                case INSTAGRAM:
+                    return getInstagramPostMetrics(postId, post);
+                case TIKTOK:
+                    return getTikTokPostMetrics(postId, post);
+                default:
+                    log.warn("Unsupported SNS type: {} for postId: {}", snsType, postId);
+                    return List.of();
             }
-            
-            return List.of();
             
         } catch (Exception e) {
             log.error("Failed to get realtime post metrics for postId: {}", postId, e);
             return List.of();
         }
+    }
+    
+    private List<RealtimePostMetricsResponse> getYouTubePostMetrics(Long postId, SnsPost post) {
+        VideoStatistics statistics = getVideoStatistics(post.getSnsPostId());
+        
+        if (statistics != null) {
+            RealtimePostMetricsResponse response = RealtimePostMetricsResponse.builder()
+                .postId(postId)
+                .accountId(post.getAccountId())
+                .views(statistics.getViewCount())
+                .likes(statistics.getLikeCount())
+                .comments(statistics.getCommentCount())
+                .fetchedAt(LocalDateTime.now())
+                .snsType(SnsType.YOUTUBE)
+                .isCached(false)
+                .build();
+            
+            return List.of(response);
+        }
+        
+        return List.of();
+    }
+    
+    private List<RealtimePostMetricsResponse> getInstagramPostMetrics(Long postId, SnsPost post) {
+        // Instagram API 구현 전까지는 빈 응답 반환
+        log.info("Instagram post metrics not implemented yet for postId: {}", postId);
+        return List.of();
+    }
+    
+    private List<RealtimePostMetricsResponse> getTikTokPostMetrics(Long postId, SnsPost post) {
+        // TikTok API 구현 전까지는 빈 응답 반환
+        log.info("TikTok post metrics not implemented yet for postId: {}", postId);
+        return List.of();
     }
     
     @Override
@@ -165,27 +196,56 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             SnsAccount account = snsAccountRepositoryPort.findById(accountId)
                 .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
             
-            ChannelStatistics statistics = getChannelStatistics(account.getSnsAccountId());
+            // SNS 타입별 처리
+            SnsType snsType = account.getType();
             
-            if (statistics != null) {
-                RealtimeAccountMetricsResponse response = RealtimeAccountMetricsResponse.builder()
-                    .accountId(accountId)
-                    .followers(statistics.getSubscriberCount())
-                    .views(statistics.getViewCount())
-                    .fetchedAt(LocalDateTime.now())
-                    .snsType(SnsType.YOUTUBE)
-                    .isCached(false)
-                    .build();
-                
-                return List.of(response);
+            switch (snsType) {
+                case YOUTUBE:
+                    return getYouTubeAccountMetrics(accountId, account);
+                case INSTAGRAM:
+                    return getInstagramAccountMetrics(accountId, account);
+                case TIKTOK:
+                    return getTikTokAccountMetrics(accountId, account);
+                default:
+                    log.warn("Unsupported SNS type: {} for accountId: {}", snsType, accountId);
+                    return List.of();
             }
-            
-            return List.of();
             
         } catch (Exception e) {
             log.error("Failed to get realtime account metrics for accountId: {}", accountId, e);
             return List.of();
         }
+    }
+    
+    private List<RealtimeAccountMetricsResponse> getYouTubeAccountMetrics(Long accountId, SnsAccount account) {
+        ChannelStatistics statistics = getChannelStatistics(account.getSnsAccountId());
+        
+        if (statistics != null) {
+            RealtimeAccountMetricsResponse response = RealtimeAccountMetricsResponse.builder()
+                .accountId(accountId)
+                .followers(statistics.getSubscriberCount())
+                .views(statistics.getViewCount())
+                .fetchedAt(LocalDateTime.now())
+                .snsType(SnsType.YOUTUBE)
+                .isCached(false)
+                .build();
+            
+            return List.of(response);
+        }
+        
+        return List.of();
+    }
+    
+    private List<RealtimeAccountMetricsResponse> getInstagramAccountMetrics(Long accountId, SnsAccount account) {
+        // Instagram API 구현 전까지는 빈 응답 반환
+        log.info("Instagram account metrics not implemented yet for accountId: {}", accountId);
+        return List.of();
+    }
+    
+    private List<RealtimeAccountMetricsResponse> getTikTokAccountMetrics(Long accountId, SnsAccount account) {
+        // TikTok API 구현 전까지는 빈 응답 반환
+        log.info("TikTok account metrics not implemented yet for accountId: {}", accountId);
+        return List.of();
     }
     
     private PostCommentsQueryResponse toPostCommentsQueryResponse(CommentThread commentThread) {

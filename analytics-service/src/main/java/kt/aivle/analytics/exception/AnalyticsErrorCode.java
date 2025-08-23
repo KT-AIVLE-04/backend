@@ -12,6 +12,7 @@ public enum AnalyticsErrorCode implements DefaultCode {
     INVALID_POST_ID(HttpStatus.BAD_REQUEST, false, "잘못된 게시물 ID 형식입니다."),
     INVALID_ACCOUNT_ID(HttpStatus.BAD_REQUEST, false, "잘못된 계정 ID 형식입니다."),
     INVALID_USER_ID(HttpStatus.BAD_REQUEST, false, "잘못된 사용자 ID 형식입니다."),
+    INVALID_SNS_TYPE(HttpStatus.BAD_REQUEST, false, "잘못된 SNS 타입입니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, false, "잘못된 날짜 매개변수입니다."),
     INVALID_PAGINATION(HttpStatus.BAD_REQUEST, false, "잘못된 페이지네이션 매개변수입니다."),
     
@@ -29,6 +30,14 @@ public enum AnalyticsErrorCode implements DefaultCode {
     // AI 분석 관련
     AI_ANALYSIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "AI 분석 서비스 오류가 발생했습니다."),
     EMOTION_ANALYSIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "감정 분석에 실패했습니다."),
+    
+    // 배치 작업 관련
+    BATCH_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, false, "배치 작업을 찾을 수 없습니다."),
+    BATCH_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, false, "배치 작업 실행에 실패했습니다."),
+    
+    // 외부 API 관련
+    EXTERNAL_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, false, "외부 API 호출에 실패했습니다."),
+    API_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, false, "API 호출 한도를 초과했습니다."),
     
     // 권한 관련
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, false, "데이터에 대한 권한이 없습니다."),

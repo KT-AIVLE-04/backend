@@ -2,7 +2,7 @@ package kt.aivle.analytics.application.port.in.dto;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.Pattern;
+import kt.aivle.analytics.domain.model.SnsType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -12,30 +12,36 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class AccountMetricsQueryRequest extends BaseQueryRequest {
     
-    @Pattern(regexp = "^\\d+$", message = "AccountId must be a valid number")
-    private String accountId; // null이면 모든 계정
+    private SnsType snsType; // SNS 타입 (실시간 API에서는 필수)
+    private String userId;   // 사용자 ID (실시간 API에서는 필수)
     
     // 편의 메서드들
-    public static AccountMetricsQueryRequest forCurrentDate(String accountId) {
-        return new AccountMetricsQueryRequest(null, accountId);
+    
+    public static AccountMetricsQueryRequest forDateAndSnsType(LocalDate date, String userId, SnsType snsType) {
+        return new AccountMetricsQueryRequest(date, snsType, userId);
     }
     
-    public static AccountMetricsQueryRequest forDate(LocalDate date, String accountId) {
-        return new AccountMetricsQueryRequest(date, accountId);
-    }
-    
-    public static AccountMetricsQueryRequest forAllAccounts(LocalDate date) {
-        return new AccountMetricsQueryRequest(date, null);
+    public static AccountMetricsQueryRequest forCurrentDateAndSnsType(String userId, SnsType snsType) {
+        return new AccountMetricsQueryRequest(null, snsType, userId);
     }
     
     // 생성자
-    public AccountMetricsQueryRequest(LocalDate date, String accountId) {
+    public AccountMetricsQueryRequest(LocalDate date, SnsType snsType, String userId) {
         super(date);
-        this.accountId = accountId;
+        this.snsType = snsType;
+        this.userId = userId;
     }
     
     // 검증 메서드
-    public boolean isValidAccountId() {
-        return accountId == null || accountId.matches("\\d+");
+    public boolean isValidRequest() {
+        if (snsType != null && userId != null) {
+            return userId.matches("\\d+");
+        }
+        return true; // 히스토리 API에서는 snsType이 선택사항이므로
+    }
+    
+    // 실시간 API용 검증 (snsType과 userId가 필수)
+    public boolean isValidRealtimeRequest() {
+        return snsType != null && userId != null && userId.matches("\\d+");
     }
 }

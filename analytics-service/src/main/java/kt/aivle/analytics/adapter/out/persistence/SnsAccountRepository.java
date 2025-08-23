@@ -1,14 +1,17 @@
 package kt.aivle.analytics.adapter.out.persistence;
 
-import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
-import kt.aivle.analytics.domain.entity.SnsAccount;
-import kt.aivle.analytics.adapter.out.persistence.repository.SnsAccountJpaRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import kt.aivle.analytics.adapter.out.persistence.repository.SnsAccountJpaRepository;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
+import kt.aivle.analytics.domain.entity.SnsAccount;
+import kt.aivle.analytics.domain.model.SnsType;
+import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
@@ -42,6 +45,11 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
     }
 
     @Override
+    public List<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType) {
+        return snsAccountJpaRepository.findByUserIdAndType(userId, snsType);
+    }
+
+    @Override
     public Optional<SnsAccount> findBySnsAccountId(String snsAccountId) {
         return snsAccountJpaRepository.findBySnsAccountId(snsAccountId);
     }
@@ -54,5 +62,10 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
     @Override
     public List<SnsAccount> findAllWithPagination(int page, int size) {
         return snsAccountJpaRepository.findAllWithPagination(PageRequest.of(page, size));
+    }
+    
+    @Override
+    public List<SnsAccount> findAllById(Set<Long> ids) {
+        return snsAccountJpaRepository.findAllById(ids);
     }
 }

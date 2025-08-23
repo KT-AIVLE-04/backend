@@ -5,6 +5,8 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import kt.aivle.analytics.domain.model.SnsType;
+
 @Component
 public class AnalyticsRequestValidator {
     
@@ -46,5 +48,21 @@ public class AnalyticsRequestValidator {
      */
     public boolean isValidDateRange(String startDate, String endDate) {
         return StringUtils.hasText(startDate) && StringUtils.hasText(endDate);
+    }
+
+    /**
+     * SNS 타입 검증
+     */
+    public boolean isValidSnsType(String snsType) {
+        if (!StringUtils.hasText(snsType)) {
+            return false;
+        }
+        
+        try {
+            SnsType.valueOf(snsType.toUpperCase());
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

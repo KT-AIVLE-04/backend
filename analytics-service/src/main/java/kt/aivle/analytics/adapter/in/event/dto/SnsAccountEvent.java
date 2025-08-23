@@ -31,8 +31,11 @@ public class SnsAccountEvent {
                 return SnsType.YOUTUBE;
             case "instagram":
                 return SnsType.INSTAGRAM;
-            case "twitter":
-                return SnsType.TWITTER;
+            case "tiktok":
+                return SnsType.TIKTOK;
+            // 하위 호환성을 위해 twitter도 지원하되 명확하게 문서화
+            case "twitter": // deprecated: use "tiktok" instead
+                return SnsType.TIKTOK;
             default:
                 throw new IllegalArgumentException("Unknown SNS type: " + snsTypeString);
         }

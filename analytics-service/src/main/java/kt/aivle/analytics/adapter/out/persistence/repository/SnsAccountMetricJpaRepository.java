@@ -15,7 +15,7 @@ public interface SnsAccountMetricJpaRepository extends BaseJpaRepository<SnsAcco
     List<SnsAccountMetric> findByAccountId(Long accountId);
     boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
     
-    // 날짜만 비교하는 메서드 (타임존 명시)
-    @Query("SELECT m FROM SnsAccountMetric m WHERE m.accountId = :accountId AND DATE(CONVERT_TZ(m.createdAt, '+00:00', '+09:00')) = DATE(:date)")
+    // 날짜만 비교하는 메서드
+    @Query("SELECT m FROM SnsAccountMetric m WHERE m.accountId = :accountId AND DATE(m.createdAt) = DATE(:date)")
     List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(@Param("accountId") Long accountId, @Param("date") LocalDate date);
 }

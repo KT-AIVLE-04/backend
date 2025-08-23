@@ -2,13 +2,11 @@ package kt.aivle.analytics.adapter.in.web;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kt.aivle.analytics.adapter.in.web.dto.AccountMetricsQueryResponse;
+import kt.aivle.analytics.adapter.in.web.dto.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostCommentsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.dto.PostMetricsQueryResponse;
 import kt.aivle.analytics.adapter.in.web.validator.AnalyticsRequestValidator;
@@ -25,6 +24,7 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
+import kt.aivle.analytics.domain.model.SnsType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.exception.BusinessException;
@@ -42,17 +42,14 @@ public class HistoricalAnalyticsController {
     private final AnalyticsRequestValidator validator;
     
     @Operation(summary = "히스토리 게시물 메트릭 조회", description = "특정 날짜의 게시물 메트릭 히스토리를 조회합니다.")
-    @GetMapping("/posts/{postId}/metrics")
+    @GetMapping("/posts/metrics")
     public ResponseEntity<ApiResponse<List<PostMetricsQueryResponse>>> getHistoricalPostMetrics(
-            @Parameter(description = "게시물 ID") @PathVariable String postId,
-            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식, 필수)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @Parameter(description = "SNS 타입 (필수)") @RequestParam String snsType,
+            @Parameter(description = "게시물 ID (선택사항, 없으면 해당 SNS의 최근 게시물)") @RequestParam(required = false) String postId,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
-        if (!validator.isValidPostId(postId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
-        }
-        
         if (!validator.isValidUserId(userId)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
@@ -61,9 +58,20 @@ public class HistoricalAnalyticsController {
             throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
-        PostMetricsQueryRequest request = PostMetricsQueryRequest.forDate(date, null, postId);
-        if (!request.isValidIds() || !request.isValidDate()) {
+        if (!validator.isValidSnsType(snsType)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
+        }
+        
+        if (postId != null && !validator.isValidPostId(postId)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
+        }
+        
+        PostMetricsQueryRequest request;
+        if (postId != null) {
+            request = PostMetricsQueryRequest.forDate(date, postId);
+        } else {
+            // 해당 SNS의 최근 게시물 기준으로 조회
+            request = PostMetricsQueryRequest.forLatestPostBySnsType(date, userId, SnsType.valueOf(snsType.toUpperCase()));
         }
         
         List<PostMetricsQueryResponse> response = analyticsQueryUseCase.getPostMetrics(userId, request);
@@ -72,17 +80,13 @@ public class HistoricalAnalyticsController {
     }
     
     @Operation(summary = "히스토리 계정 메트릭 조회", description = "특정 날짜의 계정 메트릭 히스토리를 조회합니다.")
-    @GetMapping("/accounts/{accountId}/metrics")
-    public ResponseEntity<ApiResponse<List<AccountMetricsQueryResponse>>> getHistoricalAccountMetrics(
-            @Parameter(description = "계정 ID") @PathVariable String accountId,
-            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+    @GetMapping("/accounts/metrics")
+    public ResponseEntity<ApiResponse<AccountMetricsQueryResponse>> getHistoricalAccountMetrics(
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식, 필수)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @Parameter(description = "SNS 타입 (필수)") @RequestParam String snsType,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
-        if (!validator.isValidAccountId(accountId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
-        }
-        
         if (!validator.isValidUserId(userId)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
@@ -91,45 +95,53 @@ public class HistoricalAnalyticsController {
             throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
-        AccountMetricsQueryRequest request = AccountMetricsQueryRequest.forDate(date, accountId);
-        if (!request.isValidAccountId() || !request.isValidDate()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
+        if (!validator.isValidSnsType(snsType)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
         
-        List<AccountMetricsQueryResponse> response = analyticsQueryUseCase.getAccountMetrics(userId, request);
+        AccountMetricsQueryRequest request = AccountMetricsQueryRequest.forDateAndSnsType(date, userId, SnsType.valueOf(snsType.toUpperCase()));
+        
+        List<AccountMetricsQueryResponse> responseList = analyticsQueryUseCase.getAccountMetrics(userId, request);
+        
+        // SNS 타입이 필수이므로 첫 번째 결과만 반환 (계정은 SNS 타입별로 하나씩만 존재)
+        AccountMetricsQueryResponse response = responseList.isEmpty() ? null : responseList.get(0);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @Operation(summary = "히스토리 게시물 댓글 조회", description = "특정 날짜의 게시물 댓글 히스토리를 페이지네이션으로 조회합니다.")
-    @GetMapping("/posts/{postId}/comments")
+    @Operation(summary = "히스토리 게시물 댓글 조회", description = "게시물 댓글 히스토리를 페이지네이션으로 조회합니다.")
+    @GetMapping("/posts/comments")
     public ResponseEntity<ApiResponse<List<PostCommentsQueryResponse>>> getHistoricalPostComments(
-            @Parameter(description = "게시물 ID") @PathVariable String postId,
-            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @Parameter(description = "SNS 타입 (필수)") @RequestParam String snsType,
+            @Parameter(description = "게시물 ID (선택사항, 없으면 해당 SNS의 최근 게시물)") @RequestParam(required = false) String postId,
             @Parameter(description = "페이지 번호 (기본값: 0)") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "페이지 크기 (기본값: 20, 최대: 100)") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
-        if (!validator.isValidPostId(postId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
-        }
-        
         if (!validator.isValidUserId(userId)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
         
-        if (date == null || date.isAfter(LocalDate.now())) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
+        if (!validator.isValidSnsType(snsType)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
+        }
+        
+        if (postId != null && !validator.isValidPostId(postId)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
         if (!validator.isValidPagination(page, size)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_PAGINATION);
         }
         
-        PostCommentsQueryRequest request = PostCommentsQueryRequest.forDate(date, postId, page, size);
-        if (!request.isValidRequest()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
+        PostCommentsQueryRequest request;
+        if (postId != null) {
+            // 특정 게시물 댓글 조회 (날짜 없음)
+            request = PostCommentsQueryRequest.forCurrentDate(postId, page, size);
+        } else {
+            // 해당 SNS의 최근 게시물 댓글 조회
+            request = PostCommentsQueryRequest.forLatestPostBySnsType(userId, SnsType.valueOf(snsType.toUpperCase()), page, size);
         }
         
         List<PostCommentsQueryResponse> response = analyticsQueryUseCase.getPostComments(userId, request);
@@ -137,18 +149,15 @@ public class HistoricalAnalyticsController {
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @Operation(summary = "히스토리 계정 게시물 메트릭 조회", description = "특정 날짜의 계정의 모든 게시물 메트릭 히스토리를 조회합니다.")
-    @GetMapping("/accounts/{accountId}/posts/metrics")
-    public ResponseEntity<ApiResponse<List<PostMetricsQueryResponse>>> getHistoricalAccountPostsMetrics(
-            @Parameter(description = "계정 ID") @PathVariable String accountId,
-            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+    @Operation(summary = "히스토리 게시물 감정분석 조회", description = "특정 날짜의 게시물 댓글 감정분석 결과와 키워드를 조회합니다.")
+    @GetMapping("/posts/emotion-analysis")
+    public ResponseEntity<ApiResponse<EmotionAnalysisResponse>> getHistoricalEmotionAnalysis(
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식, 필수)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @Parameter(description = "SNS 타입 (필수)") @RequestParam String snsType,
+            @Parameter(description = "게시물 ID (선택사항, 없으면 해당 SNS의 최근 게시물)") @RequestParam(required = false) String postId,
             @Parameter(description = "사용자 ID") @RequestHeader("X-USER-ID") String userId) {
         
         // 입력 검증
-        if (!validator.isValidAccountId(accountId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
-        }
-        
         if (!validator.isValidUserId(userId)) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
@@ -157,47 +166,15 @@ public class HistoricalAnalyticsController {
             throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
         }
         
-        PostMetricsQueryRequest request = PostMetricsQueryRequest.forAccount(date, accountId);
-        List<PostMetricsQueryResponse> response = analyticsQueryUseCase.getPostMetrics(userId, request);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
-    
-    @Operation(summary = "히스토리 사용자 메트릭 조회", description = "특정 날짜의 사용자의 모든 계정 및 게시물 메트릭 히스토리를 조회합니다.")
-    @GetMapping("/users/{userId}/metrics")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getHistoricalUserMetrics(
-            @Parameter(description = "사용자 ID") @PathVariable String userId,
-            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
-            @Parameter(description = "현재 사용자 ID") @RequestHeader("X-USER-ID") String currentUserId) {
-        
-        // 입력 검증
-        if (!validator.isValidUserId(userId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
+        if (!validator.isValidSnsType(snsType)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
         
-        if (!validator.isValidUserId(currentUserId)) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
+        if (postId != null && !validator.isValidPostId(postId)) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
         
-        if (date == null || date.isAfter(LocalDate.now())) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        // 사용자 본인의 데이터만 조회 가능하도록 검증
-        if (!userId.equals(currentUserId)) {
-            return ResponseEntity.status(403).build();
-        }
-        
-        AccountMetricsQueryRequest accountRequest = AccountMetricsQueryRequest.forAllAccounts(date);
-        PostMetricsQueryRequest postRequest = PostMetricsQueryRequest.forAllPosts(date);
-        
-        List<AccountMetricsQueryResponse> accountMetrics = analyticsQueryUseCase.getAccountMetrics(userId, accountRequest);
-        List<PostMetricsQueryResponse> postMetrics = analyticsQueryUseCase.getPostMetrics(userId, postRequest);
-        
-        Map<String, Object> response = Map.of(
-            "accountMetrics", accountMetrics,
-            "postMetrics", postMetrics
-        );
+        EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, postId, SnsType.valueOf(snsType.toUpperCase()), date);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

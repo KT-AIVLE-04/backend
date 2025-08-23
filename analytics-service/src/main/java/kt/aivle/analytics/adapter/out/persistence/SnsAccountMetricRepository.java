@@ -40,7 +40,7 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
 
     @Override
     public List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, LocalDate date) {
-        // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
+        // LocalDate를 direct 사용 (JpaRepository에서 타임존 처리)
         return snsAccountMetricJpaRepository.findByAccountIdAndCreatedAtDate(accountId, date);
     }
 
