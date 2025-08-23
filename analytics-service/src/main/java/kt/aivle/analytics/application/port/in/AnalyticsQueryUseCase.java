@@ -1,18 +1,16 @@
 package kt.aivle.analytics.application.port.in;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
 import kt.aivle.analytics.domain.model.SnsType;
-import java.time.LocalDate;
 
 public interface AnalyticsQueryUseCase {
     

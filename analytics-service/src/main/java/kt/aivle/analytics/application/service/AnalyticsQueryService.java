@@ -146,34 +146,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .collect(Collectors.toList());
     }
     
-    @Override
-    @Cacheable(value = "emotion-analysis", key = "#userId + '-' + #postId")
-    public EmotionAnalysisResponse getEmotionAnalysis(String userId, Long postId) {
-        return getEmotionAnalysisInternal(userId, postId);
-    }
-    
-    /**
-     * 내부 감정분석 로직 (캐시 적용)
-     */
-    private EmotionAnalysisResponse getEmotionAnalysisInternal(String userId, Long postId) {
-        log.info("Getting emotion analysis for userId: {}, postId: {}", userId, postId);
-        
-        // 게시물 존재 여부 확인
-        validatePostExists(postId);
-        
-        // 감정분석 결과 조회
-        List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostId(postId);
-        
-        return buildEmotionAnalysisResponse(postId, commentMetrics);
-    }
-    
-    @Override
-    public EmotionAnalysisResponse getEmotionAnalysis(String userId, String postId, SnsType snsType) {
-        log.info("Getting emotion analysis for userId: {}, postId: {}, snsType: {}", userId, postId, snsType);
-        
-        Long targetPostId = getTargetPostId(userId, postId, snsType);
-        return getEmotionAnalysisInternal(userId, targetPostId);
-    }
+
     
     @Override
     @Cacheable(value = "emotion-analysis", key = "#userId + '-' + #postId + '-' + #snsType + '-' + #date")
