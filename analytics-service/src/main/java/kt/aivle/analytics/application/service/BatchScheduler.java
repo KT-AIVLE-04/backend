@@ -6,6 +6,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +22,10 @@ public class BatchScheduler {
     private final Job dailyMetricsCollectionJob;
     
     /**
-     * 매일 오후 11시에 메트릭 수집 배치 작업을 실행합니다.
+     * 매일 메트릭 수집 배치 작업을 실행합니다.
+     * 스케줄은 application.yml에서 설정
      */
-    @Scheduled(cron = "0 30 3 * * ?", zone = "Asia/Seoul")
+    @Scheduled(cron = "${app.batch.schedule.daily-metrics}", zone = "${app.batch.timezone}")
     public void runDailyMetricsCollectionJob() {
         log.info("🚀 Daily metrics collection batch job started");
         
@@ -42,21 +44,4 @@ public class BatchScheduler {
             log.error("❌ Daily metrics collection failed: {}", e.getMessage());
         }
     }
-    
-    /**
-     * 테스트용 - 5분마다 실행 (개발 환경에서만 사용)
-     */
-    // @Scheduled(cron = "0 */5 * * * ?", zone = "Asia/Seoul")
-    // @org.springframework.context.annotation.Profile("dev")
-    // public void runTestMetricsCollectionJob() {
-    //     log.info("🧪 Test metrics collection started");
-        
-    //     try {
-    //         jobLauncher.run(dailyMetricsCollectionJob, new JobParameters());
-    //         log.info("✅ Test metrics collection completed");
-            
-    //     } catch (Exception e) {
-    //         log.error("❌ Test metrics collection failed: {}", e.getMessage());
-    //     }
-    // }
 }
