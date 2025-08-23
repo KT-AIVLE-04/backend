@@ -1,5 +1,7 @@
 package kt.aivle.analytics.application.service;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
@@ -30,18 +32,30 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             log.info("Processing post created event: postId={}, accountId={}, snsPostId={}", 
                     event.getPostId(), event.getAccountId(), event.getSnsPostId());
             
-            SnsPost post = SnsPost.builder()
-                .id(event.getPostId())
-                .accountId(event.getAccountId())
-                .snsPostId(event.getSnsPostId())
-                .build();
-            snsPostRepositoryPort.save(post);
+            // 기존 포스트 확인
+            Optional<SnsPost> existingPost = snsPostRepositoryPort.findById(event.getPostId());
+            
+            if (existingPost.isPresent()) {
+                log.warn("Post already exists, updating: postId={}", event.getPostId());
+                // 기존 데이터 업데이트
+                SnsPost post = existingPost.get();
+                // 필요한 경우 필드 업데이트 로직 추가
+                snsPostRepositoryPort.save(post);
+            } else {
+                // 새 포스트 생성
+                SnsPost post = SnsPost.builder()
+                    .id(event.getPostId())
+                    .accountId(event.getAccountId())
+                    .snsPostId(event.getSnsPostId())
+                    .build();
+                snsPostRepositoryPort.save(post);
+            }
             
             // 관련 캐시 무효화
             cachePort.evictPostCache(event.getPostId());
             cachePort.evictAccountCache(event.getAccountId());
             
-            log.info("Post saved successfully: postId={}", event.getPostId());
+            log.info("Post processed successfully: postId={}", event.getPostId());
             
         } catch (Exception e) {
             log.error("Failed to process post created event: {}", e.getMessage(), e);
@@ -78,18 +92,29 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
             log.info("Processing SNS account connected event: accountId={}, userId={}, snsAccountId={}, type={}", 
                     event.getAccountId(), event.getUserId(), event.getSnsAccountId(), event.getType());
             
-            SnsAccount snsAccount = SnsAccount.builder()
-                .id(event.getAccountId())
-                .userId(event.getUserId())
-                .snsAccountId(event.getSnsAccountId())
-                .type(event.getType())
-                .build();
-            snsAccountRepositoryPort.save(snsAccount);
+            // 기존 계정 확인
+            Optional<SnsAccount> existingAccount = snsAccountRepositoryPort.findById(event.getAccountId());
+            
+            if (existingAccount.isPresent()) {
+                log.warn("SNS account already exists, updating: accountId={}", event.getAccountId());
+                // 기존 데이터 업데이트 (필요한 경우 필드 업데이트 로직 추가)
+                SnsAccount account = existingAccount.get();
+                snsAccountRepositoryPort.save(account);
+            } else {
+                // 새 계정 생성
+                SnsAccount snsAccount = SnsAccount.builder()
+                    .id(event.getAccountId())
+                    .userId(event.getUserId())
+                    .snsAccountId(event.getSnsAccountId())
+                    .type(event.getType())
+                    .build();
+                snsAccountRepositoryPort.save(snsAccount);
+            }
             
             // 관련 캐시 무효화
             cachePort.evictAccountCache(event.getAccountId());
             
-            log.info("SNS account saved successfully: accountId={}", event.getAccountId());
+            log.info("SNS account processed successfully: accountId={}", event.getAccountId());
             
         } catch (Exception e) {
             log.error("Failed to process SNS account connected event: {}", e.getMessage(), e);
