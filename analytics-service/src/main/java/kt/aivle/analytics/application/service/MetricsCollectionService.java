@@ -166,7 +166,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
         SnsAccount snsAccount = snsAccountRepositoryPort.findById(accountId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
         
-        if (snsAccount.getType() != SnsType.YOUTUBE) {
+        if (snsAccount.getType() != SnsType.youtube) {
             log.warn("Skipping non-YouTube account: {}", accountId);
             return;
         }
@@ -296,8 +296,12 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     private List<SnsPostCommentMetric> fetchCommentsFromAPI(SnsPost post, Long postId) throws IOException {
         List<SnsPostCommentMetric> newComments = new ArrayList<>();
         
+        log.info("🔍 댓글 수집 시작 - postId: {}, snsPostId: {}", postId, post.getSnsPostId());
+        
         // ExternalApiPort를 통해 댓글 조회
         List<PostCommentsResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        
+        log.info("📊 외부 API에서 {}개의 댓글 조회 완료", comments.size());
         
         for (PostCommentsResponse comment : comments) {
             try {
@@ -321,7 +325,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     log.warn("Comment content truncated to 1000 characters for commentId: {}", comment.getCommentId());
                 }
                 
-                log.info("Collecting new comment - commentId: {}, publishedAt: {}, content: {}", 
+                log.info("💬 새 댓글 수집 - commentId: {}, publishedAt: {}, content: {}", 
                     comment.getCommentId(), comment.getPublishedAt(), content);
                 
                 SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
@@ -340,7 +344,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             }
         }
         
-        log.info("Completed comment collection for postId: {}. Total processed: {}, New comments: {}", 
+        log.info("✅ 댓글 수집 완료 - postId: {}, 전체 처리: {}, 새 댓글: {}", 
             postId, comments.size(), newComments.size());
         
         return newComments;
@@ -348,7 +352,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     
     // DB 저장 메서드 (개별 저장으로 변경하여 일부 실패해도 계속 진행)
     private void saveCommentsToDatabase(List<SnsPostCommentMetric> newComments, Long postId) {
-        log.info("Saving {} new comments to database for postId: {}", newComments.size(), postId);
+        log.info("💾 DB 저장 시작 - {}개의 새 댓글을 postId: {}에 저장", newComments.size(), postId);
         
         int savedCount = 0;
         for (SnsPostCommentMetric commentMetric : newComments) {
@@ -367,7 +371,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             }
         }
         
-        log.info("Successfully saved {} out of {} comments for postId: {}", savedCount, newComments.size(), postId);
+        log.info("💾 DB 저장 완료 - postId: {}, 성공: {}/{}", postId, savedCount, newComments.size());
         
         // 새로운 댓글이 있으면 감정분석을 비동기로 수행
         if (savedCount > 0) {
@@ -377,7 +381,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             if (!savedComments.isEmpty()) {
                 // 비동기로 감정분석 수행 (응답을 기다리지 않음)
                 performEmotionAnalysisAsync(postId, savedComments);
-                log.info("Started async emotion analysis for {} saved comments in postId: {}", savedComments.size(), postId);
+                log.info("🧠 비동기 감정분석 시작 - postId: {}, 댓글 수: {}", postId, savedComments.size());
             }
         }
     }

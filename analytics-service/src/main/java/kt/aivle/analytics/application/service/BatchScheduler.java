@@ -23,7 +23,7 @@ public class BatchScheduler {
     /**
      * 매일 오전 7시에 메트릭 수집 배치 작업을 실행합니다.
      */
-    @Scheduled(cron = "0 0 17 * * ?", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 15 2 * * ?", zone = "Asia/Seoul")
     public void runDailyMetricsCollectionJob() {
         log.info("🚀 Daily metrics collection batch job started");
         

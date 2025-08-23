@@ -49,7 +49,7 @@ public class RealtimeAnalyticsController {
         
         SnsType snsTypeEnum;
         try {
-            snsTypeEnum = SnsType.valueOf(snsType.toUpperCase());
+            snsTypeEnum = SnsType.valueOf(snsType);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
@@ -79,7 +79,7 @@ public class RealtimeAnalyticsController {
         
         SnsType snsTypeEnum;
         try {
-            snsTypeEnum = SnsType.valueOf(snsType.toUpperCase());
+            snsTypeEnum = SnsType.valueOf(snsType);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
@@ -110,7 +110,7 @@ public class RealtimeAnalyticsController {
         
         SnsType snsTypeEnum;
         try {
-            snsTypeEnum = SnsType.valueOf(snsType.toUpperCase());
+            snsTypeEnum = SnsType.valueOf(snsType);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }

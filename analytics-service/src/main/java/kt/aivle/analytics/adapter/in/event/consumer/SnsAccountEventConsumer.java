@@ -5,8 +5,6 @@ import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
-import kt.aivle.analytics.exception.AnalyticsErrorCode;
-import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +24,7 @@ public class SnsAccountEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle SNS account connected event: {}", e.getMessage(), e);
-            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
+            // 예외를 던지지 않고 로깅만 함으로써 컨테이너가 멈추지 않도록 함
         }
     }
     
@@ -39,7 +37,7 @@ public class SnsAccountEventConsumer {
             
         } catch (Exception e) {
             log.error("Failed to handle SNS account disconnected event: {}", e.getMessage(), e);
-            throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
+            // 예외를 던지지 않고 로깅만 함으로써 컨테이너가 멈추지 않도록 함
         }
     }
     

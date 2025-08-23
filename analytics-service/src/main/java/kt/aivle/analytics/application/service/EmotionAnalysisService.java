@@ -32,8 +32,10 @@ public class EmotionAnalysisService {
      */
     public void analyzeAndSaveEmotions(Long postId, List<SnsPostCommentMetric> comments) {
         try {
-                    // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
-        AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
+            log.info("🧠 감정분석 시작 - postId: {}, 댓글 수: {}", postId, comments.size());
+            
+            // AI 분석 수행 (기존 키워드는 AiAnalysisAdapter 내부에서 조회)
+            AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
             
             // 감정분석 결과 저장
             saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
@@ -41,7 +43,7 @@ public class EmotionAnalysisService {
             // 키워드 저장
             saveKeywords(postId, aiResponse.getKeywords());
             
-            log.info("Emotion analysis completed and saved for postId: {}", postId);
+            log.info("✅ 감정분석 완료 및 저장 - postId: {}", postId);
             
         } catch (Exception e) {
             log.error("Failed to analyze and save emotions for postId: {}", postId, e);
@@ -83,7 +85,7 @@ public class EmotionAnalysisService {
             }
         }
         
-        log.info("Updated sentiment for {} out of {} comments in postId: {}", updatedCount, comments.size(), postId);
+        log.info("💾 감정 업데이트 완료 - postId: {}, 성공: {}/{}", postId, updatedCount, comments.size());
     }
     
     /**

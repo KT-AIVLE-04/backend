@@ -72,17 +72,19 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             
             HttpEntity<AiAnalysisRequest> entity = new HttpEntity<>(request, headers);
             
-            log.info("Sending AI analysis request for {} comments with {} positive and {} negative existing keywords", 
-                comments.size(), positiveKeywords.size(), negativeKeywords.size());
+            log.info("🚀 AI 서버 요청 시작 - URL: {}, 댓글 수: {}, 긍정 키워드: {}, 부정 키워드: {}", 
+                aiAnalysisUrl, comments.size(), positiveKeywords.size(), negativeKeywords.size());
             
             // AI 분석 서버 호출
+            log.info("📤 AI 서버로 요청 전송 중...");
             AiAnalysisResponse response = restTemplate.postForObject(aiAnalysisUrl, entity, AiAnalysisResponse.class);
             
-                    if (response == null) {
-            throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
-        }
+            if (response == null) {
+                log.error("❌ AI 서버 응답이 null입니다");
+                throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+            }
             
-            log.info("AI analysis completed successfully for {} comments", comments.size());
+            log.info("✅ AI 분석 완료 - 댓글 수: {}, 응답 상태: {}", comments.size(), response.getEmotionAnalysis() != null ? "성공" : "실패");
             return response;
             
         } catch (Exception e) {

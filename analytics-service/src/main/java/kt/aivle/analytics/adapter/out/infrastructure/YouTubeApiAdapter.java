@@ -18,8 +18,8 @@ import com.google.api.services.youtube.model.VideoListResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
@@ -140,12 +140,8 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             SnsType snsType = account.getType();
             
             switch (snsType) {
-                case YOUTUBE:
+                case youtube:
                     return getYouTubePostMetrics(postId, post);
-                case INSTAGRAM:
-                    return getInstagramPostMetrics(postId, post);
-                case TIKTOK:
-                    return getTikTokPostMetrics(postId, post);
                 default:
                     log.warn("Unsupported SNS type: {} for postId: {}", snsType, postId);
                     return List.of();
@@ -168,7 +164,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                 .likes(statistics.getLikeCount())
                 .comments(statistics.getCommentCount())
                 .fetchedAt(LocalDateTime.now())
-                .snsType(SnsType.YOUTUBE)
+                .snsType(SnsType.youtube)
                 .isCached(false)
                 .build();
             
@@ -178,17 +174,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         return List.of();
     }
     
-    private List<PostMetricsResponse> getInstagramPostMetrics(Long postId, SnsPost post) {
-        // Instagram API 구현 전까지는 빈 응답 반환
-        log.info("Instagram post metrics not implemented yet for postId: {}", postId);
-        return List.of();
-    }
-    
-    private List<PostMetricsResponse> getTikTokPostMetrics(Long postId, SnsPost post) {
-        // TikTok API 구현 전까지는 빈 응답 반환
-        log.info("TikTok post metrics not implemented yet for postId: {}", postId);
-        return List.of();
-    }
+
     
     @Override
     public List<AccountMetricsResponse> getRealtimeAccountMetrics(Long accountId) {
@@ -200,12 +186,8 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             SnsType snsType = account.getType();
             
             switch (snsType) {
-                case YOUTUBE:
+                case youtube:
                     return getYouTubeAccountMetrics(accountId, account);
-                case INSTAGRAM:
-                    return getInstagramAccountMetrics(accountId, account);
-                case TIKTOK:
-                    return getTikTokAccountMetrics(accountId, account);
                 default:
                     log.warn("Unsupported SNS type: {} for accountId: {}", snsType, accountId);
                     return List.of();
@@ -226,7 +208,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                 .followers(statistics.getSubscriberCount())
                 .views(statistics.getViewCount())
                 .fetchedAt(LocalDateTime.now())
-                .snsType(SnsType.YOUTUBE)
+                .snsType(SnsType.youtube)
                 .isCached(false)
                 .build();
             
@@ -236,17 +218,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         return List.of();
     }
     
-    private List<AccountMetricsResponse> getInstagramAccountMetrics(Long accountId, SnsAccount account) {
-        // Instagram API 구현 전까지는 빈 응답 반환
-        log.info("Instagram account metrics not implemented yet for accountId: {}", accountId);
-        return List.of();
-    }
-    
-    private List<AccountMetricsResponse> getTikTokAccountMetrics(Long accountId, SnsAccount account) {
-        // TikTok API 구현 전까지는 빈 응답 반환
-        log.info("TikTok account metrics not implemented yet for accountId: {}", accountId);
-        return List.of();
-    }
+
     
     private PostCommentsResponse toPostCommentsResponse(CommentThread commentThread) {
         var snippet = commentThread.getSnippet().getTopLevelComment().getSnippet();

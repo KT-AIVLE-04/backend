@@ -1,4 +1,4 @@
-package kt.aivle.analytics.domain.service;
+package kt.aivle.analytics.adapter.out.infrastructure;
 
 import java.time.LocalDate;
 
@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class AnalyticsDomainService implements ValidationPort {
+public class AnalyticsValidationAdapter implements ValidationPort {
     
     private static final long MAX_REASONABLE_SUBSCRIBERS = 100_000_000L; // 1억 구독자
     private static final long MAX_REASONABLE_VIEWS = 1_000_000_000L; // 10억 조회수
