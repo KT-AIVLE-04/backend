@@ -52,15 +52,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     @Value("${app.youtube.api.batch-size:100}")
     private int batchSize;
     
-    @Value("${app.youtube.api.retry-attempts:3}")
-    private int retryAttempts;
-    
-    @Value("${app.youtube.api.retry-delay:1000}")
-    private int retryDelay;
-    
-    @Value("${app.youtube.api.parallel-threads:4}")
-    private int parallelThreads;
-    
     @Override
     public void collectAccountMetrics() {
         processBatch(
@@ -162,52 +153,52 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     @Retryable(value = {IOException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void collectAccountMetricsByAccountId(Long accountId) {
         log.info("Collecting account metrics for accountId: {}", accountId);
-        
+
         SnsAccount snsAccount = snsAccountRepositoryPort.findById(accountId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
-        
+
         if (snsAccount.getType() != SnsType.youtube) {
             log.warn("Skipping non-YouTube account: {}", accountId);
             return;
         }
-        
+
         try {
             // 채널 정보 조회
             var statistics = externalApiPort.getChannelStatistics(snsAccount.getSnsAccountId());
-                
+
             // API 응답 검증
             if (statistics == null) {
                 log.warn("Channel statistics is null for accountId: {}", accountId);
                 return;
             }
-            
+
             Long subscriberCount = statistics.getSubscriberCount();
             Long viewCount = statistics.getViewCount();
-            
+
             // 데이터 유효성 검증
             MetricsData metricsData = new MetricsData(subscriberCount, viewCount, null, null, "account", accountId);
             validationPort.validateMetrics(metricsData);
-            
+
             // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
             LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
             boolean hasRecentData = snsAccountMetricRepositoryPort
                 .existsByAccountIdAndCreatedAtAfter(snsAccount.getId(), oneHourAgo);
-            
+
             if (hasRecentData) {
                 log.info("Recent metrics already exist for accountId: {}, skipping", accountId);
                 return;
             }
-            
+
             SnsAccountMetric accountMetric = SnsAccountMetric.builder()
                 .accountId(snsAccount.getId())
                 .followers(subscriberCount)
                 .views(viewCount)
                 .build();
-            
+
             snsAccountMetricRepositoryPort.save(accountMetric);
-            log.info("Saved account metrics for accountId: {}, subscribers: {}, views: {}", 
+            log.info("Saved account metrics for accountId: {}, subscribers: {}, views: {}",
                 accountId, subscriberCount, viewCount);
-            
+
         } catch (Exception e) {
             log.error("Failed to collect account metrics for accountId: {}: {}", accountId, e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.INTERNAL_ERROR);
@@ -405,7 +396,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
      * 개별 댓글을 별도 트랜잭션으로 저장
      */
     @Transactional
-    private SnsPostCommentMetric saveCommentInTransaction(SnsPostCommentMetric commentMetric) {
+    public SnsPostCommentMetric saveCommentInTransaction(SnsPostCommentMetric commentMetric) {
         return snsPostCommentMetricRepositoryPort.save(commentMetric);
     }
     
@@ -419,9 +410,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             try {
                 // SNS 댓글 ID로 DB에서 조회하여 실제 DB ID를 가져옴
                 var savedComment = snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getSnsCommentId());
-                if (savedComment.isPresent()) {
-                    savedComments.add(savedComment.get());
-                }
+                savedComment.ifPresent(savedComments::add);
             } catch (Exception e) {
                 log.warn("Failed to find saved comment for snsCommentId: {}", comment.getSnsCommentId(), e);
             }
@@ -435,13 +424,13 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
      * 비동기로 감정분석 수행
      */
     @Async
-    public CompletableFuture<Void> performEmotionAnalysisAsync(Long postId, List<SnsPostCommentMetric> comments) {
+    public void performEmotionAnalysisAsync(Long postId, List<SnsPostCommentMetric> comments) {
         try {
             log.info("Starting async emotion analysis for postId: {} with {} comments", postId, comments.size());
             emotionAnalysisService.analyzeAndSaveEmotions(postId, comments);
             log.info("Completed async emotion analysis for postId: {}", postId);
-            return CompletableFuture.completedFuture(null);
-            
+            CompletableFuture.completedFuture(null);
+
         } catch (Exception e) {
             log.error("Failed to perform async emotion analysis for postId: {}: {}", postId, e.getMessage());
         }

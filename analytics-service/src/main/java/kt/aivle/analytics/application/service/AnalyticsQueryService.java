@@ -1,15 +1,10 @@
 package kt.aivle.analytics.application.service;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
@@ -67,18 +62,19 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 Long.parseLong(request.getPostId()), targetDate);
         } else if (request.getSnsType() != null && request.getUserId() != null) {
             // SNS 타입과 사용자 ID로 최근 게시물만 조회
-            List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())
-                .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
-            
+            List<Long> accountIds = new ArrayList<>();
+            for (SnsAccount snsAccount : snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())) {
+                Long id = snsAccount.getId();
+                accountIds.add(id);
+            }
+
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
             }
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
@@ -93,8 +89,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 사용자의 모든 계정 메트릭 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserId(Long.parseLong(userId))
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             metrics = accountIds.stream()
                 .flatMap(accountId -> {
@@ -108,11 +104,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         // N+1 문제 해결: 중복 제거 후 배치 조회
         return toSnsPostMetricsResponseBatch(metrics);
     }
-    
-    @Async
-    public CompletableFuture<List<PostMetricsResponse>> getPostMetricsAsync(String userId, PostMetricsQueryRequest request) {
-        return CompletableFuture.completedFuture(getPostMetrics(userId, request));
-    }
+
     
     @Override
     @Cacheable(value = "account-metrics", key = "#userId + '-' + #request.snsType + '-' + T(java.time.format.DateTimeFormatter).ISO_LOCAL_DATE.format(#request.getEffectiveDate())")
@@ -127,8 +119,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // SNS 타입과 사용자 ID로 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             metrics = accountIds.stream()
                 .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtDate(accountId, targetDate).stream())
@@ -137,8 +129,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 사용자의 모든 계정 메트릭 조회 (히스토리 API에서 snsType이 선택사항일 때)
             List<Long> accountIds = snsAccountRepositoryPort.findByUserId(Long.parseLong(userId))
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             metrics = accountIds.stream()
                 .flatMap(accountId -> snsAccountMetricRepositoryPort.findByAccountIdAndCreatedAtDate(accountId, targetDate).stream())
@@ -164,8 +156,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // SNS 타입과 사용자 ID로 최근 게시물의 댓글 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
@@ -173,7 +165,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
@@ -263,8 +255,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 해당 SNS의 최근 게시물 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(userId), snsType)
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
@@ -272,7 +264,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
@@ -299,8 +291,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 해당 SNS의 최근 게시물 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(userId), snsType)
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
@@ -308,7 +300,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
@@ -380,8 +372,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 해당 SNS의 최근 게시물 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
@@ -389,7 +381,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
@@ -437,8 +429,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             // 해당 SNS의 최근 게시물 조회
             List<Long> accountIds = snsAccountRepositoryPort.findByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType())
                 .stream()
-                .map(account -> account.getId())
-                .collect(Collectors.toList());
+                .map(SnsAccount::getId)
+                .toList();
             
             if (accountIds.isEmpty()) {
                 throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
@@ -446,7 +438,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             
             // 각 계정의 최근 게시물 조회 (최적화)
             Optional<SnsPost> latestPost = accountIds.stream()
-                .map(accountId -> snsPostRepositoryPort.findLatestByAccountId(accountId))
+                .map(snsPostRepositoryPort::findLatestByAccountId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));

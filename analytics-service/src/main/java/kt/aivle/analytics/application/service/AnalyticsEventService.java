@@ -4,8 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
-import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
+import kt.aivle.analytics.adapter.in.event.dto.*;
 import kt.aivle.analytics.application.port.in.AnalyticsEventUseCase;
 import kt.aivle.analytics.application.port.out.infrastructure.CachePort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;

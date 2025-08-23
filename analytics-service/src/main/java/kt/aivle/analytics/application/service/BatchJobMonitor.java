@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
@@ -62,59 +63,36 @@ public class BatchJobMonitor {
         return new ConcurrentHashMap<>(jobStatuses);
     }
     
+    @Getter
     public static class BatchJobStatus {
+        // Getters and Setters
         private String status;
         private LocalDateTime startTime;
         private LocalDateTime endTime;
         private int processed;
         private int total;
         private String error;
-        
-        // Getters and Setters
-        public String getStatus() {
-            return status;
-        }
-        
+
         public void setStatus(String status) {
             this.status = status;
         }
-        
-        public LocalDateTime getStartTime() {
-            return startTime;
-        }
-        
+
         public void setStartTime(LocalDateTime startTime) {
             this.startTime = startTime;
         }
-        
-        public LocalDateTime getEndTime() {
-            return endTime;
-        }
-        
+
         public void setEndTime(LocalDateTime endTime) {
             this.endTime = endTime;
         }
-        
-        public int getProcessed() {
-            return processed;
-        }
-        
+
         public void setProcessed(int processed) {
             this.processed = processed;
         }
-        
-        public int getTotal() {
-            return total;
-        }
-        
+
         public void setTotal(int total) {
             this.total = total;
         }
-        
-        public String getError() {
-            return error;
-        }
-        
+
         public void setError(String error) {
             this.error = error;
         }
