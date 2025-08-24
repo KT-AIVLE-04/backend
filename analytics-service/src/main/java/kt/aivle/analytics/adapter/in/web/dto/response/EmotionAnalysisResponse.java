@@ -1,5 +1,6 @@
 package kt.aivle.analytics.adapter.in.web.dto.response;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,16 +16,25 @@ import lombok.NoArgsConstructor;
 public class EmotionAnalysisResponse {
     private Long postId;
     private EmotionSummary emotionSummary;
-    private Map<String, List<String>> keywords;
+    
+    @Builder.Default
+    private Map<String, List<String>> keywords = new HashMap<>();  // 기본값: 빈 맵
     
     @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class EmotionSummary {
-        private Long positiveCount;
-        private Long neutralCount;
-        private Long negativeCount;
-        private Long totalCount;
+        @Builder.Default
+        private Long positiveCount = 0L;  // 기본값: 0
+        
+        @Builder.Default
+        private Long neutralCount = 0L;   // 기본값: 0
+        
+        @Builder.Default
+        private Long negativeCount = 0L;  // 기본값: 0
+        
+        @Builder.Default
+        private Long totalCount = 0L;     // 기본값: 0
     }
 }

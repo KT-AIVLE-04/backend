@@ -1,6 +1,7 @@
 package kt.aivle.analytics.application.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -307,7 +308,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             return List.of(); // 빈 목록 반환
         }
         
-        List<PostCommentsResponse> paginatedComments = comments.subList(start, end);
+        List<PostCommentsResponse> paginatedComments = new ArrayList<>(comments.subList(start, end));
         log.info("Applied pagination for postId: {}, page: {}, size: {}, result count: {}", 
             targetPostId, request.getPage(), request.getSize(), paginatedComments.size());
         

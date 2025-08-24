@@ -12,9 +12,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PostCommentsResponse {
-    private String commentId;      // YouTube에서 제공하는 실제 comment ID
-    private String authorId;       // 댓글 작성자 ID (YouTube 채널 ID, null 가능)
-    private String text;           // 댓글 내용
-    private Long likeCount;        // 댓글 좋아요 수
+    @Builder.Default
+    private String commentId = "";      // YouTube에서 제공하는 실제 comment ID (기본값: 빈 문자열)
+    
+    @Builder.Default
+    private String authorId = "";       // 댓글 작성자 ID (기본값: 빈 문자열)
+    
+    @Builder.Default
+    private String text = "";           // 댓글 내용 (기본값: 빈 문자열)
+    
+    @Builder.Default
+    private Long likeCount = 0L;        // 댓글 좋아요 수 (기본값: 0)
+    
     private LocalDateTime publishedAt; // 댓글 작성 시간
 }
