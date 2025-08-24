@@ -110,10 +110,7 @@ public class HistoricalAnalyticsController {
         
         AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forDateAndSnsType(date, userId, snsTypeEnum);
         
-        List<AccountMetricsResponse> responseList = analyticsQueryUseCase.getAccountMetrics(userId, queryRequest);
-        
-        // SNS 타입이 필수이므로 첫 번째 결과만 반환 (계정은 SNS 타입별로 하나씩만 존재)
-        AccountMetricsResponse response = responseList.isEmpty() ? null : responseList.get(0);
+        AccountMetricsResponse response = analyticsQueryUseCase.getAccountMetrics(userId, queryRequest);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

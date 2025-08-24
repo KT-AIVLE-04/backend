@@ -17,14 +17,14 @@ public interface AnalyticsQueryUseCase {
     // 로컬 DB 데이터 조회 (date 파라미터 필수)
     List<PostMetricsResponse> getPostMetrics(String userId, PostMetricsQueryRequest request);
     
-    List<AccountMetricsResponse> getAccountMetrics(String userId, AccountMetricsQueryRequest request);
+    AccountMetricsResponse getAccountMetrics(String userId, AccountMetricsQueryRequest request);
     
     List<PostCommentsResponse> getPostComments(String userId, PostCommentsQueryRequest request);
     
     // 실시간 YouTube API 데이터 조회 (date 파라미터 없음)
     List<PostMetricsResponse> getRealtimePostMetrics(String userId, PostMetricsQueryRequest request);
     
-    List<AccountMetricsResponse> getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request);
+    AccountMetricsResponse getRealtimeAccountMetrics(String userId, AccountMetricsQueryRequest request);
     
     List<PostCommentsResponse> getRealtimePostComments(String userId, PostCommentsQueryRequest request);
 
