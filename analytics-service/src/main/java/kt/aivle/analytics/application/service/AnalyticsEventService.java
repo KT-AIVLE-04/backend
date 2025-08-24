@@ -2,7 +2,6 @@ package kt.aivle.analytics.application.service;
 
 import java.util.Optional;
 
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
@@ -26,7 +25,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     
     @Override
-    @CacheEvict(value = {"post-metrics", "comments"}, allEntries = true)
     public void handlePostCreated(SnsPostEvent event) {
         try {
             log.info("Processing post created event: postId={}, accountId={}, snsPostId={}", 
@@ -60,7 +58,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
-    @CacheEvict(value = {"post-metrics", "comments"}, allEntries = true)
     public void handlePostDeleted(SnsPostEvent event) {
         try {
             log.info("Processing post deleted event: postId={}, accountId={}, snsPostId={}", 
@@ -80,7 +77,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
-    @CacheEvict(value = {"account-metrics"}, allEntries = true)
     public void handleSnsAccountConnected(SnsAccountEvent event) {
         try {
             log.info("Processing SNS account connected event: accountId={}, userId={}, snsAccountId={}, type={}", 
@@ -114,7 +110,6 @@ public class AnalyticsEventService implements AnalyticsEventUseCase {
     }
     
     @Override
-    @CacheEvict(value = {"account-metrics"}, allEntries = true)
     public void handleSnsAccountDisconnected(SnsAccountEvent event) {
         try {
             log.info("Processing SNS account disconnected event: accountId={}, userId={}, snsAccountId={}, type={}", 
