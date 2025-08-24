@@ -44,4 +44,9 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     public void deleteById(Long id) {
         snsPostMetricJpaRepository.deleteById(id);
     }
+    
+    @Override
+    public List<Object[]> findMetricsWithPostAndAccount(List<Long> postIds, LocalDate date) {
+        return snsPostMetricJpaRepository.findMetricsWithPostAndAccount(postIds, date);
+    }
 }

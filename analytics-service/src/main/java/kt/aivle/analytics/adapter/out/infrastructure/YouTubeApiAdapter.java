@@ -180,7 +180,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     // AI 분석은 별도 AiAnalysisAdapter에서 처리
     
     @Override
-    public List<PostMetricsResponse> getRealtimePostMetrics(Long postId) {
+    public PostMetricsResponse getRealtimePostMetrics(Long postId) {
         try {
             SnsPost post = snsPostRepositoryPort.findById(postId)
                 .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
@@ -195,20 +195,20 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                     return getYouTubePostMetrics(postId, post);
                 default:
                     log.warn("Unsupported SNS type: {} for postId: {}", snsType, postId);
-                    return List.of();
+                    return null;
             }
             
         } catch (Exception e) {
             log.error("Failed to get realtime post metrics for postId: {}", postId, e);
-            return List.of();
+            return null;
         }
     }
     
-    private List<PostMetricsResponse> getYouTubePostMetrics(Long postId, SnsPost post) {
+    private PostMetricsResponse getYouTubePostMetrics(Long postId, SnsPost post) {
         VideoStatistics statistics = getVideoStatistics(post.getSnsPostId());
         
         if (statistics != null) {
-            PostMetricsResponse response = PostMetricsResponse.builder()
+            return PostMetricsResponse.builder()
                 .postId(postId)
                 .accountId(post.getAccountId())
                 .views(statistics.viewCount())
@@ -216,13 +216,10 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                 .comments(statistics.commentCount())
                 .fetchedAt(LocalDateTime.now())
                 .snsType(SnsType.youtube)
-                .isCached(false)
                 .build();
-            
-            return List.of(response);
         }
         
-        return List.of();
+        return null;
     }
     
 
@@ -260,7 +257,6 @@ public class YouTubeApiAdapter implements ExternalApiPort {
                 .views(statistics.getViewCount())
                 .fetchedAt(LocalDateTime.now())
                 .snsType(SnsType.youtube)
-                .isCached(false)
                 .build();
             
             return List.of(response);

@@ -1,6 +1,5 @@
 package kt.aivle.analytics.adapter.in.web;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -18,13 +17,7 @@ import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
-import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
-import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
-import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.domain.model.SnsType;
-import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
-import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -39,42 +32,13 @@ public class HistoricalAnalyticsController {
     
     @Operation(summary = "히스토리 게시물 메트릭 조회", description = "특정 날짜의 게시물 메트릭 히스토리를 조회합니다.")
     @GetMapping("/posts/metrics")
-    public ResponseEntity<ApiResponse<List<PostMetricsResponse>>> getHistoricalPostMetrics(
+    public ResponseEntity<ApiResponse<PostMetricsResponse>> getHistoricalPostMetrics(
             @RequestParam("date") String dateStr,
             @RequestParam("snsType") String snsType,
             @RequestParam(value = "postId", required = false) String postId,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        LocalDate date;
-        try {
-            date = LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostMetricsQueryRequest.forDate(date, postId);
-        } else {
-            queryRequest = PostMetricsQueryRequest.forLatestPostBySnsType(date, userId, snsTypeEnum);
-        }
-        
-        List<PostMetricsResponse> response = analyticsQueryUseCase.getPostMetrics(userId, queryRequest);
+        PostMetricsResponse response = analyticsQueryUseCase.getHistoricalPostMetrics(userId, dateStr, snsType, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -86,31 +50,7 @@ public class HistoricalAnalyticsController {
             @RequestParam("snsType") String snsType,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        LocalDate date;
-        try {
-            date = LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forDateAndSnsType(date, userId, snsTypeEnum);
-        
-        AccountMetricsResponse response = analyticsQueryUseCase.getAccountMetrics(userId, queryRequest);
+        AccountMetricsResponse response = analyticsQueryUseCase.getHistoricalAccountMetrics(userId, dateStr, snsType);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -125,36 +65,7 @@ public class HistoricalAnalyticsController {
             @RequestParam(value = "size", defaultValue = "20") Integer size,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        LocalDate date;
-        try {
-            date = LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        PostCommentsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size);
-        } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum, page, size);
-        }
-        
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getPostComments(userId, queryRequest);
+        List<PostCommentsResponse> response = analyticsQueryUseCase.getHistoricalPostComments(userId, dateStr, snsType, postId, page, size);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -167,32 +78,7 @@ public class HistoricalAnalyticsController {
             @RequestParam("postId") String postId,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        if (postId == null || postId.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
-        }
-        
-        LocalDate date;
-        try {
-            date = LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, postId, snsTypeEnum, date);
+        EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, dateStr, snsType, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

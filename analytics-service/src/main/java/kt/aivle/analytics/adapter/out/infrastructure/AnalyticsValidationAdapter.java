@@ -1,10 +1,12 @@
 package kt.aivle.analytics.adapter.out.infrastructure;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
+import kt.aivle.analytics.domain.model.SnsType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
@@ -75,5 +77,43 @@ public class AnalyticsValidationAdapter implements ValidationPort {
      */
     private boolean isValidMetric(Long value, long maxValue) {
         return value != null && value >= 0 && value <= maxValue;
+    }
+    
+    @Override
+    public SnsType validateAndParseSnsType(String snsType) {
+        if (snsType == null || snsType.trim().isEmpty()) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
+        }
+        try {
+            return SnsType.valueOf(snsType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
+        }
+    }
+    
+    @Override
+    public LocalDate validateAndParseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
+        }
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (DateTimeParseException e) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_DATE);
+        }
+    }
+    
+    @Override
+    public void validateUserId(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
+        }
+    }
+    
+    @Override
+    public void validatePostId(String postId) {
+        if (postId == null || postId.trim().isEmpty()) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
+        }
     }
 }

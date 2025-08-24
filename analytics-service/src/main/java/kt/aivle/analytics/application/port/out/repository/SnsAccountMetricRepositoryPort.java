@@ -12,6 +12,12 @@ public interface SnsAccountMetricRepositoryPort {
     Optional<SnsAccountMetric> findById(Long id);
 
     List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(Long accountId, LocalDate date);
+    
+    /**
+     * Account Metrics를 Account 정보와 함께 조회 (JOIN 쿼리)
+     */
+    List<Object[]> findMetricsWithAccount(List<Long> accountIds, LocalDate date);
+    
     boolean existsByAccountIdAndCreatedAtAfter(Long accountId, LocalDateTime date);
     void deleteById(Long id);
 }

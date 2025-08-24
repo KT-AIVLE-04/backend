@@ -17,4 +17,15 @@ public interface SnsPostMetricJpaRepository extends BaseJpaRepository<SnsPostMet
     // 날짜만 비교하는 메서드
     @Query("SELECT m FROM SnsPostMetric m WHERE m.postId = :postId AND DATE(m.createdAt) = DATE(:date)")
     List<SnsPostMetric> findByPostIdAndCreatedAtDate(@Param("postId") Long postId, @Param("date") LocalDate date);
+    
+    /**
+     * Post Metrics를 Post와 Account 정보와 함께 조회 (JOIN 쿼리)
+     */
+    @Query("""
+        SELECT m, p, a FROM SnsPostMetric m
+        JOIN SnsPost p ON m.postId = p.id
+        JOIN SnsAccount a ON p.accountId = a.id
+        WHERE m.postId IN :postIds AND DATE(m.createdAt) = DATE(:date)
+        """)
+    List<Object[]> findMetricsWithPostAndAccount(@Param("postIds") List<Long> postIds, @Param("date") LocalDate date);
 }

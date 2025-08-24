@@ -44,4 +44,9 @@ public class SnsAccountMetricRepository implements SnsAccountMetricRepositoryPor
     public void deleteById(Long id) {
         snsAccountMetricJpaRepository.deleteById(id);
     }
+    
+    @Override
+    public List<Object[]> findMetricsWithAccount(List<Long> accountIds, LocalDate date) {
+        return snsAccountMetricJpaRepository.findMetricsWithAccount(accountIds, date);
+    }
 }

@@ -11,6 +11,12 @@ public interface SnsPostMetricRepositoryPort {
     SnsPostMetric save(SnsPostMetric snsPostMetric);
     Optional<SnsPostMetric> findById(Long id);
     List<SnsPostMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
+    
+    /**
+     * Post Metrics를 Post와 Account 정보와 함께 조회 (JOIN 쿼리)
+     */
+    List<Object[]> findMetricsWithPostAndAccount(List<Long> postIds, LocalDate date);
+    
     boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     void deleteById(Long id);
 }

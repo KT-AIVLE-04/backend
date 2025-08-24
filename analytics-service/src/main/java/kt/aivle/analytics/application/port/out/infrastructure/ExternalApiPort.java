@@ -40,7 +40,7 @@ public interface ExternalApiPort {
     /**
      * 실시간 게시물 메트릭 조회
      */
-    List<PostMetricsResponse> getRealtimePostMetrics(Long postId);
+    PostMetricsResponse getRealtimePostMetrics(Long postId);
     
     /**
      * 실시간 계정 메트릭 조회

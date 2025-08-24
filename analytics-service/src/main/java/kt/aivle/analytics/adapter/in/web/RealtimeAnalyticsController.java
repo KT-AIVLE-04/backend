@@ -16,13 +16,7 @@ import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
-import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
-import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
-import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
-import kt.aivle.analytics.domain.model.SnsType;
-import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
-import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -37,31 +31,12 @@ public class RealtimeAnalyticsController {
     
     @Operation(summary = "실시간 게시물 메트릭 조회", description = "특정 게시물의 실시간 메트릭을 조회합니다.")
     @GetMapping("/posts/metrics")
-    public ResponseEntity<ApiResponse<List<PostMetricsResponse>>> getRealtimePostMetrics(
+    public ResponseEntity<ApiResponse<PostMetricsResponse>> getRealtimePostMetrics(
             @RequestParam("snsType") String snsType,
             @RequestParam(value = "postId", required = false) String postId,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostMetricsQueryRequest.forCurrentDate(postId);
-        } else {
-            queryRequest = PostMetricsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum);
-        }
-        
-        List<PostMetricsResponse> response = analyticsQueryUseCase.getRealtimePostMetrics(userId, queryRequest);
+        PostMetricsResponse response = analyticsQueryUseCase.getRealtimePostMetrics(userId, snsType, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -72,24 +47,7 @@ public class RealtimeAnalyticsController {
             @RequestParam("snsType") String snsType,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forCurrentDateAndSnsType(userId, snsTypeEnum);
-        
-        List<AccountMetricsResponse> responseList = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, queryRequest);
-        
-        // SNS 타입이 필수이므로 첫 번째 결과만 반환 (계정은 SNS 타입별로 하나씩만 존재)
-        AccountMetricsResponse response = responseList.isEmpty() ? null : responseList.get(0);
+        AccountMetricsResponse response = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, snsType);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -103,26 +61,7 @@ public class RealtimeAnalyticsController {
             @RequestParam(value = "size", defaultValue = "20") Integer size,
             @RequestHeader("X-USER-ID") String userId) {
         
-        // 입력 검증
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        SnsType snsTypeEnum;
-        try {
-            snsTypeEnum = SnsType.valueOf(snsType);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        
-        PostCommentsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size);
-        } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum, page, size);
-        }
-        
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, queryRequest);
+        List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, snsType, postId, page, size);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

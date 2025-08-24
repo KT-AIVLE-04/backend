@@ -17,4 +17,14 @@ public interface SnsAccountMetricJpaRepository extends BaseJpaRepository<SnsAcco
     // 날짜만 비교하는 메서드
     @Query("SELECT m FROM SnsAccountMetric m WHERE m.accountId = :accountId AND DATE(m.createdAt) = DATE(:date)")
     List<SnsAccountMetric> findByAccountIdAndCreatedAtDate(@Param("accountId") Long accountId, @Param("date") LocalDate date);
+    
+    /**
+     * Account Metrics를 Account 정보와 함께 조회 (JOIN 쿼리)
+     */
+    @Query("""
+        SELECT m, a FROM SnsAccountMetric m
+        JOIN SnsAccount a ON m.accountId = a.id
+        WHERE m.accountId IN :accountIds AND DATE(m.createdAt) = DATE(:date)
+        """)
+    List<Object[]> findMetricsWithAccount(@Param("accountIds") List<Long> accountIds, @Param("date") LocalDate date);
 }

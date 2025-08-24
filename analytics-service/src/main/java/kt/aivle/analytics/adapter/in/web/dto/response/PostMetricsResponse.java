@@ -22,5 +22,4 @@ public class PostMetricsResponse {
     private Long views;            // 실시간 조회 수
     private LocalDateTime fetchedAt; // API 호출 시간
     private SnsType snsType;       // SNS 플랫폼 타입
-    private Boolean isCached;      // 캐시된 데이터인지 여부
 }
