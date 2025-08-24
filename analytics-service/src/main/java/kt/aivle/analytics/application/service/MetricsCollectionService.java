@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
@@ -50,6 +52,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     
     @Value("${app.youtube.api.batch-size:100}")
     private int batchSize;
+    
+    // AI 분석용 전용 스레드 풀 (최대 5개 동시 실행)
+    private final ExecutorService aiAnalysisExecutor = Executors.newFixedThreadPool(5);
     
     @Override
     public void collectAccountMetrics() {
@@ -420,12 +425,19 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
     public void performEmotionAnalysisAsync(Long postId, List<SnsPostCommentMetric> comments) {
         try {
             log.info("Starting async emotion analysis for postId: {} with {} comments", postId, comments.size());
-            emotionAnalysisService.analyzeAndSaveEmotions(postId, comments);
-            log.info("Completed async emotion analysis for postId: {}", postId);
-            CompletableFuture.completedFuture(null);
+            
+            // AI 분석을 별도 스레드에서 실행하여 응답을 기다리지 않음
+            CompletableFuture.runAsync(() -> {
+                try {
+                    emotionAnalysisService.analyzeAndSaveEmotions(postId, comments);
+                    log.info("Completed async emotion analysis for postId: {}", postId);
+                } catch (Exception e) {
+                    log.error("Failed to perform emotion analysis for postId: {}: {}", postId, e.getMessage());
+                }
+            }, aiAnalysisExecutor); // 커스텀 스레드 풀 사용
 
         } catch (Exception e) {
-            log.error("Failed to perform async emotion analysis for postId: {}: {}", postId, e.getMessage());
+            log.error("Failed to start async emotion analysis for postId: {}: {}", postId, e.getMessage());
         }
     }
 }
