@@ -11,6 +11,7 @@ public interface SnsPostCommentMetricRepositoryPort {
     SnsPostCommentMetric save(SnsPostCommentMetric snsPostCommentMetric);
     Optional<SnsPostCommentMetric> findById(Long id);
     List<SnsPostCommentMetric> findByPostId(Long postId);
+    List<SnsPostCommentMetric> findByPostIdWithPagination(Long postId, int page, int size);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     void deleteById(Long id);

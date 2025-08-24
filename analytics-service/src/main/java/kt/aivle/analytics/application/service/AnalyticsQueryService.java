@@ -151,10 +151,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     @Override
     @Cacheable(value = "history-emotion-analysis", key = "'history-emotion-' + #userId + ',' + #dateStr + ',' + #snsType + ',' + #postId")
     public EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String dateStr, String snsType, String postId) {
-        validationPort.validatePostId(postId);
-        
         LocalDate date = validationPort.validateAndParseDate(dateStr);
         SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+        
+        // postId가 null이거나 비어있으면 validation 건너뛰기
+        if (postId != null && !postId.trim().isEmpty()) {
+            validationPort.validatePostId(postId);
+        }
         
         return getHistoricalEmotionAnalysisInternal(userId, postId, snsTypeEnum, date);
     }
@@ -216,18 +219,14 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             targetPostId = getLatestPostIdBySnsType(Long.parseLong(request.getUserId()), request.getSnsType());
         }
         
-        // 특정 게시물의 댓글 조회 (날짜 조건 없음)
-        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostId(targetPostId);
+        // DB 레벨에서 페이지네이션 적용하여 댓글 조회
+        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdWithPagination(
+            targetPostId, request.getPage(), request.getSize());
         
-        // 페이지네이션 적용
-        int start = request.getPage() * request.getSize();
-        int end = Math.min(start + request.getSize(), comments.size());
+        log.info("Retrieved comments from DB for postId: {}, page: {}, size: {}, result count: {}", 
+            targetPostId, request.getPage(), request.getSize(), comments.size());
         
-        if (start >= comments.size()) {
-            return List.of(); // 빈 목록 반환
-        }
-        
-        return comments.subList(start, end).stream()
+        return comments.stream()
             .map(this::toSnsPostCommentsResponse)
             .collect(Collectors.toList());
     }
@@ -239,7 +238,14 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private EmotionAnalysisResponse getHistoricalEmotionAnalysisInternal(String userId, String postId, SnsType snsType, LocalDate date) {
         log.info("Getting historical emotion analysis for userId: {}, postId: {}, snsType: {}, date: {}", userId, postId, snsType, date);
         
-        Long targetPostId = getTargetPostId(userId, postId, snsType);
+        Long targetPostId;
+        if (postId != null && !postId.trim().isEmpty()) {
+            targetPostId = Long.parseLong(postId);
+        } else {
+            // postId가 없으면 최근 게시물 사용
+            targetPostId = getLatestPostIdBySnsType(Long.parseLong(userId), snsType);
+            log.info("No postId provided, using latest post for userId: {}, snsType: {}, latestPostId: {}", userId, snsType, targetPostId);
+        }
         
         // 게시물 존재 여부 확인
         validatePostExists(targetPostId);
@@ -289,11 +295,23 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         SnsPost post = snsPostRepositoryPort.findById(targetPostId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
-        // 외부 API에서 댓글 조회
-        List<PostCommentsResponse> comments = externalApiPort.getVideoComments(post.getSnsPostId());
+        // 외부 API에서 댓글 조회 (개수 제한 적용)
+        List<PostCommentsResponse> comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
         log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
         
-        return comments;
+        // 페이지네이션 적용
+        int start = request.getPage() * request.getSize();
+        int end = Math.min(start + request.getSize(), comments.size());
+        
+        if (start >= comments.size()) {
+            return List.of(); // 빈 목록 반환
+        }
+        
+        List<PostCommentsResponse> paginatedComments = comments.subList(start, end);
+        log.info("Applied pagination for postId: {}, page: {}, size: {}, result count: {}", 
+            targetPostId, request.getPage(), request.getSize(), paginatedComments.size());
+        
+        return paginatedComments;
     }
     
     // 헬퍼 메서드들

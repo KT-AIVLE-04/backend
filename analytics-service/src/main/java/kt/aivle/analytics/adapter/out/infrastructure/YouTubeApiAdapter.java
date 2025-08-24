@@ -103,12 +103,17 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     
     @Override
     public List<PostCommentsResponse> getVideoComments(String videoId) {
+        return getVideoCommentsWithLimit(videoId, 20); // 기본 20개로 제한
+    }
+    
+    @Override
+    public List<PostCommentsResponse> getVideoCommentsWithLimit(String videoId, int limit) {
         try {
             YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
                 .list(List.of("snippet"))
                 .setKey(apiKey)
                 .setVideoId(videoId)
-                .setMaxResults(100L);
+                .setMaxResults(Math.min(limit, 100L)); // 최대 100개, 요청된 개수와 비교하여 작은 값 사용
             
             CommentThreadListResponse response = request.execute();
             
@@ -117,6 +122,7 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             }
             
             return response.getItems().stream()
+                .limit(limit) // 추가로 limit 적용
                 .map(this::toPostCommentsResponse)
                 .collect(Collectors.toList());
             

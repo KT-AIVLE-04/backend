@@ -33,6 +33,11 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     public List<SnsPostCommentMetric> findByPostId(Long postId) {
         return snsPostCommentMetricJpaRepository.findByPostId(postId);
     }
+    
+    @Override
+    public List<SnsPostCommentMetric> findByPostIdWithPagination(Long postId, int page, int size) {
+        return snsPostCommentMetricJpaRepository.findByPostIdWithPagination(postId, PageRequest.of(page, size));
+    }
 
     @Override
     public Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId) {

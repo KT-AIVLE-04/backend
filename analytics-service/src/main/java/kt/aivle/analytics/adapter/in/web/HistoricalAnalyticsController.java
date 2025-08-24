@@ -75,7 +75,7 @@ public class HistoricalAnalyticsController {
     public ResponseEntity<ApiResponse<EmotionAnalysisResponse>> getHistoricalEmotionAnalysis(
             @RequestParam("date") String dateStr,
             @RequestParam("snsType") String snsType,
-            @RequestParam("postId") String postId,
+            @RequestParam(value = "postId", required = false) String postId,
             @RequestHeader("X-USER-ID") String userId) {
         
         EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, dateStr, snsType, postId);

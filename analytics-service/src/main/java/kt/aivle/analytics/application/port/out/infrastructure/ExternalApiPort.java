@@ -28,6 +28,11 @@ public interface ExternalApiPort {
     List<PostCommentsResponse> getVideoComments(String videoId);
     
     /**
+     * YouTube 비디오 댓글 조회 (개수 제한)
+     */
+    List<PostCommentsResponse> getVideoCommentsWithLimit(String videoId, int limit);
+    
+    /**
      * YouTube 비디오 댓글 조회 (페이지네이션 지원)
      */
     List<PostCommentsResponse> getVideoCommentsWithPagination(String videoId, String pageToken);

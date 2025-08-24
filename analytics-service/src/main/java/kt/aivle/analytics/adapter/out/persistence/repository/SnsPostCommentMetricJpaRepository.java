@@ -18,6 +18,10 @@ import kt.aivle.analytics.domain.model.SentimentType;
 public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<SnsPostCommentMetric, Long> {
     List<SnsPostCommentMetric> findByPostId(Long postId);
     
+    // 페이지네이션 지원 댓글 조회
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId ORDER BY c.createdAt DESC")
+    List<SnsPostCommentMetric> findByPostIdWithPagination(@Param("postId") Long postId, PageRequest pageRequest);
+    
     // 날짜만 비교하는 메서드
     @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND DATE(c.createdAt) = DATE(:date) ORDER BY c.createdAt DESC")
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(@Param("postId") Long postId, @Param("date") LocalDate date);

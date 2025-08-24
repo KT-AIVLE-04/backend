@@ -85,7 +85,7 @@ public class AnalyticsValidationAdapter implements ValidationPort {
             throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
         try {
-            return SnsType.valueOf(snsType.toUpperCase());
+            return SnsType.valueOf(snsType.toLowerCase());
         } catch (IllegalArgumentException e) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
         }
