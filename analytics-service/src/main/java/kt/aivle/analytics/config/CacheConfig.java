@@ -46,26 +46,6 @@ public class CacheConfig {
     @Value("${app.cache.ttl.realtime-comments:120}")
     private long realtimeCommentsTtl;
 
-//     @Bean
-//     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         objectMapper.registerModule(new JavaTimeModule());
-//         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        
-//         // activateDefaultTyping 대신 dto에 @JsonTypeInfo 가 있으면 자동 인식 가능
-//         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
-        
-//         RedisTemplate<String, Object> template = new RedisTemplate<>();
-//         template.setConnectionFactory(connectionFactory);
-//         template.setKeySerializer(new StringRedisSerializer());
-//         template.setValueSerializer(serializer);
-//         template.setHashKeySerializer(new StringRedisSerializer());
-//         template.setHashValueSerializer(serializer);
-//         template.afterPropertiesSet();
-//         return template;
-//     }
-
-
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         log.info("캐시 TTL 설정 - 히스토리: {}초, 실시간: {}초, 댓글: {}초",

@@ -34,11 +34,11 @@ public class HistoricalAnalyticsController {
     @GetMapping("/posts/metrics")
     public ResponseEntity<ApiResponse<PostMetricsResponse>> getHistoricalPostMetrics(
             @RequestParam("date") String dateStr,
-            @RequestParam("snsType") String snsType,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam("accountId") Long accountId,
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        PostMetricsResponse response = analyticsQueryUseCase.getHistoricalPostMetrics(userId, dateStr, snsType, postId);
+        PostMetricsResponse response = analyticsQueryUseCase.getHistoricalPostMetrics(userId, dateStr, accountId, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -47,10 +47,10 @@ public class HistoricalAnalyticsController {
     @GetMapping("/accounts/metrics")
     public ResponseEntity<ApiResponse<AccountMetricsResponse>> getHistoricalAccountMetrics(
             @RequestParam("date") String dateStr,
-            @RequestParam("snsType") String snsType,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam("accountId") Long accountId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        AccountMetricsResponse response = analyticsQueryUseCase.getHistoricalAccountMetrics(userId, dateStr, snsType);
+        AccountMetricsResponse response = analyticsQueryUseCase.getHistoricalAccountMetrics(userId, dateStr, accountId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -59,13 +59,13 @@ public class HistoricalAnalyticsController {
     @GetMapping("/posts/comments")
     public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getHistoricalPostComments(
             @RequestParam("date") String dateStr,
-            @RequestParam("snsType") String snsType,
-            @RequestParam(value = "postId", required = false) String postId,
+            @RequestParam("accountId") Long accountId,
+            @RequestParam(value = "postId", required = false) Long postId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getHistoricalPostComments(userId, dateStr, snsType, postId, page, size);
+        List<PostCommentsResponse> response = analyticsQueryUseCase.getHistoricalPostComments(userId, dateStr, accountId, postId, page, size);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -74,11 +74,11 @@ public class HistoricalAnalyticsController {
     @GetMapping("/posts/emotion-analysis")
     public ResponseEntity<ApiResponse<EmotionAnalysisResponse>> getHistoricalEmotionAnalysis(
             @RequestParam("date") String dateStr,
-            @RequestParam("snsType") String snsType,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam("accountId") Long accountId,
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, dateStr, snsType, postId);
+        EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, dateStr, accountId, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import kt.aivle.analytics.domain.entity.SnsAccount;
-import kt.aivle.analytics.domain.model.SnsType;
+
 
 public interface SnsAccountRepositoryPort {
     SnsAccount save(SnsAccount snsAccount);
@@ -14,7 +14,7 @@ public interface SnsAccountRepositoryPort {
 
     long countAll();
     List<SnsAccount> findByUserId(Long userId);
-    List<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType);
+
 
     void deleteById(Long id);
     List<SnsAccount> findAllWithPagination(int page, int size);

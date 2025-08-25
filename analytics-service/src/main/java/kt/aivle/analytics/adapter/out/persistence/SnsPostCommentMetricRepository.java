@@ -54,6 +54,11 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
         // LocalDate를 직접 사용 (JpaRepository에서 타임존 처리)
         return snsPostCommentMetricJpaRepository.findByPostIdAndCreatedAtDate(postId, date);
     }
+    
+    @Override
+    public List<SnsPostCommentMetric> findByPostIdAndPublishedAtBeforeWithPagination(Long postId, LocalDate date, int page, int size) {
+        return snsPostCommentMetricJpaRepository.findByPostIdAndPublishedAtBeforeWithPagination(postId, date, PageRequest.of(page, size));
+    }
 
     @Override
     public void saveAll(List<SnsPostCommentMetric> metrics) {

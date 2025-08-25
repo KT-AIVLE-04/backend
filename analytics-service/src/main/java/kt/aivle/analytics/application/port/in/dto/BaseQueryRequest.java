@@ -1,8 +1,6 @@
 package kt.aivle.analytics.application.port.in.dto;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
