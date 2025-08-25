@@ -2,7 +2,7 @@ package kt.aivle.analytics.application.port.out.infrastructure;
 
 import java.time.LocalDate;
 
-import kt.aivle.analytics.domain.model.SnsType;
+
 
 /**
  * 비즈니스 규칙 검증을 위한 Port 인터페이스
@@ -34,10 +34,7 @@ public interface ValidationPort {
      */
     void validateCommentCount(Long count, Long id);
 
-    /**
-     * SNS 타입 유효성 검증 및 파싱
-     */
-    SnsType validateAndParseSnsType(String snsType);
+
     
     /**
      * 날짜 문자열 유효성 검증 및 파싱
@@ -53,6 +50,11 @@ public interface ValidationPort {
      * 게시물 ID 유효성 검증
      */
     void validatePostId(String postId);
+    
+    /**
+     * 계정 ID 유효성 검증
+     */
+    void validateAccountId(Long accountId);
 
     /**
      * 메트릭 데이터 DTO

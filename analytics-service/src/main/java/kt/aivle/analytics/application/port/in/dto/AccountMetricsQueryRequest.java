@@ -2,7 +2,6 @@ package kt.aivle.analytics.application.port.in.dto;
 
 import java.time.LocalDate;
 
-import kt.aivle.analytics.domain.model.SnsType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -12,23 +11,21 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class AccountMetricsQueryRequest extends BaseQueryRequest {
     
-    private SnsType snsType; // SNS 타입 (실시간 API에서는 필수)
-    private String userId;   // 사용자 ID (실시간 API에서는 필수)
+    private Long accountId; // SNS 계정 ID
     
     // 편의 메서드들
     
-    public static AccountMetricsQueryRequest forDateAndSnsType(LocalDate date, String userId, SnsType snsType) {
-        return new AccountMetricsQueryRequest(date, snsType, userId);
+    public static AccountMetricsQueryRequest forDateAndAccountId(LocalDate date, Long accountId) {
+        return new AccountMetricsQueryRequest(date, accountId);
     }
     
-    public static AccountMetricsQueryRequest forCurrentDateAndSnsType(String userId, SnsType snsType) {
-        return new AccountMetricsQueryRequest(null, snsType, userId);
+    public static AccountMetricsQueryRequest forCurrentDateAndAccountId(Long accountId) {
+        return new AccountMetricsQueryRequest(null, accountId);
     }
     
     // 생성자
-    public AccountMetricsQueryRequest(LocalDate date, SnsType snsType, String userId) {
+    public AccountMetricsQueryRequest(LocalDate date, Long accountId) {
         super(date);
-        this.snsType = snsType;
-        this.userId = userId;
+        this.accountId = accountId;
     }
 }

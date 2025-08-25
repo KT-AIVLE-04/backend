@@ -6,7 +6,7 @@ import java.time.format.DateTimeParseException;
 import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
-import kt.aivle.analytics.domain.model.SnsType;
+
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
@@ -79,17 +79,7 @@ public class AnalyticsValidationAdapter implements ValidationPort {
         return value != null && value >= 0 && value <= maxValue;
     }
     
-    @Override
-    public SnsType validateAndParseSnsType(String snsType) {
-        if (snsType == null || snsType.trim().isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-        try {
-            return SnsType.valueOf(snsType.toLowerCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(AnalyticsErrorCode.INVALID_SNS_TYPE);
-        }
-    }
+
     
     @Override
     public LocalDate validateAndParseDate(String dateStr) {
@@ -114,6 +104,13 @@ public class AnalyticsValidationAdapter implements ValidationPort {
     public void validatePostId(String postId) {
         if (postId == null || postId.trim().isEmpty()) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
+        }
+    }
+    
+    @Override
+    public void validateAccountId(Long accountId) {
+        if (accountId == null || accountId <= 0) {
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
         }
     }
 }
