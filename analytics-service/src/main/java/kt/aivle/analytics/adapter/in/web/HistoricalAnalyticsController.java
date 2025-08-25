@@ -35,8 +35,8 @@ public class HistoricalAnalyticsController {
     public ResponseEntity<ApiResponse<PostMetricsResponse>> getHistoricalPostMetrics(
             @RequestParam("date") String dateStr,
             @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
         PostMetricsResponse response = analyticsQueryUseCase.getHistoricalPostMetrics(userId, dateStr, accountId, postId);
         
@@ -48,7 +48,7 @@ public class HistoricalAnalyticsController {
     public ResponseEntity<ApiResponse<AccountMetricsResponse>> getHistoricalAccountMetrics(
             @RequestParam("date") String dateStr,
             @RequestParam("accountId") Long accountId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
         AccountMetricsResponse response = analyticsQueryUseCase.getHistoricalAccountMetrics(userId, dateStr, accountId);
         
@@ -60,10 +60,10 @@ public class HistoricalAnalyticsController {
     public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getHistoricalPostComments(
             @RequestParam("date") String dateStr,
             @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) String postId,
+            @RequestParam(value = "postId", required = false) Long postId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
         List<PostCommentsResponse> response = analyticsQueryUseCase.getHistoricalPostComments(userId, dateStr, accountId, postId, page, size);
         
@@ -75,8 +75,8 @@ public class HistoricalAnalyticsController {
     public ResponseEntity<ApiResponse<EmotionAnalysisResponse>> getHistoricalEmotionAnalysis(
             @RequestParam("date") String dateStr,
             @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
         EmotionAnalysisResponse response = analyticsQueryUseCase.getHistoricalEmotionAnalysis(userId, dateStr, accountId, postId);
         

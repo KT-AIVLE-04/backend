@@ -33,8 +33,8 @@ public class RealtimeAnalyticsController {
     @GetMapping("/posts/metrics")
     public ResponseEntity<ApiResponse<PostMetricsResponse>> getRealtimePostMetrics(
             @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
         PostMetricsResponse response = analyticsQueryUseCase.getRealtimePostMetrics(userId, accountId, postId);
         
@@ -45,7 +45,7 @@ public class RealtimeAnalyticsController {
     @GetMapping("/accounts/metrics")
     public ResponseEntity<ApiResponse<AccountMetricsResponse>> getRealtimeAccountMetrics(
             @RequestParam("accountId") Long accountId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
         AccountMetricsResponse response = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, accountId);
         
@@ -56,10 +56,10 @@ public class RealtimeAnalyticsController {
     @GetMapping("/posts/comments")
     public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getRealtimePostComments(
             @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) String postId,
+            @RequestParam(value = "postId", required = false) Long postId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
         List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, accountId, postId, page, size);
         

@@ -56,11 +56,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     // 실시간 데이터 조회 메서드들
     @Override
     @Cacheable(value = "realtime-post-metrics", key = "'post-' + #userId + ',' + #accountId + ',' + #postId")
-    public PostMetricsResponse getRealtimePostMetrics(String userId, Long accountId, String postId) {
+    public PostMetricsResponse getRealtimePostMetrics(Long userId, Long accountId, Long postId) {
         validationPort.validateAccountId(accountId);
         
         PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             queryRequest = PostMetricsQueryRequest.forCurrentDate(postId);
         } else {
             queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(accountId);
@@ -71,7 +71,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "realtime-account-metrics", key = "'account-' + #userId + ',' + #accountId")
-    public AccountMetricsResponse getRealtimeAccountMetrics(String userId, Long accountId) {
+    public AccountMetricsResponse getRealtimeAccountMetrics(Long userId, Long accountId) {
         validationPort.validateAccountId(accountId);
         
         AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forCurrentDateAndAccountId(accountId);
@@ -81,12 +81,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "realtime-comments", key = "'comments-' + #userId + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getRealtimePostComments(String userId, Long accountId, String postId, Integer page, Integer size) {
+    public List<PostCommentsResponse> getRealtimePostComments(Long userId, Long accountId, Long postId, Integer page, Integer size) {
         validationPort.validateAccountId(accountId);
         
         PostCommentsQueryRequest queryRequest;
         
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size, accountId);
         } else {
             queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
@@ -98,12 +98,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     // 히스토리 데이터 조회 메서드들
     @Override
     @Cacheable(value = "history-post-metrics", key = "'history-post-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId")
-    public PostMetricsResponse getHistoricalPostMetrics(String userId, String dateStr, Long accountId, String postId) {
+    public PostMetricsResponse getHistoricalPostMetrics(Long userId, String dateStr, Long accountId, Long postId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
         validationPort.validateAccountId(accountId);
         
         PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             queryRequest = PostMetricsQueryRequest.forDate(date, postId);
         } else {
             queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(date, accountId);
@@ -123,7 +123,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "history-account-metrics", key = "'history-account-' + #userId + ',' + #dateStr + ',' + #accountId")
-    public AccountMetricsResponse getHistoricalAccountMetrics(String userId, String dateStr, Long accountId) {
+    public AccountMetricsResponse getHistoricalAccountMetrics(Long userId, String dateStr, Long accountId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
         validationPort.validateAccountId(accountId);
         
@@ -134,12 +134,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "history-comments", key = "'history-comments-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getHistoricalPostComments(String userId, String dateStr, Long accountId, String postId, Integer page, Integer size) {
+    public List<PostCommentsResponse> getHistoricalPostComments(Long userId, String dateStr, Long accountId, Long postId, Integer page, Integer size) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
         validationPort.validateAccountId(accountId);
         
         PostCommentsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size, accountId);
         } else {
             queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
@@ -150,12 +150,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "history-emotion-analysis", key = "'history-emotion-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId")
-    public EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String dateStr, Long accountId, String postId) {
+    public EmotionAnalysisResponse getHistoricalEmotionAnalysis(Long userId, String dateStr, Long accountId, Long postId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
         validationPort.validateAccountId(accountId);
         
         // postId가 null이거나 비어있으면 validation 건너뛰기
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             validationPort.validatePostId(postId);
         }
         
@@ -164,7 +164,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // ===== PRIVATE METHODS =====
     
-    private List<PostMetricsResponse> getPostMetricsInternal(String userId, PostMetricsQueryRequest request) {
+    private List<PostMetricsResponse> getPostMetricsInternal(Long userId, PostMetricsQueryRequest request) {
         log.info("Getting post metrics for userId: {}, date: {}, postId: {}, accountId: {}", 
                 userId, request.getDate(), request.getPostId(), request.getAccountId());
         
@@ -173,7 +173,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<Object[]> results;
         if (request.getPostId() != null) {
             // 특정 게시물의 메트릭 조회
-            Long postId = Long.parseLong(request.getPostId());
+            Long postId = request.getPostId();
             // postId가 제공된 경우 계정 ID 검증
             validatePostAccountId(postId, request.getAccountId());
             results = snsPostMetricRepositoryPort.findMetricsWithPostAndAccount(
@@ -188,7 +188,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return toSnsPostMetricsResponseFromJoin(results);
     }
     
-    private AccountMetricsResponse getAccountMetricsInternal(String userId, AccountMetricsQueryRequest request) {
+    private AccountMetricsResponse getAccountMetricsInternal(Long userId, AccountMetricsQueryRequest request) {
         log.info("Getting account metrics for userId: {}, date: {}, accountId: {}", 
                 userId, request.getDate(), request.getAccountId());
         
@@ -212,13 +212,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 히스토리 댓글 조회 내부 로직 (날짜 기준 필터링)
      */
-    private List<PostCommentsResponse> getHistoricalPostCommentsInternal(String userId, PostCommentsQueryRequest request, LocalDate date) {
+    private List<PostCommentsResponse> getHistoricalPostCommentsInternal(Long userId, PostCommentsQueryRequest request, LocalDate date) {
         log.info("Getting historical post comments for userId: {}, postId: {}, accountId: {}, date: {}, page: {}, size: {}", 
                 userId, request.getPostId(), request.getAccountId(), date, request.getPage(), request.getSize());
         
         Long targetPostId;
         if (request.getPostId() != null) {
-            targetPostId = Long.parseLong(request.getPostId());
+            targetPostId = request.getPostId();
             // postId가 제공된 경우 계정 ID 검증
             validatePostAccountId(targetPostId, request.getAccountId());
         } else {
@@ -240,12 +240,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 내부 히스토리 감정분석 로직 (캐시 적용)
      */
-    private EmotionAnalysisResponse getHistoricalEmotionAnalysisInternal(String userId, String postId, Long accountId, LocalDate date) {
+    private EmotionAnalysisResponse getHistoricalEmotionAnalysisInternal(Long userId, Long postId, Long accountId, LocalDate date) {
         log.info("Getting historical emotion analysis for userId: {}, postId: {}, accountId: {}, date: {}", userId, postId, accountId, date);
         
         Long targetPostId;
-        if (postId != null && !postId.trim().isEmpty()) {
-            targetPostId = Long.parseLong(postId);
+        if (postId != null) {
+            targetPostId = postId;
             // postId가 제공된 경우 계정 ID 검증
             validatePostAccountId(targetPostId, accountId);
         } else {
@@ -264,7 +264,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     // 실시간 데이터 조회 메서드들
-    private PostMetricsResponse getRealtimePostMetricsInternal(String userId, PostMetricsQueryRequest request) {
+    private PostMetricsResponse getRealtimePostMetricsInternal(Long userId, PostMetricsQueryRequest request) {
         log.info("Getting realtime post metrics for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
@@ -280,7 +280,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
 
     
-    private AccountMetricsResponse getRealtimeAccountMetricsInternal(String userId, AccountMetricsQueryRequest request) {
+    private AccountMetricsResponse getRealtimeAccountMetricsInternal(Long userId, AccountMetricsQueryRequest request) {
         log.info("Getting realtime account metrics for userId: {}, accountId: {}", userId, request.getAccountId());
         
         log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-account-metrics, userId: {}, accountId: {}", userId, request.getAccountId());
@@ -290,7 +290,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return responses.isEmpty() ? null : responses.get(0);
     }
     
-    private List<PostCommentsResponse> getRealtimePostCommentsInternal(String userId, PostCommentsQueryRequest request) {
+    private List<PostCommentsResponse> getRealtimePostCommentsInternal(Long userId, PostCommentsQueryRequest request) {
         log.info("Getting realtime post comments for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
@@ -418,9 +418,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 실시간 조회를 위한 타겟 게시물 ID 조회
      */
-    private Long getTargetPostIdForRealtime(String userId, PostMetricsQueryRequest request) {
+    private Long getTargetPostIdForRealtime(Long userId, PostMetricsQueryRequest request) {
         if (request.getPostId() != null) {
-            return Long.parseLong(request.getPostId());
+            return request.getPostId();
         } else {
             return getLatestPostIdByAccountId(request.getAccountId());
         }
@@ -429,9 +429,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 실시간 조회를 위한 타겟 게시물 ID 조회 (댓글용)
      */
-    private Long getTargetPostIdForRealtime(String userId, PostCommentsQueryRequest request) {
+    private Long getTargetPostIdForRealtime(Long userId, PostCommentsQueryRequest request) {
         if (request.getPostId() != null) {
-            return Long.parseLong(request.getPostId());
+            return request.getPostId();
         } else {
             return getLatestPostIdByAccountId(request.getAccountId());
         }
@@ -440,9 +440,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 감정분석을 위한 타겟 게시물 ID 조회
      */
-    private Long getTargetPostId(String userId, String postId, Long accountId) {
-        if (postId != null && !postId.trim().isEmpty()) {
-            return Long.parseLong(postId);
+    private Long getTargetPostId(Long userId, Long postId, Long accountId) {
+        if (postId != null) {
+            return postId;
         } else {
             return getLatestPostIdByAccountId(accountId);
         }
@@ -513,8 +513,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     private PostCommentsResponse toSnsPostCommentsResponse(SnsPostCommentMetric comment) {
         return PostCommentsResponse.builder()
-            .commentId(comment.getSnsCommentId())  // SNS ID 사용
-            .authorId(comment.getAuthorId())
+            .snsCommentId(comment.getSnsCommentId())  // SNS ID 사용
+            .snsAuthorId(comment.getAuthorId())
             .text(comment.getContent())
             .likeCount(comment.getLikeCount())
             .publishedAt(comment.getPublishedAt())

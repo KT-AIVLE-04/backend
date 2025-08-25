@@ -44,12 +44,12 @@ public interface ValidationPort {
     /**
      * 사용자 ID 유효성 검증
      */
-    void validateUserId(String userId);
+    void validateUserId(Long userId);
     
     /**
      * 게시물 ID 유효성 검증
      */
-    void validatePostId(String postId);
+    void validatePostId(Long postId);
     
     /**
      * 계정 ID 유효성 검증

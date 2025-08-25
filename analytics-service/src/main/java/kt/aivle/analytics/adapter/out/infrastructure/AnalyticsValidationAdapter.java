@@ -94,15 +94,15 @@ public class AnalyticsValidationAdapter implements ValidationPort {
     }
     
     @Override
-    public void validateUserId(String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
+    public void validateUserId(Long userId) {
+        if (userId == null || userId <= 0) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_USER_ID);
         }
     }
     
     @Override
-    public void validatePostId(String postId) {
-        if (postId == null || postId.trim().isEmpty()) {
+    public void validatePostId(Long postId) {
+        if (postId == null || postId <= 0) {
             throw new BusinessException(AnalyticsErrorCode.INVALID_POST_ID);
         }
     }
