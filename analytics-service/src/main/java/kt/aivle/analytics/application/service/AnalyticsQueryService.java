@@ -87,7 +87,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         PostCommentsQueryRequest queryRequest;
         
         if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size);
+            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size, accountId);
         } else {
             queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
         }
@@ -140,12 +140,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         PostCommentsQueryRequest queryRequest;
         if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size);
+            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size, accountId);
         } else {
             queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
         }
         
-        return getPostCommentsInternal(userId, queryRequest);
+        return getHistoricalPostCommentsInternal(userId, queryRequest, date);
     }
     
     @Override
@@ -173,8 +173,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<Object[]> results;
         if (request.getPostId() != null) {
             // 특정 게시물의 메트릭 조회
+            Long postId = Long.parseLong(request.getPostId());
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(postId, request.getAccountId());
             results = snsPostMetricRepositoryPort.findMetricsWithPostAndAccount(
-                List.of(Long.parseLong(request.getPostId())), targetDate);
+                List.of(postId), targetDate);
         } else {
             // 계정 ID로 최근 게시물만 조회
             Long latestPostId = getLatestPostIdByAccountId(request.getAccountId());
@@ -206,29 +209,33 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return null;
     }
     
-    private List<PostCommentsResponse> getPostCommentsInternal(String userId, PostCommentsQueryRequest request) {
-        log.info("Getting post comments for userId: {}, postId: {}, accountId: {}, page: {}, size: {}", 
-                userId, request.getPostId(), request.getAccountId(), request.getPage(), request.getSize());
+    /**
+     * 히스토리 댓글 조회 내부 로직 (날짜 기준 필터링)
+     */
+    private List<PostCommentsResponse> getHistoricalPostCommentsInternal(String userId, PostCommentsQueryRequest request, LocalDate date) {
+        log.info("Getting historical post comments for userId: {}, postId: {}, accountId: {}, date: {}, page: {}, size: {}", 
+                userId, request.getPostId(), request.getAccountId(), date, request.getPage(), request.getSize());
         
         Long targetPostId;
         if (request.getPostId() != null) {
             targetPostId = Long.parseLong(request.getPostId());
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(targetPostId, request.getAccountId());
         } else {
             targetPostId = getLatestPostIdByAccountId(request.getAccountId());
         }
         
-        // DB 레벨에서 페이지네이션 적용하여 댓글 조회
-        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdWithPagination(
-            targetPostId, request.getPage(), request.getSize());
+        // 날짜 기준으로 publishedAt 이전의 댓글을 최신순으로 페이지네이션하여 조회
+        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdAndPublishedAtBeforeWithPagination(
+            targetPostId, date, request.getPage(), request.getSize());
         
-        log.info("Retrieved comments from DB for postId: {}, page: {}, size: {}, result count: {}", 
-            targetPostId, request.getPage(), request.getSize(), comments.size());
+        log.info("Retrieved historical comments from DB for postId: {}, date: {}, page: {}, size: {}, result count: {}", 
+            targetPostId, date, request.getPage(), request.getSize(), comments.size());
         
         return comments.stream()
             .map(this::toSnsPostCommentsResponse)
             .collect(Collectors.toList());
     }
-
     
     /**
      * 내부 히스토리 감정분석 로직 (캐시 적용)
@@ -239,6 +246,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         Long targetPostId;
         if (postId != null && !postId.trim().isEmpty()) {
             targetPostId = Long.parseLong(postId);
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(targetPostId, accountId);
         } else {
             // postId가 없으면 최근 게시물 사용
             targetPostId = getLatestPostIdByAccountId(accountId);
@@ -260,6 +269,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
         
+        // postId가 제공된 경우 계정 ID 검증
+        if (request.getPostId() != null) {
+            validatePostAccountId(targetPostId, request.getAccountId());
+        }
+        
         log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-post-metrics, targetPostId: {}", targetPostId);
         return externalApiPort.getRealtimePostMetrics(targetPostId);
     }
@@ -280,6 +294,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("Getting realtime post comments for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
+        
+        // postId가 제공된 경우 계정 ID 검증
+        if (request.getPostId() != null) {
+            validatePostAccountId(targetPostId, request.getAccountId());
+        }
         
         log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-comments, targetPostId: {}", targetPostId);
         
@@ -333,6 +352,23 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private void validatePostExists(Long postId) {
         snsPostRepositoryPort.findById(postId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
+    }
+    
+    /**
+     * 게시물의 계정 ID 검증
+     */
+    private void validatePostAccountId(Long postId, Long accountId) {
+        SnsPost post = snsPostRepositoryPort.findById(postId)
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
+        
+        log.info("🔍 Post Account ID 검증: postId={}, expected accountId={}, actual accountId={}", 
+            postId, accountId, post.getAccountId());
+        
+        if (!post.getAccountId().equals(accountId)) {
+            log.warn("Post accountId mismatch: postId={}, expected accountId={}, actual accountId={}", 
+                postId, accountId, post.getAccountId());
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
+        }
     }
     
     /**

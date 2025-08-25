@@ -27,13 +27,13 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
     @Builder.Default
     private Integer size = 20; // 기본값 20
     
-    private Long accountId; // SNS 계정 ID
+    private Long accountId; // 계정 ID
 
-    public static PostCommentsQueryRequest forCurrentDate(String postId, Integer page, Integer size) {
-        return new PostCommentsQueryRequest(null, postId, page, size, null);
+    public static PostCommentsQueryRequest forCurrentDate(String postId, Integer page, Integer size, Long accountId) {
+        return new PostCommentsQueryRequest(null, postId, page, size, accountId);
     }
-    public static PostCommentsQueryRequest forDate(LocalDate date, String postId, Integer page, Integer size) {
-        return new PostCommentsQueryRequest(date, postId, page, size, null);
+    public static PostCommentsQueryRequest forDate(LocalDate date, String postId, Integer page, Integer size, Long accountId) {
+        return new PostCommentsQueryRequest(date, postId, page, size, accountId);
     }
     
     public static PostCommentsQueryRequest forLatestPostByAccountId(Long accountId, Integer page, Integer size) {
