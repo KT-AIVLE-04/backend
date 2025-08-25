@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import kt.aivle.analytics.adapter.out.persistence.repository.SnsAccountJpaRepository;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
 import kt.aivle.analytics.domain.entity.SnsAccount;
-import kt.aivle.analytics.domain.model.SnsType;
+
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -39,10 +39,7 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
         return snsAccountJpaRepository.findByUserId(userId);
     }
 
-    @Override
-    public List<SnsAccount> findByUserIdAndSnsType(Long userId, SnsType snsType) {
-        return snsAccountJpaRepository.findByUserIdAndType(userId, snsType);
-    }
+
 
     @Override
     public void deleteById(Long id) {

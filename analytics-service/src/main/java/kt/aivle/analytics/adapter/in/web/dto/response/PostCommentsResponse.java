@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PostCommentsResponse {
     @Builder.Default
-    private String commentId = "";      // YouTube에서 제공하는 실제 comment ID (기본값: 빈 문자열)
+    private String snsCommentId = "";      // YouTube에서 제공하는 실제 comment ID (기본값: 빈 문자열)
     
     @Builder.Default
-    private String authorId = "";       // 댓글 작성자 ID (기본값: 빈 문자열)
+    private String snsAuthorId = "";       // 댓글 작성자 ID (기본값: 빈 문자열)
     
     @Builder.Default
     private String text = "";           // 댓글 내용 (기본값: 빈 문자열)

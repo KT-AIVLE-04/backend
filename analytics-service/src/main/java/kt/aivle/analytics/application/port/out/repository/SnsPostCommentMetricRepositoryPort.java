@@ -13,6 +13,10 @@ public interface SnsPostCommentMetricRepositoryPort {
     List<SnsPostCommentMetric> findByPostId(Long postId);
     List<SnsPostCommentMetric> findByPostIdWithPagination(Long postId, int page, int size);
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(Long postId, LocalDate date);
+    
+    // 날짜 기준으로 publishedAt 이전의 댓글을 최신순으로 페이지네이션
+    List<SnsPostCommentMetric> findByPostIdAndPublishedAtBeforeWithPagination(Long postId, LocalDate date, int page, int size);
+    
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     void deleteById(Long id);
     void saveAll(List<SnsPostCommentMetric> metrics);

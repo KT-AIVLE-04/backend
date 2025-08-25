@@ -26,6 +26,10 @@ public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<Sns
     @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND DATE(c.createdAt) = DATE(:date) ORDER BY c.createdAt DESC")
     List<SnsPostCommentMetric> findByPostIdAndCreatedAtDate(@Param("postId") Long postId, @Param("date") LocalDate date);
 
+    // 날짜 기준으로 publishedAt 이전의 댓글을 최신순으로 페이지네이션
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND DATE(c.publishedAt) <= DATE(:date) ORDER BY c.publishedAt DESC")
+    List<SnsPostCommentMetric> findByPostIdAndPublishedAtBeforeWithPagination(@Param("postId") Long postId, @Param("date") LocalDate date, PageRequest pageRequest);
+
     Optional<SnsPostCommentMetric> findBySnsCommentId(String snsCommentId);
     
     @Modifying
