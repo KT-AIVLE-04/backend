@@ -114,6 +114,18 @@ services:
     networks:
       - backend
 
+  analytics-service:
+    image: ${DOCKER_USERNAME}/aivle-analytics:latest
+    container_name: analytics-service
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - TZ=Asia/Seoul
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
