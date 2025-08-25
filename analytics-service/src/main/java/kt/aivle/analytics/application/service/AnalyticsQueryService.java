@@ -437,17 +437,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         }
     }
     
-    /**
-     * 감정분석을 위한 타겟 게시물 ID 조회
-     */
-    private Long getTargetPostId(Long userId, Long postId, Long accountId) {
-        if (postId != null) {
-            return postId;
-        } else {
-            return getLatestPostIdByAccountId(accountId);
-        }
-    }
-    
     // 변환 메서드들
     
     /**

@@ -231,9 +231,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 MetricsData metricsData = new MetricsData(null, viewCount, likeCount, commentCount, "post", postId);
                 validationPort.validateMetrics(metricsData);
                 
-                // YouTube API v3에서는 share 정보를 직접 제공하지 않으므로 null로 설정
-                Long shareCount = null;
-                
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
                 LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
                 boolean hasRecentData = snsPostMetricRepositoryPort
