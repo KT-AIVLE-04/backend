@@ -1,0 +1,36 @@
+package kt.aivle.analytics.adapter.in.web.dto.response;
+
+import java.time.LocalDateTime;
+
+import kt.aivle.analytics.domain.model.SnsType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PostMetricsResponse {
+    private Long postId;           // Local DB ID
+    private Long accountId;        // Local Account ID
+    
+    @Builder.Default
+    private Long likes = 0L;       // 실시간 좋아요 수 (기본값: 0)
+    
+    @Builder.Default
+    private Long dislikes = 0L;    // 실시간 싫어요 수 (기본값: 0)
+    
+    @Builder.Default
+    private Long comments = 0L;    // 실시간 댓글 수 (기본값: 0)
+    
+    @Builder.Default
+    private Long shares = 0L;      // 실시간 공유 수 (기본값: 0)
+    
+    @Builder.Default
+    private Long views = 0L;       // 실시간 조회 수 (기본값: 0)
+    
+    private LocalDateTime fetchedAt; // API 호출 시간
+    private SnsType snsType;       // SNS 플랫폼 타입
+}

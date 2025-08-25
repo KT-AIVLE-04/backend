@@ -1,8 +1,8 @@
 package kt.aivle.gateway.config;
 
-import org.springframework.util.AntPathMatcher;
-
 import java.util.List;
+
+import org.springframework.util.AntPathMatcher;
 
 public class ExcludePaths {
     private static final ThreadLocal<AntPathMatcher> pathMatcher = ThreadLocal.withInitial(AntPathMatcher::new);
@@ -28,7 +28,8 @@ public class ExcludePaths {
             "/api/stores/v3/api-docs/**",
             "/api/shorts/v3/api-docs/**",
             "/api/contents/v3/api-docs/**",
-            "/api/sns/v3/api-docs/**"
+            "/api/sns/v3/api-docs/**",
+            "/api/analytics/v3/api-docs/**"
     );
 
     public static boolean isPatternMatch(String path) {
