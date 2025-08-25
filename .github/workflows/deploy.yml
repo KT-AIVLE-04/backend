@@ -3,7 +3,7 @@ name: MSA CI/CD (paths-filter + matrix)
 on:
   push:
     branches: [ "release" ]
-  workflow_dispatch: {}
+  workflow_dispatch: { }
 
 permissions:
   contents: read
@@ -19,14 +19,15 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      compose:  ${{ steps.filter.outputs.compose }}
-      common:   ${{ steps.filter.outputs.common }}
-      gateway:  ${{ steps.filter.outputs.gateway }}
-      auth:     ${{ steps.filter.outputs.auth }}
-      store:    ${{ steps.filter.outputs.store }}
-      shorts:   ${{ steps.filter.outputs.shorts }}
-      content:  ${{ steps.filter.outputs.content }}
-      sns:      ${{ steps.filter.outputs.sns }}
+      compose: ${{ steps.filter.outputs.compose }}
+      common: ${{ steps.filter.outputs.common }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      auth: ${{ steps.filter.outputs.auth }}
+      store: ${{ steps.filter.outputs.store }}
+      shorts: ${{ steps.filter.outputs.shorts }}
+      content: ${{ steps.filter.outputs.content }}
+      sns: ${{ steps.filter.outputs.sns }}
+      analytics: ${{ steps.filter.outputs.analytics }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,7 +59,7 @@ jobs:
         uses: dorny/paths-filter@v3.0.2
         with:
           base: ${{ steps.base.outputs.base }}
-          ref:  ${{ github.sha }}
+          ref: ${{ github.sha }}
           list-files: none
           filters: |
             compose:
@@ -80,6 +81,8 @@ jobs:
               - 'content-service/**'
             sns:
               - 'sns-service/**'
+            analytics:
+              - 'analytics-service/**'
 
   plan:
     needs: filter
@@ -101,6 +104,7 @@ jobs:
           changed_shorts='${{ needs.filter.outputs.shorts }}'
           changed_content='${{ needs.filter.outputs.content }}'
           changed_sns='${{ needs.filter.outputs.sns }}'
+          changed_analytics='${{ needs.filter.outputs.analytics }}'
 
           tb() { [ "$1" = "true" ] && echo true || echo false; }
 
@@ -112,6 +116,7 @@ jobs:
           CHANGED_SHORTS=$(tb "$changed_shorts")
           CHANGED_CONTENT=$(tb "$changed_content")
           CHANGED_SNS=$(tb "$changed_sns")
+          CHANGED_ANALYTICS=$(tb "$changed_analytics")
 
           add() {
             local service="$1" module="$2" image="$3" compose_name="$4" build="$5"
@@ -135,6 +140,7 @@ jobs:
           include_svc "shorts-service"  "shorts-service"  "aivle-shorts"    "shorts-service"  "$CHANGED_SHORTS"
           include_svc "content-service" "content-service" "aivle-content"   "content-service" "$CHANGED_CONTENT"
           include_svc "sns-service"     "sns-service"     "aivle-sns"       "sns-service"     "$CHANGED_SNS"
+          include_svc "analytics-service" "analytics-service" "aivle-analytics" "analytics-service" "$CHANGED_ANALYTICS"
 
           ITEMS="[${ITEMS%,}]"
 
@@ -183,12 +189,13 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
-      APP_YML_GATEWAY:   ${{ secrets.APPLICATION_YML_GATEWAY }}
-      APP_YML_AUTH:      ${{ secrets.APPLICATION_YML_AUTH }}
-      APP_YML_STORE:     ${{ secrets.APPLICATION_YML_STORE }}
-      APP_YML_SHORTS:    ${{ secrets.APPLICATION_YML_SHORTS }}
-      APP_YML_CONTENT:   ${{ secrets.APPLICATION_YML_CONTENT }}
-      APP_YML_SNS:       ${{ secrets.APPLICATION_YML_SNS }}
+      APP_YML_GATEWAY: ${{ secrets.APPLICATION_YML_GATEWAY }}
+      APP_YML_AUTH: ${{ secrets.APPLICATION_YML_AUTH }}
+      APP_YML_STORE: ${{ secrets.APPLICATION_YML_STORE }}
+      APP_YML_SHORTS: ${{ secrets.APPLICATION_YML_SHORTS }}
+      APP_YML_CONTENT: ${{ secrets.APPLICATION_YML_CONTENT }}
+      APP_YML_SNS: ${{ secrets.APPLICATION_YML_SNS }}
+      APP_YML_ANALYTICS: ${{ secrets.APPLICATION_YML_ANALYTICS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -210,6 +217,7 @@ jobs:
             shorts-service)  APP_YML="$APP_YML_SHORTS"   ;;
             content-service) APP_YML="$APP_YML_CONTENT"  ;;
             sns-service)     APP_YML="$APP_YML_SNS"      ;;
+            analytics-service) APP_YML="$APP_YML_ANALYTICS" ;;
           esac
           cat <<EOF > ./${{ matrix.module }}/src/main/resources/application.yml
           ${APP_YML}

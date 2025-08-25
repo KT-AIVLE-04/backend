@@ -44,6 +44,21 @@ services:
     networks:
       - backend
 
+  analytics-service:
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    depends_on:
+      - mysql
+      - kafka
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - TZ=Asia/Seoul
+    networks:
+      - backend
+
   mysql:
     image: mysql:8.0
     container_name: mysql
