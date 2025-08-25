@@ -2,7 +2,6 @@ package kt.aivle.analytics.application.port.in.dto;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -17,12 +16,12 @@ public class PostMetricsQueryRequest extends BaseQueryRequest {
     private Long accountId; // SNS 계정 ID
     
     // 편의 메서드들
-    public static PostMetricsQueryRequest forCurrentDate(Long postId) {
-        return new PostMetricsQueryRequest(null, postId, null);
+    public static PostMetricsQueryRequest forCurrentDate(Long postId, Long accountId) {
+        return new PostMetricsQueryRequest(null, postId, accountId);
     }
     
-    public static PostMetricsQueryRequest forDate(LocalDate date, Long postId) {
-        return new PostMetricsQueryRequest(date, postId, null);
+    public static PostMetricsQueryRequest forDate(LocalDate date, Long postId, Long accountId) {
+        return new PostMetricsQueryRequest(date, postId, accountId);
     }
     
     public static PostMetricsQueryRequest forLatestPostByAccountId(Long accountId) {

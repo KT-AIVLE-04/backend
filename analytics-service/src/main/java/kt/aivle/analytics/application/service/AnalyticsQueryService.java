@@ -61,7 +61,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         PostMetricsQueryRequest queryRequest;
         if (postId != null) {
-            queryRequest = PostMetricsQueryRequest.forCurrentDate(postId);
+            queryRequest = PostMetricsQueryRequest.forCurrentDate(postId, accountId);
         } else {
             queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(accountId);
         }
@@ -104,7 +104,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         PostMetricsQueryRequest queryRequest;
         if (postId != null) {
-            queryRequest = PostMetricsQueryRequest.forDate(date, postId);
+            queryRequest = PostMetricsQueryRequest.forDate(date, postId, accountId);
         } else {
             queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(date, accountId);
         }
