@@ -2,6 +2,7 @@ package kt.aivle.analytics.application.port.out.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
@@ -21,4 +22,14 @@ public interface SnsPostCommentMetricRepositoryPort {
     void deleteById(Long id);
     void saveAll(List<SnsPostCommentMetric> metrics);
     void updateSentimentById(Long id, SentimentType sentiment);
+    
+    /**
+     * sentiment가 null인 댓글들을 postId로 그룹화하여 조회
+     */
+    Map<Long, List<SnsPostCommentMetric>> findCommentsWithNullSentimentGroupedByPostId();
+    
+    /**
+     * 특정 게시물의 sentiment가 null인 댓글들을 조회
+     */
+    List<SnsPostCommentMetric> findByPostIdAndSentimentIsNull(Long postId);
 }

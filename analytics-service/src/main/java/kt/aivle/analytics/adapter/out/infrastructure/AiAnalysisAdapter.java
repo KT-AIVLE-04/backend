@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportResponse;
 import kt.aivle.analytics.application.port.out.dto.AiAnalysisRequest;
 import kt.aivle.analytics.application.port.out.dto.AiAnalysisResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
@@ -30,8 +32,8 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     private final RestTemplate restTemplate;
     private final PostCommentKeywordRepositoryPort keywordRepository;
     
-    @Value("${ai.analysis.url}")
-    private String aiAnalysisUrl;
+    @Value("${ai.origin-url}")
+    private String aiOriginUrl;
     
     @Override
     public AiAnalysisResponse analyzeComments(List<SnsPostCommentMetric> comments, Long postId) {
@@ -72,12 +74,13 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             
             HttpEntity<AiAnalysisRequest> entity = new HttpEntity<>(request, headers);
             
+            String analysisUrl = aiOriginUrl + "/api/comments/analyze";
             log.info("🚀 AI 서버 요청 시작 - URL: {}, 댓글 수: {}, 긍정 키워드: {}, 부정 키워드: {}", 
-                aiAnalysisUrl, comments.size(), positiveKeywords.size(), negativeKeywords.size());
+                analysisUrl, comments.size(), positiveKeywords.size(), negativeKeywords.size());
             
             // AI 분석 서버 호출
             log.info("📤 AI 서버로 요청 전송 중...");
-            AiAnalysisResponse response = restTemplate.postForObject(aiAnalysisUrl, entity, AiAnalysisResponse.class);
+            AiAnalysisResponse response = restTemplate.postForObject(analysisUrl, entity, AiAnalysisResponse.class);
 
             if (response.getEmotionAnalysis() == null) {
                 log.error("❌ AI 서버 응답의 emotionAnalysis가 null입니다");
@@ -89,6 +92,36 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             
         } catch (Exception e) {
             log.error("Failed to analyze comments with AI service: {}", e.getMessage());
+            throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+        }
+    }
+    
+    @Override
+    public AiReportResponse generateReport(AiReportRequest request) {
+        try {
+            // HTTP 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
+            HttpEntity<AiReportRequest> entity = new HttpEntity<>(request, headers);
+            
+            String reportUrl = aiOriginUrl + "/api/analysis/report";
+            log.info("📊 AI 보고서 생성 요청 시작 - URL: {}, Post ID: {}", reportUrl, request.getMetrics().getPost_id());
+            
+            // AI 보고서 생성 서버 호출
+            log.info("📤 AI 서버로 보고서 생성 요청 전송 중...");
+            AiReportResponse response = restTemplate.postForObject(reportUrl, entity, AiReportResponse.class);
+            
+            if (response == null || response.getMarkdown_report() == null) {
+                log.error("❌ AI 서버 응답의 markdown_report가 null입니다");
+                throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+            }
+            
+            log.info("✅ AI 보고서 생성 완료 - Post ID: {}", request.getMetrics().getPost_id());
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Failed to generate report with AI service: {}", e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
         }
     }
