@@ -10,7 +10,7 @@ public enum AnalyticsErrorCode implements DefaultCode {
 
     // 입력 검증 관련
     INVALID_POST_ID(HttpStatus.BAD_REQUEST, false, "잘못된 게시물 ID 형식입니다."),
-    INVALID_ACCOUNT_ID(HttpStatus.BAD_REQUEST, false, "잘못된 계정 ID 형식입니다."),
+    INVALID_ACCOUNT_ID(HttpStatus.BAD_REQUEST, false, "잘못된 계정입니다."),
     INVALID_USER_ID(HttpStatus.BAD_REQUEST, false, "잘못된 사용자 ID 형식입니다."),
     INVALID_SNS_TYPE(HttpStatus.BAD_REQUEST, false, "잘못된 SNS 타입입니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, false, "잘못된 날짜 매개변수입니다."),

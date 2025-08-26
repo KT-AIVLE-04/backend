@@ -231,9 +231,6 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 MetricsData metricsData = new MetricsData(null, viewCount, likeCount, commentCount, "post", postId);
                 validationPort.validateMetrics(metricsData);
                 
-                // YouTube API v3에서는 share 정보를 직접 제공하지 않으므로 null로 설정
-                Long shareCount = null;
-                
                 // 중복 데이터 방지 - 최근 1시간 내 데이터가 있으면 스킵 (최적화)
                 LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
                 boolean hasRecentData = snsPostMetricRepositoryPort
@@ -319,9 +316,9 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             for (PostCommentsResponse comment : pageComments) {
                 try {
                     // 이미 DB에 있는 댓글인지 확인
-                    if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getCommentId()).isPresent()) {
+                    if (snsPostCommentMetricRepositoryPort.findBySnsCommentId(comment.getSnsCommentId()).isPresent()) {
                         log.info("🛑 기존 댓글 발견 - postId: {}, 페이지: {}, commentId: {}, 수집 중단. 총 수집: {}", 
-                            postId, pageCount, comment.getCommentId(), newComments.size());
+                            postId, pageCount, comment.getSnsCommentId(), newComments.size());
                         return newComments; // 이미 있는 댓글을 만나면 수집 중단
                     }
                     
@@ -330,13 +327,13 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     // 긴 댓글은 1000자로 제한 (DB TEXT 타입이지만 안전하게)
                     if (content != null && content.length() > 1000) {
                         content = content.substring(0, 1000);
-                        log.debug("댓글 내용 잘림 - commentId: {}, 길이: 1000자로 제한", comment.getCommentId());
+                        log.debug("댓글 내용 잘림 - commentId: {}, 길이: 1000자로 제한", comment.getSnsCommentId());
                     }
                     
                     SnsPostCommentMetric commentMetric = SnsPostCommentMetric.builder()
-                        .snsCommentId(comment.getCommentId())
+                        .snsCommentId(comment.getSnsCommentId())
                         .postId(post.getId())
-                        .authorId(comment.getAuthorId())  // null 가능
+                        .authorId(comment.getSnsAuthorId())  // null 가능
                         .content(content)
                         .likeCount(comment.getLikeCount())
                         .publishedAt(comment.getPublishedAt())
@@ -345,7 +342,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                     newComments.add(commentMetric);
                     
                 } catch (Exception e) {
-                    log.error("댓글 처리 실패 - postId: {}, commentId: {}: {}", postId, comment.getCommentId(), e.getMessage());
+                    log.error("댓글 처리 실패 - postId: {}, commentId: {}: {}", postId, comment.getSnsCommentId(), e.getMessage());
                 }
             }
             

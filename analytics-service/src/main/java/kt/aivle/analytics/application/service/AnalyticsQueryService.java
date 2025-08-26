@@ -32,7 +32,6 @@ import kt.aivle.analytics.domain.entity.SnsPost;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 import kt.aivle.analytics.domain.entity.SnsPostMetric;
 import kt.aivle.analytics.domain.model.SentimentType;
-import kt.aivle.analytics.domain.model.SnsType;
 import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -56,41 +55,41 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 실시간 데이터 조회 메서드들
     @Override
-    @Cacheable(value = "realtime-post-metrics", key = "'post-' + #userId + ',' + #snsType + ',' + #postId")
-    public PostMetricsResponse getRealtimePostMetrics(String userId, String snsType, String postId) {
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+    @Cacheable(value = "realtime-post-metrics", key = "'post-' + #userId + ',' + #accountId + ',' + #postId")
+    public PostMetricsResponse getRealtimePostMetrics(Long userId, Long accountId, Long postId) {
+        validationPort.validateAccountId(accountId);
         
         PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostMetricsQueryRequest.forCurrentDate(postId);
+        if (postId != null) {
+            queryRequest = PostMetricsQueryRequest.forCurrentDate(postId, accountId);
         } else {
-            queryRequest = PostMetricsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum);
+            queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(accountId);
         }
         
         return getRealtimePostMetricsInternal(userId, queryRequest);
     }
     
     @Override
-    @Cacheable(value = "realtime-account-metrics", key = "'account-' + #userId + ',' + #snsType")
-    public AccountMetricsResponse getRealtimeAccountMetrics(String userId, String snsType) {
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+    @Cacheable(value = "realtime-account-metrics", key = "'account-' + #userId + ',' + #accountId")
+    public AccountMetricsResponse getRealtimeAccountMetrics(Long userId, Long accountId) {
+        validationPort.validateAccountId(accountId);
         
-        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forCurrentDateAndSnsType(userId, snsTypeEnum);
+        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forCurrentDateAndAccountId(accountId);
         
         return getRealtimeAccountMetricsInternal(userId, queryRequest);
     }
     
     @Override
-    @Cacheable(value = "realtime-comments", key = "'comments-' + #userId + ',' + #snsType + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getRealtimePostComments(String userId, String snsType, String postId, Integer page, Integer size) {
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+    @Cacheable(value = "realtime-comments", key = "'comments-' + #userId + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
+    public List<PostCommentsResponse> getRealtimePostComments(Long userId, Long accountId, Long postId, Integer page, Integer size) {
+        validationPort.validateAccountId(accountId);
         
         PostCommentsQueryRequest queryRequest;
         
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size);
+        if (postId != null) {
+            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size, accountId);
         } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum, page, size);
+            queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
         }
         
         return getRealtimePostCommentsInternal(userId, queryRequest);
@@ -98,16 +97,16 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 히스토리 데이터 조회 메서드들
     @Override
-    @Cacheable(value = "history-post-metrics", key = "'history-post-' + #userId + ',' + #dateStr + ',' + #snsType + ',' + #postId")
-    public PostMetricsResponse getHistoricalPostMetrics(String userId, String dateStr, String snsType, String postId) {
+    @Cacheable(value = "history-post-metrics", key = "'history-post-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId")
+    public PostMetricsResponse getHistoricalPostMetrics(Long userId, String dateStr, Long accountId, Long postId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+        validationPort.validateAccountId(accountId);
         
         PostMetricsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostMetricsQueryRequest.forDate(date, postId);
+        if (postId != null) {
+            queryRequest = PostMetricsQueryRequest.forDate(date, postId, accountId);
         } else {
-            queryRequest = PostMetricsQueryRequest.forLatestPostBySnsType(date, userId, snsTypeEnum);
+            queryRequest = PostMetricsQueryRequest.forLatestPostByAccountId(date, accountId);
         }
         
         List<PostMetricsResponse> responses = getPostMetricsInternal(userId, queryRequest);
@@ -123,62 +122,65 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    @Cacheable(value = "history-account-metrics", key = "'history-account-' + #userId + ',' + #dateStr + ',' + #snsType")
-    public AccountMetricsResponse getHistoricalAccountMetrics(String userId, String dateStr, String snsType) {
+    @Cacheable(value = "history-account-metrics", key = "'history-account-' + #userId + ',' + #dateStr + ',' + #accountId")
+    public AccountMetricsResponse getHistoricalAccountMetrics(Long userId, String dateStr, Long accountId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+        validationPort.validateAccountId(accountId);
         
-        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forDateAndSnsType(date, userId, snsTypeEnum);
+        AccountMetricsQueryRequest queryRequest = AccountMetricsQueryRequest.forDateAndAccountId(date, accountId);
         
         return getAccountMetricsInternal(userId, queryRequest);
     }
     
     @Override
-    @Cacheable(value = "history-comments", key = "'history-comments-' + #userId + ',' + #dateStr + ',' + #snsType + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getHistoricalPostComments(String userId, String dateStr, String snsType, String postId, Integer page, Integer size) {
+    @Cacheable(value = "history-comments", key = "'history-comments-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
+    public List<PostCommentsResponse> getHistoricalPostComments(Long userId, String dateStr, Long accountId, Long postId, Integer page, Integer size) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+        validationPort.validateAccountId(accountId);
         
         PostCommentsQueryRequest queryRequest;
-        if (postId != null && !postId.trim().isEmpty()) {
-            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size);
+        if (postId != null) {
+            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size, accountId);
         } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostBySnsType(userId, snsTypeEnum, page, size);
+            queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
         }
         
-        return getPostCommentsInternal(userId, queryRequest);
+        return getHistoricalPostCommentsInternal(userId, queryRequest, date);
     }
     
     @Override
-    @Cacheable(value = "history-emotion-analysis", key = "'history-emotion-' + #userId + ',' + #dateStr + ',' + #snsType + ',' + #postId")
-    public EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String dateStr, String snsType, String postId) {
+    @Cacheable(value = "history-emotion-analysis", key = "'history-emotion-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId")
+    public EmotionAnalysisResponse getHistoricalEmotionAnalysis(Long userId, String dateStr, Long accountId, Long postId) {
         LocalDate date = validationPort.validateAndParseDate(dateStr);
-        SnsType snsTypeEnum = validationPort.validateAndParseSnsType(snsType);
+        validationPort.validateAccountId(accountId);
         
         // postId가 null이거나 비어있으면 validation 건너뛰기
-        if (postId != null && !postId.trim().isEmpty()) {
+        if (postId != null) {
             validationPort.validatePostId(postId);
         }
         
-        return getHistoricalEmotionAnalysisInternal(userId, postId, snsTypeEnum, date);
+        return getHistoricalEmotionAnalysisInternal(userId, postId, accountId, date);
     }
     
     // ===== PRIVATE METHODS =====
     
-    private List<PostMetricsResponse> getPostMetricsInternal(String userId, PostMetricsQueryRequest request) {
-        log.info("Getting post metrics for userId: {}, date: {}, postId: {}, snsType: {}", 
-                userId, request.getDate(), request.getPostId(), request.getSnsType());
+    private List<PostMetricsResponse> getPostMetricsInternal(Long userId, PostMetricsQueryRequest request) {
+        log.info("Getting post metrics for userId: {}, date: {}, postId: {}, accountId: {}", 
+                userId, request.getDate(), request.getPostId(), request.getAccountId());
         
         LocalDate targetDate = request.getEffectiveDate();
         
         List<Object[]> results;
         if (request.getPostId() != null) {
             // 특정 게시물의 메트릭 조회
+            Long postId = request.getPostId();
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(postId, request.getAccountId());
             results = snsPostMetricRepositoryPort.findMetricsWithPostAndAccount(
-                List.of(Long.parseLong(request.getPostId())), targetDate);
+                List.of(postId), targetDate);
         } else {
-            // SNS 타입과 사용자 ID로 최근 게시물만 조회
-            Long latestPostId = getLatestPostIdBySnsType(Long.parseLong(request.getUserId()), request.getSnsType());
+            // 계정 ID로 최근 게시물만 조회
+            Long latestPostId = getLatestPostIdByAccountId(request.getAccountId());
             results = snsPostMetricRepositoryPort.findMetricsWithPostAndAccount(
                 List.of(latestPostId), targetDate);
         }
@@ -186,16 +188,14 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return toSnsPostMetricsResponseFromJoin(results);
     }
     
-    private AccountMetricsResponse getAccountMetricsInternal(String userId, AccountMetricsQueryRequest request) {
-        log.info("Getting account metrics for userId: {}, date: {}, snsType: {}", 
-                userId, request.getDate(), request.getSnsType());
+    private AccountMetricsResponse getAccountMetricsInternal(Long userId, AccountMetricsQueryRequest request) {
+        log.info("Getting account metrics for userId: {}, date: {}, accountId: {}", 
+                userId, request.getDate(), request.getAccountId());
         
         LocalDate targetDate = request.getEffectiveDate();
         
-        // SNS 타입과 사용자 ID로 조회
-        List<Long> accountIds = getAccountIdsByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType());
-        
-        List<Object[]> results = snsAccountMetricRepositoryPort.findMetricsWithAccount(accountIds, targetDate);
+        // 계정 ID로 조회
+        List<Object[]> results = snsAccountMetricRepositoryPort.findMetricsWithAccount(List.of(request.getAccountId()), targetDate);
         
         List<AccountMetricsResponse> responses = toSnsAccountMetricsResponseFromJoin(results);
         
@@ -209,43 +209,49 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return null;
     }
     
-    private List<PostCommentsResponse> getPostCommentsInternal(String userId, PostCommentsQueryRequest request) {
-        log.info("Getting post comments for userId: {}, postId: {}, snsType: {}, page: {}, size: {}", 
-                userId, request.getPostId(), request.getSnsType(), request.getPage(), request.getSize());
+    /**
+     * 히스토리 댓글 조회 내부 로직 (날짜 기준 필터링)
+     */
+    private List<PostCommentsResponse> getHistoricalPostCommentsInternal(Long userId, PostCommentsQueryRequest request, LocalDate date) {
+        log.info("Getting historical post comments for userId: {}, postId: {}, accountId: {}, date: {}, page: {}, size: {}", 
+                userId, request.getPostId(), request.getAccountId(), date, request.getPage(), request.getSize());
         
         Long targetPostId;
         if (request.getPostId() != null) {
-            targetPostId = Long.parseLong(request.getPostId());
+            targetPostId = request.getPostId();
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(targetPostId, request.getAccountId());
         } else {
-            targetPostId = getLatestPostIdBySnsType(Long.parseLong(request.getUserId()), request.getSnsType());
+            targetPostId = getLatestPostIdByAccountId(request.getAccountId());
         }
         
-        // DB 레벨에서 페이지네이션 적용하여 댓글 조회
-        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdWithPagination(
-            targetPostId, request.getPage(), request.getSize());
+        // 날짜 기준으로 publishedAt 이전의 댓글을 최신순으로 페이지네이션하여 조회
+        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdAndPublishedAtBeforeWithPagination(
+            targetPostId, date, request.getPage(), request.getSize());
         
-        log.info("Retrieved comments from DB for postId: {}, page: {}, size: {}, result count: {}", 
-            targetPostId, request.getPage(), request.getSize(), comments.size());
+        log.info("Retrieved historical comments from DB for postId: {}, date: {}, page: {}, size: {}, result count: {}", 
+            targetPostId, date, request.getPage(), request.getSize(), comments.size());
         
         return comments.stream()
             .map(this::toSnsPostCommentsResponse)
             .collect(Collectors.toList());
     }
-
     
     /**
      * 내부 히스토리 감정분석 로직 (캐시 적용)
      */
-    private EmotionAnalysisResponse getHistoricalEmotionAnalysisInternal(String userId, String postId, SnsType snsType, LocalDate date) {
-        log.info("Getting historical emotion analysis for userId: {}, postId: {}, snsType: {}, date: {}", userId, postId, snsType, date);
+    private EmotionAnalysisResponse getHistoricalEmotionAnalysisInternal(Long userId, Long postId, Long accountId, LocalDate date) {
+        log.info("Getting historical emotion analysis for userId: {}, postId: {}, accountId: {}, date: {}", userId, postId, accountId, date);
         
         Long targetPostId;
-        if (postId != null && !postId.trim().isEmpty()) {
-            targetPostId = Long.parseLong(postId);
+        if (postId != null) {
+            targetPostId = postId;
+            // postId가 제공된 경우 계정 ID 검증
+            validatePostAccountId(targetPostId, accountId);
         } else {
             // postId가 없으면 최근 게시물 사용
-            targetPostId = getLatestPostIdBySnsType(Long.parseLong(userId), snsType);
-            log.info("No postId provided, using latest post for userId: {}, snsType: {}, latestPostId: {}", userId, snsType, targetPostId);
+            targetPostId = getLatestPostIdByAccountId(accountId);
+            log.info("No postId provided, using latest post for accountId: {}, latestPostId: {}", accountId, targetPostId);
         }
         
         // 게시물 존재 여부 확인
@@ -258,10 +264,15 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     // 실시간 데이터 조회 메서드들
-    private PostMetricsResponse getRealtimePostMetricsInternal(String userId, PostMetricsQueryRequest request) {
-        log.info("Getting realtime post metrics for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
+    private PostMetricsResponse getRealtimePostMetricsInternal(Long userId, PostMetricsQueryRequest request) {
+        log.info("Getting realtime post metrics for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
+        
+        // postId가 제공된 경우 계정 ID 검증
+        if (request.getPostId() != null) {
+            validatePostAccountId(targetPostId, request.getAccountId());
+        }
         
         log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-post-metrics, targetPostId: {}", targetPostId);
         return externalApiPort.getRealtimePostMetrics(targetPostId);
@@ -269,26 +280,25 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
 
     
-    private AccountMetricsResponse getRealtimeAccountMetricsInternal(String userId, AccountMetricsQueryRequest request) {
-        log.info("Getting realtime account metrics for userId: {}, snsType: {}", userId, request.getSnsType());
+    private AccountMetricsResponse getRealtimeAccountMetricsInternal(Long userId, AccountMetricsQueryRequest request) {
+        log.info("Getting realtime account metrics for userId: {}, accountId: {}", userId, request.getAccountId());
         
-        // SNS 타입과 사용자 ID로 조회
-        List<Long> accountIds = getAccountIdsByUserIdAndSnsType(Long.parseLong(request.getUserId()), request.getSnsType());
+        log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-account-metrics, userId: {}, accountId: {}", userId, request.getAccountId());
         
-        log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-account-metrics, userId: {}, snsType: {}", userId, request.getSnsType());
+        List<AccountMetricsResponse> responses = externalApiPort.getRealtimeAccountMetrics(request.getAccountId());
         
-        List<AccountMetricsResponse> responses = accountIds.stream()
-            .flatMap(accountId -> externalApiPort.getRealtimeAccountMetrics(accountId).stream())
-            .collect(Collectors.toList());
-        
-        // SNS 타입이 지정된 경우 첫 번째 결과만 반환 (계정은 SNS 타입별로 하나씩만 존재)
         return responses.isEmpty() ? null : responses.get(0);
     }
     
-    private List<PostCommentsResponse> getRealtimePostCommentsInternal(String userId, PostCommentsQueryRequest request) {
-        log.info("Getting realtime post comments for userId: {}, postId: {}, snsType: {}", userId, request.getPostId(), request.getSnsType());
+    private List<PostCommentsResponse> getRealtimePostCommentsInternal(Long userId, PostCommentsQueryRequest request) {
+        log.info("Getting realtime post comments for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
         Long targetPostId = getTargetPostIdForRealtime(userId, request);
+        
+        // postId가 제공된 경우 계정 ID 검증
+        if (request.getPostId() != null) {
+            validatePostAccountId(targetPostId, request.getAccountId());
+        }
         
         log.info("🔍 [CACHE MISS] 외부 API 호출 - realtime-comments, targetPostId: {}", targetPostId);
         
@@ -321,32 +331,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
 
     
-    /**
-     * 사용자 ID와 SNS 타입으로 계정 ID 목록 조회
-     */
-    private List<Long> getAccountIdsByUserIdAndSnsType(Long userId, SnsType snsType) {
-        return snsAccountRepositoryPort.findByUserIdAndSnsType(userId, snsType)
-            .stream()
-            .map(SnsAccount::getId)
-            .toList();
-    }
+
     
     /**
-     * SNS 타입으로 최근 게시물 ID 조회
+     * 계정 ID로 최근 게시물 ID 조회
      */
-    private Long getLatestPostIdBySnsType(Long userId, SnsType snsType) {
-        List<Long> accountIds = getAccountIdsByUserIdAndSnsType(userId, snsType);
-        
-        if (accountIds.isEmpty()) {
-            throw new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND);
-        }
-        
-        // 각 계정의 최근 게시물 조회 (최적화)
-        Optional<SnsPost> latestPost = accountIds.stream()
-            .map(snsPostRepositoryPort::findLatestByAccountId)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()));
+    private Long getLatestPostIdByAccountId(Long accountId) {
+        Optional<SnsPost> latestPost = snsPostRepositoryPort.findLatestByAccountId(accountId);
         
         if (latestPost.isEmpty()) {
             throw new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND);
@@ -361,6 +352,23 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private void validatePostExists(Long postId) {
         snsPostRepositoryPort.findById(postId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
+    }
+    
+    /**
+     * 게시물의 계정 ID 검증
+     */
+    private void validatePostAccountId(Long postId, Long accountId) {
+        SnsPost post = snsPostRepositoryPort.findById(postId)
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
+        
+        log.info("🔍 Post Account ID 검증: postId={}, expected accountId={}, actual accountId={}", 
+            postId, accountId, post.getAccountId());
+        
+        if (!post.getAccountId().equals(accountId)) {
+            log.warn("Post accountId mismatch: postId={}, expected accountId={}, actual accountId={}", 
+                postId, accountId, post.getAccountId());
+            throw new BusinessException(AnalyticsErrorCode.INVALID_ACCOUNT_ID);
+        }
     }
     
     /**
@@ -410,33 +418,22 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     /**
      * 실시간 조회를 위한 타겟 게시물 ID 조회
      */
-    private Long getTargetPostIdForRealtime(String userId, PostMetricsQueryRequest request) {
+    private Long getTargetPostIdForRealtime(Long userId, PostMetricsQueryRequest request) {
         if (request.getPostId() != null) {
-            return Long.parseLong(request.getPostId());
+            return request.getPostId();
         } else {
-            return getLatestPostIdBySnsType(Long.parseLong(request.getUserId()), request.getSnsType());
+            return getLatestPostIdByAccountId(request.getAccountId());
         }
     }
     
     /**
      * 실시간 조회를 위한 타겟 게시물 ID 조회 (댓글용)
      */
-    private Long getTargetPostIdForRealtime(String userId, PostCommentsQueryRequest request) {
+    private Long getTargetPostIdForRealtime(Long userId, PostCommentsQueryRequest request) {
         if (request.getPostId() != null) {
-            return Long.parseLong(request.getPostId());
+            return request.getPostId();
         } else {
-            return getLatestPostIdBySnsType(Long.parseLong(request.getUserId()), request.getSnsType());
-        }
-    }
-    
-    /**
-     * 감정분석을 위한 타겟 게시물 ID 조회
-     */
-    private Long getTargetPostId(String userId, String postId, SnsType snsType) {
-        if (postId != null && !postId.trim().isEmpty()) {
-            return Long.parseLong(postId);
-        } else {
-            return getLatestPostIdBySnsType(Long.parseLong(userId), snsType);
+            return getLatestPostIdByAccountId(request.getAccountId());
         }
     }
     
@@ -505,8 +502,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     private PostCommentsResponse toSnsPostCommentsResponse(SnsPostCommentMetric comment) {
         return PostCommentsResponse.builder()
-            .commentId(comment.getSnsCommentId())  // SNS ID 사용
-            .authorId(comment.getAuthorId())
+            .snsCommentId(comment.getSnsCommentId())  // SNS ID 사용
+            .snsAuthorId(comment.getAuthorId())
             .text(comment.getContent())
             .likeCount(comment.getLikeCount())
             .publishedAt(comment.getPublishedAt())

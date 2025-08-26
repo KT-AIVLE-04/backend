@@ -277,8 +277,8 @@ public class YouTubeApiAdapter implements ExternalApiPort {
         var snippet = commentThread.getSnippet().getTopLevelComment().getSnippet();
         
         return PostCommentsResponse.builder()
-            .commentId(commentThread.getId())  // YouTube comment ID
-            .authorId(snippet.getAuthorChannelId() != null ? snippet.getAuthorChannelId().getValue() : null)
+            .snsCommentId(commentThread.getId())  // YouTube comment ID
+            .snsAuthorId(snippet.getAuthorChannelId() != null ? snippet.getAuthorChannelId().getValue() : null)
             .text(snippet.getTextDisplay())
             .likeCount(snippet.getLikeCount() != null ? snippet.getLikeCount().longValue() : 0L)
             .publishedAt(ZonedDateTime.parse(snippet.getPublishedAt().toString()).toLocalDateTime())

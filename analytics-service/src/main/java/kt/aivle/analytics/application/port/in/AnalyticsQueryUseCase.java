@@ -10,18 +10,18 @@ import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 public interface AnalyticsQueryUseCase {
     
     // 실시간 YouTube API 데이터 조회 (date 파라미터 없음)
-    PostMetricsResponse getRealtimePostMetrics(String userId, String snsType, String postId);
+    PostMetricsResponse getRealtimePostMetrics(Long userId, Long accountId, Long postId);
     
-    AccountMetricsResponse getRealtimeAccountMetrics(String userId, String snsType);
+    AccountMetricsResponse getRealtimeAccountMetrics(Long userId, Long accountId);
     
-    List<PostCommentsResponse> getRealtimePostComments(String userId, String snsType, String postId, Integer page, Integer size);
+    List<PostCommentsResponse> getRealtimePostComments(Long userId, Long accountId, Long postId, Integer page, Integer size);
 
     // 히스토리 데이터 조회 (date 파라미터 필수)
-    PostMetricsResponse getHistoricalPostMetrics(String userId, String dateStr, String snsType, String postId);
+    PostMetricsResponse getHistoricalPostMetrics(Long userId, String dateStr, Long accountId, Long postId);
     
-    AccountMetricsResponse getHistoricalAccountMetrics(String userId, String dateStr, String snsType);
+    AccountMetricsResponse getHistoricalAccountMetrics(Long userId, String dateStr, Long accountId);
     
-    List<PostCommentsResponse> getHistoricalPostComments(String userId, String dateStr, String snsType, String postId, Integer page, Integer size);
+    List<PostCommentsResponse> getHistoricalPostComments(Long userId, String dateStr, Long accountId, Long postId, Integer page, Integer size);
     
-    EmotionAnalysisResponse getHistoricalEmotionAnalysis(String userId, String dateStr, String snsType, String postId);
+    EmotionAnalysisResponse getHistoricalEmotionAnalysis(Long userId, String dateStr, Long accountId, Long postId);
 }

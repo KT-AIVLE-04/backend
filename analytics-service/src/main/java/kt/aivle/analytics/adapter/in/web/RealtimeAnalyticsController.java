@@ -32,11 +32,11 @@ public class RealtimeAnalyticsController {
     @Operation(summary = "실시간 게시물 메트릭 조회", description = "특정 게시물의 실시간 메트릭을 조회합니다.")
     @GetMapping("/posts/metrics")
     public ResponseEntity<ApiResponse<PostMetricsResponse>> getRealtimePostMetrics(
-            @RequestParam("snsType") String snsType,
-            @RequestParam(value = "postId", required = false) String postId,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam("accountId") Long accountId,
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        PostMetricsResponse response = analyticsQueryUseCase.getRealtimePostMetrics(userId, snsType, postId);
+        PostMetricsResponse response = analyticsQueryUseCase.getRealtimePostMetrics(userId, accountId, postId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -44,10 +44,10 @@ public class RealtimeAnalyticsController {
     @Operation(summary = "실시간 계정 메트릭 조회", description = "특정 계정의 실시간 메트릭을 조회합니다.")
     @GetMapping("/accounts/metrics")
     public ResponseEntity<ApiResponse<AccountMetricsResponse>> getRealtimeAccountMetrics(
-            @RequestParam("snsType") String snsType,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestParam("accountId") Long accountId,
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        AccountMetricsResponse response = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, snsType);
+        AccountMetricsResponse response = analyticsQueryUseCase.getRealtimeAccountMetrics(userId, accountId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
@@ -55,13 +55,13 @@ public class RealtimeAnalyticsController {
     @Operation(summary = "실시간 게시물 댓글 조회", description = "특정 게시물의 실시간 댓글을 페이지네이션으로 조회합니다.")
     @GetMapping("/posts/comments")
     public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getRealtimePostComments(
-            @RequestParam("snsType") String snsType,
-            @RequestParam(value = "postId", required = false) String postId,
+            @RequestParam("accountId") Long accountId,
+            @RequestParam(value = "postId", required = false) Long postId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
-            @RequestHeader("X-USER-ID") String userId) {
+            @RequestHeader("X-USER-ID") Long userId) {
         
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, snsType, postId, page, size);
+        List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, accountId, postId, page, size);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
