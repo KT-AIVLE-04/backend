@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
@@ -65,6 +66,22 @@ public class RealtimeAnalyticsController {
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
+    
+    @Operation(summary = "AI 분석 보고서 조회", description = "특정 게시물의 AI 분석 보고서를 조회합니다. (캐시 포함)")
+    @GetMapping("/posts/report")
+    public ResponseEntity<ApiResponse<ReportResponse>> generateReport(
+            @RequestParam("accountId") Long accountId,
+            @RequestParam("postId") Long postId,
+            @RequestHeader("X-USER-ID") Long userId,
+            @RequestHeader("X-STORE-ID") String storeId) {
+        
+        // storeId는 향후 권한 검증에 사용할 수 있음
+        ReportResponse response = analyticsQueryUseCase.generateReport(userId, accountId, postId);
+        
+        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
+    }
+    
+
 }
 
 

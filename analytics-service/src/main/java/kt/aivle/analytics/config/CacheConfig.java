@@ -45,11 +45,14 @@ public class CacheConfig {
 
     @Value("${app.cache.ttl.realtime-comments:120}")
     private long realtimeCommentsTtl;
+    
+    @Value("${app.cache.ttl.report:3600}")
+    private long reportTtl;
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        log.info("캐시 TTL 설정 - 히스토리: {}초, 실시간: {}초, 댓글: {}초",
-                postMetricsTtl, realtimePostMetricsTtl, historyCommentsTtl);
+        log.info("캐시 TTL 설정 - 히스토리: {}초, 실시간: {}초, 댓글: {}초, 보고서: {}초",
+                postMetricsTtl, realtimePostMetricsTtl, historyCommentsTtl, reportTtl);
 
         // Redis 연결 테스트
         try {
@@ -84,7 +87,8 @@ public class CacheConfig {
             "realtime-post-metrics", defaultConfig.entryTtl(Duration.ofSeconds(realtimePostMetricsTtl)),
             "realtime-account-metrics", defaultConfig.entryTtl(Duration.ofSeconds(realtimeAccountMetricsTtl)),
             "realtime-comments", defaultConfig.entryTtl(Duration.ofSeconds(realtimeCommentsTtl)),
-            "history-comments", defaultConfig.entryTtl(Duration.ofSeconds(historyCommentsTtl))
+            "history-comments", defaultConfig.entryTtl(Duration.ofSeconds(historyCommentsTtl)),
+            "report", defaultConfig.entryTtl(Duration.ofSeconds(reportTtl))
         );
 
         return RedisCacheManager.builder(connectionFactory)

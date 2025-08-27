@@ -36,4 +36,16 @@ public interface SnsPostCommentMetricJpaRepository extends BaseJpaRepository<Sns
     @Transactional
     @Query("UPDATE SnsPostCommentMetric c SET c.sentiment = :sentiment WHERE c.id = :id")
     void updateSentimentById(@Param("id") Long id, @Param("sentiment") SentimentType sentiment);
+    
+    /**
+     * sentiment가 null인 댓글들을 조회
+     */
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.sentiment IS NULL ORDER BY c.postId, c.createdAt")
+    List<SnsPostCommentMetric> findBySentimentIsNull();
+    
+    /**
+     * 특정 게시물의 sentiment가 null인 댓글들을 조회
+     */
+    @Query("SELECT c FROM SnsPostCommentMetric c WHERE c.postId = :postId AND c.sentiment IS NULL ORDER BY c.createdAt")
+    List<SnsPostCommentMetric> findByPostIdAndSentimentIsNull(@Param("postId") Long postId);
 }

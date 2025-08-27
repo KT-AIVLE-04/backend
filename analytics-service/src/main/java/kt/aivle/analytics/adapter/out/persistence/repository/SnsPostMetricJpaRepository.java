@@ -3,6 +3,7 @@ package kt.aivle.analytics.adapter.out.persistence.repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,9 @@ public interface SnsPostMetricJpaRepository extends BaseJpaRepository<SnsPostMet
         WHERE m.postId IN :postIds AND DATE(m.createdAt) = DATE(:date)
         """)
     List<Object[]> findMetricsWithPostAndAccount(@Param("postIds") List<Long> postIds, @Param("date") LocalDate date);
+    
+    /**
+     * 특정 게시물의 가장 최근 메트릭 조회
+     */
+    Optional<SnsPostMetric> findTopByPostIdOrderByCreatedAtDesc(Long postId);
 }
