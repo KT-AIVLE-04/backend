@@ -6,6 +6,7 @@ import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
 
 public interface AnalyticsQueryUseCase {
     
@@ -24,4 +25,7 @@ public interface AnalyticsQueryUseCase {
     List<PostCommentsResponse> getHistoricalPostComments(Long userId, String dateStr, Long accountId, Long postId, Integer page, Integer size);
     
     EmotionAnalysisResponse getHistoricalEmotionAnalysis(Long userId, String dateStr, Long accountId, Long postId);
+    
+    // AI 보고서 생성 (캐시 포함)
+    ReportResponse generateReport(Long userId, Long accountId, Long postId);
 }

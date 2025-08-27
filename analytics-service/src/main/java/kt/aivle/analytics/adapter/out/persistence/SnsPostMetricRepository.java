@@ -49,4 +49,9 @@ public class SnsPostMetricRepository implements SnsPostMetricRepositoryPort {
     public List<Object[]> findMetricsWithPostAndAccount(List<Long> postIds, LocalDate date) {
         return snsPostMetricJpaRepository.findMetricsWithPostAndAccount(postIds, date);
     }
+    
+    @Override
+    public Optional<SnsPostMetric> findLatestByPostId(Long postId) {
+        return snsPostMetricJpaRepository.findTopByPostIdOrderByCreatedAtDesc(postId);
+    }
 }

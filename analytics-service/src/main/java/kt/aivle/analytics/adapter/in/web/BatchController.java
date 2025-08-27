@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.BatchJobStatusResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.BatchOperationResponse;
+import kt.aivle.analytics.application.port.in.EmotionAnalysisUseCase;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.service.BatchJobMonitor;
-import kt.aivle.common.exception.BusinessException;
-import kt.aivle.analytics.exception.AnalyticsErrorCode;
 import kt.aivle.common.code.CommonResponseCode;
+import kt.aivle.common.exception.BusinessException;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BatchController {
     
     private final MetricsCollectionUseCase metricsCollectionUseCase;
+    private final EmotionAnalysisUseCase emotionAnalysisUseCase;
     private final BatchJobMonitor batchJobMonitor;
     
     // 공통 예외 처리 메서드
@@ -129,6 +130,22 @@ public class BatchController {
             metricsCollectionUseCase.collectPostMetrics();
             metricsCollectionUseCase.collectPostComments();
         });
+    }
+    
+    // POST /api/analytics/batch/emotion-analysis
+    @PostMapping("/emotion-analysis")
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> analyzeAllNullSentimentComments() {
+        log.info("Manual emotion analysis for all null sentiment comments requested");
+        
+        return executeBatchOperation("emotion analysis for all null sentiment comments", () -> emotionAnalysisUseCase.analyzeAllNullSentimentComments());
+    }
+    
+    // POST /api/analytics/batch/posts/{postId}/emotion-analysis
+    @PostMapping("/posts/{postId}/emotion-analysis")
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> analyzeNullSentimentCommentsByPostId(@PathVariable Long postId) {
+        log.info("Manual emotion analysis requested for postId: {}", postId);
+        
+        return executeBatchOperation("emotion analysis for postId: " + postId, () -> emotionAnalysisUseCase.analyzeNullSentimentCommentsByPostId(postId));
     }
     
     // GET /api/analytics/batch/status

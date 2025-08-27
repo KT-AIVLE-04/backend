@@ -14,10 +14,14 @@ import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
+import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
@@ -50,6 +54,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final PostCommentKeywordRepositoryPort postCommentKeywordRepository;
     private final ExternalApiPort externalApiPort;
     private final ValidationPort validationPort;
+    private final AiAnalysisPort aiAnalysisPort;
     
     // ===== PUBLIC METHODS =====
     
@@ -509,4 +514,58 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .publishedAt(comment.getPublishedAt())
             .build();
     }
+    
+    @Override
+    @Cacheable(value = "report", key = "#postId")
+    public ReportResponse generateReport(Long userId, Long accountId, Long postId) {
+        validationPort.validateAccountId(accountId);
+        
+        // 1. 게시물 메트릭 조회 (가장 최근 데이터)
+        SnsPostMetric postMetric = snsPostMetricRepositoryPort.findLatestByPostId(postId)
+            .orElseThrow(() -> {
+                log.warn("게시물 메트릭을 찾을 수 없습니다 - Post ID: {}, Account ID: {}, User ID: {}", postId, accountId, userId);
+                return new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND);
+            });
+        
+        log.info("게시물 메트릭 조회 성공 - Post ID: {}, Views: {}, Likes: {}, Comments: {}", 
+            postId, postMetric.getViews(), postMetric.getLikes(), postMetric.getComments());
+        
+        // 2. 감정 분석 데이터 조회
+        Map<SentimentType, List<String>> groupedKeywords = postCommentKeywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
+        
+        // 3. 댓글 수 조회
+        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostId(postId);
+        
+        // 4. AI 보고서 요청 데이터 구성
+        AiReportRequest.Metrics metrics = AiReportRequest.Metrics.builder()
+            .post_id(postId)
+            .view_count(postMetric.getViews())
+            .like_count(postMetric.getLikes())
+            .comment_count(postMetric.getComments())
+            .build();
+        
+        AiReportRequest.EmotionData emotionData = AiReportRequest.EmotionData.builder()
+            .positive_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.POSITIVE).count())
+            .negative_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEGATIVE).count())
+            .neutral_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEUTRAL).count())
+            .positive_keywords(groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of()))
+            .negative_keywords(groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of()))
+            .neutral_keywords(groupedKeywords.getOrDefault(SentimentType.NEUTRAL, List.of()))
+            .build();
+        
+        AiReportRequest request = AiReportRequest.builder()
+            .metrics(metrics)
+            .emotion_data(emotionData)
+            .build();
+        
+        // 5. AI 서버에 보고서 생성 요청
+        AiReportResponse aiResponse = aiAnalysisPort.generateReport(request);
+        
+        return ReportResponse.builder()
+            .postId(postId)
+            .markdownReport(aiResponse.getMarkdown_report())
+            .build();
+    }
+    
+
 }

@@ -19,4 +19,9 @@ public interface SnsPostMetricRepositoryPort {
     
     boolean existsByPostIdAndCreatedAtAfter(Long postId, LocalDateTime date);
     void deleteById(Long id);
+    
+    /**
+     * 특정 게시물의 가장 최근 메트릭 조회
+     */
+    Optional<SnsPostMetric> findLatestByPostId(Long postId);
 }

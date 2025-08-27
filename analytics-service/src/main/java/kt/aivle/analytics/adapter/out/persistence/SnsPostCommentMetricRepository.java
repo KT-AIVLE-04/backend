@@ -2,7 +2,9 @@ package kt.aivle.analytics.adapter.out.persistence;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -68,5 +70,18 @@ public class SnsPostCommentMetricRepository implements SnsPostCommentMetricRepos
     @Override
     public void updateSentimentById(Long id, SentimentType sentiment) {
         snsPostCommentMetricJpaRepository.updateSentimentById(id, sentiment);
+    }
+    
+    @Override
+    public Map<Long, List<SnsPostCommentMetric>> findCommentsWithNullSentimentGroupedByPostId() {
+        List<SnsPostCommentMetric> commentsWithNullSentiment = snsPostCommentMetricJpaRepository.findBySentimentIsNull();
+        
+        return commentsWithNullSentiment.stream()
+            .collect(Collectors.groupingBy(SnsPostCommentMetric::getPostId));
+    }
+    
+    @Override
+    public List<SnsPostCommentMetric> findByPostIdAndSentimentIsNull(Long postId) {
+        return snsPostCommentMetricJpaRepository.findByPostIdAndSentimentIsNull(postId);
     }
 }

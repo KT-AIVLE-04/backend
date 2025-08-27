@@ -3,6 +3,8 @@ package kt.aivle.analytics.application.port.out.infrastructure;
 import java.util.List;
 
 import kt.aivle.analytics.application.port.out.dto.AiAnalysisResponse;
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
+import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportResponse;
 import kt.aivle.analytics.domain.entity.SnsPostCommentMetric;
 
 /**
@@ -16,5 +18,8 @@ public interface AiAnalysisPort {
      */
     AiAnalysisResponse analyzeComments(List<SnsPostCommentMetric> comments, Long postId);
     
-
+    /**
+     * AI 보고서 생성 요청
+     */
+    AiReportResponse generateReport(AiReportRequest request);
 }
