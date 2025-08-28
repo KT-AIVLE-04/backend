@@ -6,7 +6,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
 import java.util.List;
+
+import static kt.aivle.common.code.CommonResponseCode.ACCEPTED;
 
 @Component
 public class ResponseUtils {
@@ -33,5 +36,17 @@ public class ResponseUtils {
 
     public ResponseEntity<ApiResponse<Void>> build(DefaultCode code) {
         return build(code, (Void) null);
+    }
+
+    public ResponseEntity<ApiResponse<Void>> buildAccepted(URI location) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(location);
+        return ResponseEntity.accepted().headers(headers).body(ApiResponse.of(ACCEPTED, null));
+    }
+
+    public <T> ResponseEntity<ApiResponse<T>> buildAccepted(URI location, T result) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(location);
+        return ResponseEntity.accepted().headers(headers).body(ApiResponse.of(ACCEPTED, result));
     }
 }
