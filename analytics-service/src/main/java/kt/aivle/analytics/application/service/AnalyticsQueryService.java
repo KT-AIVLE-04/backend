@@ -519,7 +519,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "report", key = "#postId")
-    public ReportResponse generateReport(Long userId, Long accountId, Long postId) {
+    public ReportResponse generateReport(Long userId, Long accountId, Long postId, String storeId) {
         validationPort.validateAccountId(accountId);
         
         // 1. 게시물 메트릭 조회 (가장 최근 데이터)
@@ -561,7 +561,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .build();
         
         // 5. AI 서버에 보고서 생성 요청
-        AiReportResponse aiResponse = aiAnalysisPort.generateReport(request);
+        AiReportResponse aiResponse = aiAnalysisPort.generateReport(request, storeId);
         
         return ReportResponse.builder()
             .postId(postId)

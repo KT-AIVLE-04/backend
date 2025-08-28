@@ -76,7 +76,7 @@ public class RealtimeAnalyticsController {
             @RequestHeader("X-STORE-ID") String storeId) {
         
         // storeId는 향후 권한 검증에 사용할 수 있음
-        ReportResponse response = analyticsQueryUseCase.generateReport(userId, accountId, postId);
+        ReportResponse response = analyticsQueryUseCase.generateReport(userId, accountId, postId,storeId);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }

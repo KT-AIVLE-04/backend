@@ -98,11 +98,12 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     }
     
     @Override
-    public AiReportResponse generateReport(AiReportRequest request) {
+    public AiReportResponse generateReport(AiReportRequest request, String storeId) {
         try {
             // HTTP 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-STORE-ID", storeId);
             
             HttpEntity<AiReportRequest> entity = new HttpEntity<>(request, headers);
             
