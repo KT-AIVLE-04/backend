@@ -83,8 +83,8 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             AiAnalysisResponse response = restTemplate.postForObject(analysisUrl, entity, AiAnalysisResponse.class);
             log.info("🚀 AI 서버 응답: {}", response);
 
-            if (response.getEmotionAnalysis() == null) {
-                log.error("❌ AI 서버 응답의 emotionAnalysis가 null입니다");
+            if (response.getIndividual_results() == null) {
+                log.error("❌ AI 서버 응답의 individual_results가 null입니다");
                 throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
             }
             
