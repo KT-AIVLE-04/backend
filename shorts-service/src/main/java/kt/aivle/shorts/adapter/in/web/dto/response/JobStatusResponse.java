@@ -5,6 +5,7 @@ public record JobStatusResponse(
         String status,
         int progress,
         String videoUrl,
+        String key,
         String error
 ) {
 }
