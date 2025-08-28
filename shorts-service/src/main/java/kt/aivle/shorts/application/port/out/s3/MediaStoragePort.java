@@ -7,4 +7,6 @@ public interface MediaStoragePort {
     Mono<UploadedObjectResponse> uploadTempImage(FilePart image);
 
     Mono<String> getPresignedUrl(String key);
+
+    Mono<Boolean> exists(String key);
 }

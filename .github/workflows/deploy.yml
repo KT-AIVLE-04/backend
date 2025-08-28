@@ -3,6 +3,9 @@ name: MSA CI/CD (paths-filter + matrix)
 on:
   push:
     branches: [ "release" ]
+  pull_request:
+    branches: [ "release" ]
+    types: [ closed ]
   workflow_dispatch: {}
 
 permissions:
@@ -19,20 +22,35 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      compose:  ${{ steps.filter.outputs.compose }}
-      common:   ${{ steps.filter.outputs.common }}
-      gateway:  ${{ steps.filter.outputs.gateway }}
-      auth:     ${{ steps.filter.outputs.auth }}
-      store:    ${{ steps.filter.outputs.store }}
-      shorts:   ${{ steps.filter.outputs.shorts }}
-      content:  ${{ steps.filter.outputs.content }}
-      sns:      ${{ steps.filter.outputs.sns }}
+      force_full: ${{ steps.force.outputs.force_full }}
+      compose: ${{ steps.filter.outputs.compose }}
+      common: ${{ steps.filter.outputs.common }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      auth: ${{ steps.filter.outputs.auth }}
+      store: ${{ steps.filter.outputs.store }}
+      shorts: ${{ steps.filter.outputs.shorts }}
+      content: ${{ steps.filter.outputs.content }}
+      sns: ${{ steps.filter.outputs.sns }}
+      analytics: ${{ steps.filter.outputs.analytics }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 첫 배포/수동 실행 예외처리: 비교 기준(base) 커밋 계산
+      - name: Decide force_full
+        id: force
+        shell: bash
+        run: |
+          force=false
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            MERGED='${{ github.event.pull_request.merged }}'
+            TITLE='${{ github.event.pull_request.title }}'
+            if [ "$MERGED" = "true" ] && echo "$TITLE" | grep -qi '\[full-redeploy\]'; then
+              force=true
+            fi
+          fi
+          echo "force_full=$force" >> $GITHUB_OUTPUT
+
       - name: Compute base SHA (handle first push / dispatch)
         id: base
         shell: bash
@@ -58,7 +76,7 @@ jobs:
         uses: dorny/paths-filter@v3.0.2
         with:
           base: ${{ steps.base.outputs.base }}
-          ref:  ${{ github.sha }}
+          ref: ${{ github.sha }}
           list-files: none
           filters: |
             compose:
@@ -76,10 +94,12 @@ jobs:
               - 'store-service/**'
             shorts:
               - 'shorts-service/**'
-            content:                   
+            content:
               - 'content-service/**'
             sns:
               - 'sns-service/**'
+            analytics:
+              - 'analytics-service/**'
 
   plan:
     needs: filter
@@ -93,6 +113,8 @@ jobs:
         id: mk
         shell: bash
         run: |
+          force_full='${{ needs.filter.outputs.force_full }}'
+
           changed_compose='${{ needs.filter.outputs.compose }}'
           changed_common='${{ needs.filter.outputs.common }}'
           changed_gateway='${{ needs.filter.outputs.gateway }}'
@@ -101,17 +123,31 @@ jobs:
           changed_shorts='${{ needs.filter.outputs.shorts }}'
           changed_content='${{ needs.filter.outputs.content }}'
           changed_sns='${{ needs.filter.outputs.sns }}'
+          changed_analytics='${{ needs.filter.outputs.analytics }}'
 
           tb() { [ "$1" = "true" ] && echo true || echo false; }
 
-          CHANGED_COMPOSE=$(tb "$changed_compose")
-          CHANGED_COMMON=$(tb "$changed_common")
-          CHANGED_GATEWAY=$(tb "$changed_gateway")
-          CHANGED_AUTH=$(tb "$changed_auth")
-          CHANGED_STORE=$(tb "$changed_store")
-          CHANGED_SHORTS=$(tb "$changed_shorts")
-          CHANGED_CONTENT=$(tb "$changed_content")
-          CHANGED_SNS=$(tb "$changed_sns")
+          if [ "$force_full" = "true" ]; then
+            CHANGED_COMPOSE=true
+            CHANGED_COMMON=true
+            CHANGED_GATEWAY=true
+            CHANGED_AUTH=true
+            CHANGED_STORE=true
+            CHANGED_SHORTS=true
+            CHANGED_CONTENT=true
+            CHANGED_SNS=true
+            CHANGED_ANALYTICS=true
+          else
+            CHANGED_COMPOSE=$(tb "$changed_compose")
+            CHANGED_COMMON=$(tb "$changed_common")
+            CHANGED_GATEWAY=$(tb "$changed_gateway")
+            CHANGED_AUTH=$(tb "$changed_auth")
+            CHANGED_STORE=$(tb "$changed_store")
+            CHANGED_SHORTS=$(tb "$changed_shorts")
+            CHANGED_CONTENT=$(tb "$changed_content")
+            CHANGED_SNS=$(tb "$changed_sns")
+            CHANGED_ANALYTICS=$(tb "$changed_analytics")
+          fi
 
           add() {
             local service="$1" module="$2" image="$3" compose_name="$4" build="$5"
@@ -123,18 +159,18 @@ jobs:
           include_svc() {
             local svc="$1" module="$2" image="$3" compose="$4" svc_changed="$5"
             local build=$([ "$svc_changed" = true ] || [ "$CHANGED_COMMON" = true ] && echo true || echo false)
-            # 포함 조건: build == true OR CHANGED_COMPOSE == true (compose만 바뀌어도 재배포)
-            if [ "$build" = true ] || [ "$CHANGED_COMPOSE" = true ]; then
+            if [ "$build" = true ] || [ "$CHANGED_COMPOSE" = true ] || [ "$force_full" = "true" ]; then
               add "$svc" "$module" "$image" "$compose" "$build"
             fi
           }
 
-          include_svc "gateway"         "gateway"         "aivle-gateway"   "gateway"         "$CHANGED_GATEWAY"
-          include_svc "auth-service"    "auth-service"    "aivle-auth"      "auth-service"    "$CHANGED_AUTH"
-          include_svc "store-service"   "store-service"   "aivle-store"     "store-service"   "$CHANGED_STORE"
-          include_svc "shorts-service"  "shorts-service"  "aivle-shorts"    "shorts-service"  "$CHANGED_SHORTS"
-          include_svc "content-service" "content-service" "aivle-content"   "content-service" "$CHANGED_CONTENT"
-          include_svc "sns-service"     "sns-service"     "aivle-sns"       "sns-service"     "$CHANGED_SNS"
+          include_svc "gateway"            "gateway"            "aivle-gateway"     "gateway"            "$CHANGED_GATEWAY"
+          include_svc "auth-service"       "auth-service"       "aivle-auth"        "auth-service"       "$CHANGED_AUTH"
+          include_svc "store-service"      "store-service"      "aivle-store"       "store-service"      "$CHANGED_STORE"
+          include_svc "shorts-service"     "shorts-service"     "aivle-shorts"      "shorts-service"     "$CHANGED_SHORTS"
+          include_svc "content-service"    "content-service"    "aivle-content"     "content-service"    "$CHANGED_CONTENT"
+          include_svc "sns-service"        "sns-service"        "aivle-sns"         "sns-service"        "$CHANGED_SNS"
+          include_svc "analytics-service"  "analytics-service"  "aivle-analytics"   "analytics-service"  "$CHANGED_ANALYTICS"
 
           ITEMS="[${ITEMS%,}]"
 
@@ -183,12 +219,13 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
-      APP_YML_GATEWAY:   ${{ secrets.APPLICATION_YML_GATEWAY }}
-      APP_YML_AUTH:      ${{ secrets.APPLICATION_YML_AUTH }}
-      APP_YML_STORE:     ${{ secrets.APPLICATION_YML_STORE }}
-      APP_YML_SHORTS:    ${{ secrets.APPLICATION_YML_SHORTS }}
-      APP_YML_CONTENT:   ${{ secrets.APPLICATION_YML_CONTENT }}
-      APP_YML_SNS:       ${{ secrets.APPLICATION_YML_SNS }}
+      APP_YML_GATEWAY: ${{ secrets.APPLICATION_YML_GATEWAY }}
+      APP_YML_AUTH: ${{ secrets.APPLICATION_YML_AUTH }}
+      APP_YML_STORE: ${{ secrets.APPLICATION_YML_STORE }}
+      APP_YML_SHORTS: ${{ secrets.APPLICATION_YML_SHORTS }}
+      APP_YML_CONTENT: ${{ secrets.APPLICATION_YML_CONTENT }}
+      APP_YML_SNS: ${{ secrets.APPLICATION_YML_SNS }}
+      APP_YML_ANALYTICS: ${{ secrets.APPLICATION_YML_ANALYTICS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -210,6 +247,7 @@ jobs:
             shorts-service)  APP_YML="$APP_YML_SHORTS"   ;;
             content-service) APP_YML="$APP_YML_CONTENT"  ;;
             sns-service)     APP_YML="$APP_YML_SNS"      ;;
+            analytics-service) APP_YML="$APP_YML_ANALYTICS" ;;
           esac
           cat <<EOF > ./${{ matrix.module }}/src/main/resources/application.yml
           ${APP_YML}
@@ -244,12 +282,10 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/deploy/
-
             cat > .env <<'EOF'
             DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}
             CLOUDFRONT_PRIVATE_KEY=${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
             EOF
-
             docker compose pull ${{ matrix.compose }}
             docker compose up -d --no-deps ${{ matrix.compose }}
             docker image prune -f || true
