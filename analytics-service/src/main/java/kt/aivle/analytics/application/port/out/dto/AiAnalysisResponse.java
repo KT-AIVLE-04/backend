@@ -19,23 +19,15 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class AiAnalysisResponse {
-    private EmotionAnalysis emotionAnalysis;
+    private List<IndividualResult> individual_results;  // AI 서버 응답 필드명에 맞춤
     private Keywords keywords;
     
     @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class EmotionAnalysis {
-        private List<IndividualResult> individualResults;
-    }
-    
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class IndividualResult {
-        private String id;              // 댓글 ID (DB ID)
+        private Long id;                // 댓글 ID (DB ID) - AI 서버에서 숫자로 보내고 있음
         private SentimentType result;   // 감정분석 결과
     }
     
