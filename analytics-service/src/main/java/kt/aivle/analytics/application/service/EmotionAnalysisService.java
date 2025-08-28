@@ -38,13 +38,13 @@ public class EmotionAnalysisService {
             AiAnalysisResponse aiResponse = aiAnalysisPort.analyzeComments(comments, postId);
             
             // null 체크 추가
-            if (aiResponse == null || aiResponse.getEmotionAnalysis() == null || aiResponse.getEmotionAnalysis().getIndividualResults() == null) {
+            if (aiResponse == null || aiResponse.getIndividual_results() == null) {
                 log.error("❌ AI 분석 응답이 유효하지 않습니다 - postId: {}", postId);
                 throw new BusinessException(AnalyticsErrorCode.EMOTION_ANALYSIS_ERROR);
             }
             
             // 감정분석 결과 저장
-            saveCommentMetrics(postId, comments, aiResponse.getEmotionAnalysis().getIndividualResults());
+            saveCommentMetrics(postId, comments, aiResponse.getIndividual_results());
             
             // 키워드 저장
             saveKeywords(postId, aiResponse.getKeywords());
@@ -66,7 +66,7 @@ public class EmotionAnalysisService {
         // AI 응답을 DB ID 기준으로 매핑 (AI 서버가 DB ID를 기준으로 응답함)
         Map<Long, SentimentType> resultMap = analysisResults.stream()
             .collect(Collectors.toMap(
-                result -> Long.valueOf(result.getId()), // AI 서버에서 받은 ID는 DB ID
+                result -> result.getId(), // AI 서버에서 받은 ID는 DB ID (이제 Long 타입)
                 AiAnalysisResponse.IndividualResult::getResult
             ));
         
