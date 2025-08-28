@@ -18,6 +18,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -46,7 +47,7 @@ public class S3StorageAdapter implements MediaStoragePort {
     private static final String BUCKET_NAME = "aivle-temp";
     private static final List<String> ALLOWED_IMAGE_TYPES = List.of("image/jpeg", "image/png");
 
-    private static final Duration DEFAULT_PRESIGN_TTL = Duration.ofMinutes(15);
+    private static final Duration DEFAULT_PRESIGN_TTL = Duration.ofMinutes(60);
 
     @Value("${cloud.aws.region.static}")
     private String region;
@@ -107,6 +108,17 @@ public class S3StorageAdapter implements MediaStoragePort {
                                     return Mono.error(err);
                                 })
                 );
+    }
+
+    @Override
+    public Mono<Boolean> exists(String key) {
+        HeadObjectRequest req = HeadObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(key)
+                .build();
+        return Mono.fromFuture(s3AsyncClient.headObject(req))
+                .map(r -> true)
+                .onErrorResume(e -> Mono.just(false));
     }
 
     private Mono<Long> fileSize(Path path) {
