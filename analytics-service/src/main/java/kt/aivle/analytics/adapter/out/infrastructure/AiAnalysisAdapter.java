@@ -81,6 +81,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             // AI 분석 서버 호출
             log.info("📤 AI 서버로 요청 전송 중...");
             AiAnalysisResponse response = restTemplate.postForObject(analysisUrl, entity, AiAnalysisResponse.class);
+            log.info("🚀 AI 서버 응답: {}", response);
 
             if (response.getEmotionAnalysis() == null) {
                 log.error("❌ AI 서버 응답의 emotionAnalysis가 null입니다");
