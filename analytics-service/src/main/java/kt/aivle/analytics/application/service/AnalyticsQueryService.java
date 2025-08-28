@@ -313,16 +313,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         // 외부 API에서 댓글 조회 (개수 제한 적용)
-        List<PostCommentsResponse> comments;
-        try {
-            comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
-            log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
-        } catch (Exception e) {
-            log.error("Failed to retrieve comments from external API for postId: {}, snsPostId: {}, error: {}", 
-                targetPostId, post.getSnsPostId(), e.getMessage());
-            // 외부 API 실패 시 빈 목록 반환
-            return List.of();
-        }
+    
+        List<PostCommentsResponse> comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
+        log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
         
         // 페이지네이션 적용
         int start = request.getPage() * request.getSize();
