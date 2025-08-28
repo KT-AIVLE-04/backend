@@ -95,11 +95,22 @@ public class ShortsController {
                     if (st.getStatus() == JobStatus.SUCCEEDED && st.getResultKey() != null) {
                         return mediaStoragePort.getPresignedUrl(st.getResultKey())
                                 .map(url -> responseUtils.build(OK, new JobStatusResponse(
-                                        st.getJobId(), st.getStatus().name(), st.getProgress(), url, null
+                                        st.getJobId(),
+                                        st.getStatus().name(),
+                                        st.getProgress(),
+                                        url,
+                                        st.getResultKey(),
+                                        null
                                 )));
                     }
+                    // 진행 중/대기/실패
                     return Mono.just(responseUtils.build(OK, new JobStatusResponse(
-                            st.getJobId(), st.getStatus().name(), st.getProgress(), null, st.getError()
+                            st.getJobId(),
+                            st.getStatus().name(),
+                            st.getProgress(),
+                            null,
+                            null,
+                            st.getError()
                     )));
                 })
                 .switchIfEmpty(Mono.error(new BusinessException(BAD_REQUEST, "존재하지 않는 작업입니다.")));
