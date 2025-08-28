@@ -27,5 +27,5 @@ public interface AnalyticsQueryUseCase {
     EmotionAnalysisResponse getHistoricalEmotionAnalysis(Long userId, String dateStr, Long accountId, Long postId);
     
     // AI 보고서 생성 (캐시 포함)
-    ReportResponse generateReport(Long userId, Long accountId, Long postId);
+    ReportResponse generateReport(Long userId, Long accountId, Long postId, String storeId);
 }
