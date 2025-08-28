@@ -262,8 +262,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         // 게시물 존재 여부 확인
         validatePostExists(targetPostId);
         
-        // 특정 날짜의 감정분석 결과 조회
-        List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostIdAndCreatedAtDate(targetPostId, date);
+        //감정분석 결과 조회
+        List<SnsPostCommentMetric> commentMetrics = snsPostCommentMetricRepositoryPort.findByPostId(targetPostId);
+        log.info("Found {} comments for postId: {} on date: {}", commentMetrics.size(), targetPostId, date);
         
         return buildEmotionAnalysisResponse(targetPostId, commentMetrics);
     }
@@ -312,8 +313,16 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
         // 외부 API에서 댓글 조회 (개수 제한 적용)
-        List<PostCommentsResponse> comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
-        log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
+        List<PostCommentsResponse> comments;
+        try {
+            comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
+            log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
+        } catch (Exception e) {
+            log.error("Failed to retrieve comments from external API for postId: {}, snsPostId: {}, error: {}", 
+                targetPostId, post.getSnsPostId(), e.getMessage());
+            // 외부 API 실패 시 빈 목록 반환
+            return List.of();
+        }
         
         // 페이지네이션 적용
         int start = request.getPage() * request.getSize();
