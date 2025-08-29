@@ -278,5 +278,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**개발팀**: KT AIVLE School 4기  
+**개발팀**: KT AIVLE School 7기  
 **프로젝트 버전**: 0.0.1-SNAPSHOT
