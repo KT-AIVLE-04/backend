@@ -98,32 +98,33 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     }
     
     @Override
-    public AiReportResponse generateReport(AiReportRequest request, String storeId) {
+    public AiReportResponse generateReport(AiReportRequest request, Long storeId) {
         try {
+            log.info("🤖 [AI] Sending request - postId: {}, title: {}", 
+                    request.getMetrics().getPost_id(), request.getTitle());
+            
             // HTTP 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("X-STORE-ID", storeId);
             
             HttpEntity<AiReportRequest> entity = new HttpEntity<>(request, headers);
             
             String reportUrl = aiOriginUrl + "/api/analysis/report";
-            log.info("📊 AI 보고서 생성 요청 시작 - URL: {}, Post ID: {}", reportUrl, request.getMetrics().getPost_id());
             
             // AI 보고서 생성 서버 호출
-            log.info("📤 AI 서버로 보고서 생성 요청 전송 중...");
             AiReportResponse response = restTemplate.postForObject(reportUrl, entity, AiReportResponse.class);
             
             if (response == null || response.getMarkdown_report() == null) {
-                log.error("❌ AI 서버 응답의 markdown_report가 null입니다");
+                log.error("❌ [AI] Response is null or markdown_report is null");
                 throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
             }
             
-            log.info("✅ AI 보고서 생성 완료 - Post ID: {}", request.getMetrics().getPost_id());
+            log.info("✅ [AI] Received response - postId: {}", request.getMetrics().getPost_id());
             return response;
             
         } catch (Exception e) {
-            log.error("Failed to generate report with AI service: {}", e.getMessage());
+            log.error("❌ [AI] Failed - postId: {}, error: {}", 
+                    request.getMetrics().getPost_id(), e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
         }
     }

@@ -21,5 +21,5 @@ public interface AiAnalysisPort {
     /**
      * AI 보고서 생성 요청
      */
-    AiReportResponse generateReport(AiReportRequest request, String storeId);
+    AiReportResponse generateReport(AiReportRequest request, Long storeId);
 }

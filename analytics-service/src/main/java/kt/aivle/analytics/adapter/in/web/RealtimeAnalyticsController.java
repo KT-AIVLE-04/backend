@@ -73,7 +73,7 @@ public class RealtimeAnalyticsController {
             @RequestParam("accountId") Long accountId,
             @RequestParam("postId") Long postId,
             @RequestHeader("X-USER-ID") Long userId,
-            @RequestHeader("X-STORE-ID") String storeId) {
+            @RequestHeader("X-STORE-ID") Long storeId) {
         
         // storeId는 향후 권한 검증에 사용할 수 있음
         ReportResponse response = analyticsQueryUseCase.generateReport(userId, accountId, postId,storeId);
