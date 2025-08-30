@@ -4,7 +4,6 @@ import java.time.Duration;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,8 +21,7 @@ public class SnsServiceAdapter implements SnsServicePort {
 
     private final ReplyingKafkaTemplate<String, PostInfoRequestMessage, PostInfoResponseMessage> replyingKafkaTemplate;
 
-    @Value("${topic.post-info.request}")
-    private String requestTopic;
+    private final String requestTopic = "post-info.request";
 
     @Override
     public Mono<PostInfoResponseMessage> getPostInfo(Long postId, Long userId, Long accountId, Long storeId) {

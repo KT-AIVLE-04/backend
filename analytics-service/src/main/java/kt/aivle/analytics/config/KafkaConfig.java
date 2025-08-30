@@ -127,9 +127,9 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentMessageListenerContainer<String, PostInfoResponseMessage> postInfoRepliesContainer(
-            ConsumerFactory<String, PostInfoResponseMessage> cf,
-            @Value("${topic.post-info.reply}") String replyTopic
+            ConsumerFactory<String, PostInfoResponseMessage> cf
     ) {
+        String replyTopic = "post-info.reply";
         var factory = new ConcurrentKafkaListenerContainerFactory<String, PostInfoResponseMessage>();
         factory.setConsumerFactory(cf);
         var container = factory.createContainer(replyTopic);
