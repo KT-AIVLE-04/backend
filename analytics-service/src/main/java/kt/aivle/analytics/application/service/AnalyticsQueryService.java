@@ -602,7 +602,4 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .publishAt(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
             .build();
     }
-    }
-    
-
 }

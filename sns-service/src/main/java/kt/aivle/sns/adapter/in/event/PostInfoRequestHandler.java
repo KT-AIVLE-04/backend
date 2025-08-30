@@ -22,7 +22,7 @@ public class PostInfoRequestHandler {
     private final CloudFrontSigner cloudFrontSigner;
 
     @KafkaListener(
-            topics = "${topic.post-info.request}",
+            topics = "post-info.request",
             groupId = "sns-post-info-group",
             containerFactory = "postInfoRequestListenerFactory"
     )
