@@ -24,8 +24,7 @@ public class PostInfoRequestHandler {
 
     @KafkaListener(
             topics = Topics.POST_INFO_REQUEST,
-            groupId = "sns-post-info-group",
-            containerFactory = "postInfoRequestListenerFactory"
+            groupId = "sns-post-info-group"
     )
     @SendTo(Topics.POST_INFO_REPLY)
     public PostInfoResponseMessage handle(PostInfoRequestMessage request) {
