@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import kt.aivle.analytics.adapter.in.event.dto.PostInfoResponseMessage;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
@@ -568,7 +569,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostId(postId);
         
         // 5. SNS 서비스에서 받은 post 정보와 analytics 데이터를 조합
-        var postInfo = postInfoFuture.block(); // Mono를 동기적으로 처리
+        PostInfoResponseMessage postInfo;
+        try {
+            postInfo = postInfoFuture.get(); // CompletableFuture를 동기적으로 처리
+        } catch (Exception e) {
+            log.error("SNS 서비스에서 post 정보를 가져오는 중 오류 발생: {}", e.getMessage());
+            throw new BusinessException(AnalyticsErrorCode.EXTERNAL_API_ERROR);
+        }
         
         // AI 보고서 요청 데이터 구성
         AiReportRequest.Metrics metrics = AiReportRequest.Metrics.builder()
