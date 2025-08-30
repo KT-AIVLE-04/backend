@@ -1,6 +1,7 @@
 package kt.aivle.analytics.application.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -122,10 +123,19 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         if (!responses.isEmpty()) {
             return responses.stream()
                 .max((r1, r2) -> r1.getFetchedAt().compareTo(r2.getFetchedAt()))
-                .orElse(null);
+                .orElse(PostMetricsResponse.builder()
+                    .postId(postId)
+                    .accountId(accountId)
+                    .fetchedAt(LocalDateTime.now())
+                    .build());
         }
         
-        return null;
+        // 데이터가 없으면 기본값을 가진 객체 반환
+        return PostMetricsResponse.builder()
+            .postId(postId)
+            .accountId(accountId)
+            .fetchedAt(LocalDateTime.now())
+            .build();
     }
     
     @Override
@@ -210,10 +220,17 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         if (!responses.isEmpty()) {
             return responses.stream()
                 .max((r1, r2) -> r1.getFetchedAt().compareTo(r2.getFetchedAt()))
-                .orElse(null);
+                .orElse(AccountMetricsResponse.builder()
+                    .accountId(request.getAccountId())
+                    .fetchedAt(LocalDateTime.now())
+                    .build());
         }
         
-        return null;
+        // 데이터가 없으면 기본값을 가진 객체 반환
+        return AccountMetricsResponse.builder()
+            .accountId(request.getAccountId())
+            .fetchedAt(LocalDateTime.now())
+            .build();
     }
     
     /**
@@ -295,7 +312,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         
         List<AccountMetricsResponse> responses = externalApiPort.getRealtimeAccountMetrics(request.getAccountId());
         
-        return responses.isEmpty() ? null : responses.get(0);
+        return responses.isEmpty() ? 
+            AccountMetricsResponse.builder()
+                .accountId(request.getAccountId())
+                .fetchedAt(LocalDateTime.now())
+                .build() : 
+            responses.get(0);
     }
     
     private List<PostCommentsResponse> getRealtimePostCommentsInternal(Long userId, PostCommentsQueryRequest request) {
