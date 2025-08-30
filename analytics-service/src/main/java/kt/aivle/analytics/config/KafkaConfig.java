@@ -31,6 +31,7 @@ import kt.aivle.analytics.adapter.in.event.dto.PostInfoRequestMessage;
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoResponseMessage;
 import kt.aivle.analytics.adapter.in.event.dto.SnsAccountEvent;
 import kt.aivle.analytics.adapter.in.event.dto.SnsPostEvent;
+import kt.aivle.analytics.application.messaging.Topics;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -171,7 +172,7 @@ public class KafkaConfig {
     public ConcurrentMessageListenerContainer<String, PostInfoResponseMessage> postInfoRepliesContainer(
             ConsumerFactory<String, PostInfoResponseMessage> cf
     ) {
-        String replyTopic = "post-info.reply";
+        String replyTopic = Topics.POST_INFO_REPLY;
         String groupId = "analytics-post-info-replies-" + UUID.randomUUID();
         
         log.info("🏷️ [KAFKA REPLY CONSUMER] 토픽: {}, 그룹 ID: {}", replyTopic, groupId);

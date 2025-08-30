@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoRequestMessage;
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoResponseMessage;
+import kt.aivle.analytics.application.messaging.Topics;
 import kt.aivle.analytics.application.port.out.SnsServicePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 public class SnsServiceAdapter implements SnsServicePort {
 
     private final ReplyingKafkaTemplate<String, PostInfoRequestMessage, PostInfoResponseMessage> replyingKafkaTemplate;
-
-    private final String requestTopic = "post-info.request";
 
     @Override
     public CompletableFuture<PostInfoResponseMessage> getPostInfo(Long postId, Long userId, Long accountId, Long storeId) {
@@ -35,7 +34,7 @@ public class SnsServiceAdapter implements SnsServicePort {
                 .build();
 
         ProducerRecord<String, PostInfoRequestMessage> record =
-                new ProducerRecord<>(requestTopic, String.valueOf(postId), request);
+                new ProducerRecord<>(Topics.POST_INFO_REQUEST, String.valueOf(postId), request);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
