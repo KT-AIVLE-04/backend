@@ -39,4 +39,9 @@ public class AiReportRequest {
     
     private Metrics metrics;
     private EmotionData emotion_data;
+    private String title;
+    private String description;
+    private String url;
+    private List<String> tags;
+    private String publish_at;
 }

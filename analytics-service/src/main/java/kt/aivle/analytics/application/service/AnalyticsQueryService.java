@@ -21,6 +21,7 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
+import kt.aivle.analytics.application.port.out.SnsServicePort;
 import kt.aivle.analytics.application.port.out.infrastructure.AiAnalysisPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
@@ -55,6 +56,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final ExternalApiPort externalApiPort;
     private final ValidationPort validationPort;
     private final AiAnalysisPort aiAnalysisPort;
+    private final SnsServicePort snsServicePort;
     
     // ===== PUBLIC METHODS =====
     
@@ -519,10 +521,15 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     @Override
     @Cacheable(value = "report", key = "#postId")
-    public ReportResponse generateReport(Long userId, Long accountId, Long postId, String storeId) {
+    public ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId) {
+        log.info("📊 [REPORT] Starting - postId: {}", postId);
+        
         validationPort.validateAccountId(accountId);
         
-        // 1. 게시물 메트릭 조회 (가장 최근 데이터)
+        // 1. SNS 서비스에서 post 정보 가져오기
+        var postInfoFuture = snsServicePort.getPostInfo(postId, userId, accountId, storeId);
+        
+        // 2. 게시물 메트릭 조회 (가장 최근 데이터)
         SnsPostMetric postMetric = snsPostMetricRepositoryPort.findLatestByPostId(postId)
             .orElseThrow(() -> {
                 log.warn("게시물 메트릭을 찾을 수 없습니다 - Post ID: {}, Account ID: {}, User ID: {}", postId, accountId, userId);
@@ -532,13 +539,16 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         log.info("게시물 메트릭 조회 성공 - Post ID: {}, Views: {}, Likes: {}, Comments: {}", 
             postId, postMetric.getViews(), postMetric.getLikes(), postMetric.getComments());
         
-        // 2. 감정 분석 데이터 조회
+        // 3. 감정 분석 데이터 조회
         Map<SentimentType, List<String>> groupedKeywords = postCommentKeywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
         
-        // 3. 댓글 수 조회
+        // 4. 댓글 수 조회
         List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostId(postId);
         
-        // 4. AI 보고서 요청 데이터 구성
+        // 5. SNS 서비스에서 받은 post 정보와 analytics 데이터를 조합
+        var postInfo = postInfoFuture.block(); // Mono를 동기적으로 처리
+        
+        // AI 보고서 요청 데이터 구성
         AiReportRequest.Metrics metrics = AiReportRequest.Metrics.builder()
             .post_id(postId)
             .view_count(postMetric.getViews())
@@ -558,15 +568,40 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         AiReportRequest request = AiReportRequest.builder()
             .metrics(metrics)
             .emotion_data(emotionData)
+            .title(postInfo.getTitle())
+            .description(postInfo.getDescription())
+            .url(postInfo.getUrl())
+            .tags(postInfo.getTags())
+            .publish_at(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
             .build();
         
-        // 5. AI 서버에 보고서 생성 요청
+        // 6. AI 서버에 보고서 생성 요청
         AiReportResponse aiResponse = aiAnalysisPort.generateReport(request, storeId);
         
         return ReportResponse.builder()
             .postId(postId)
             .markdownReport(aiResponse.getMarkdown_report())
+            .metrics(ReportResponse.MetricsData.builder()
+                .postId(postId)
+                .viewCount(postMetric.getViews())
+                .likeCount(postMetric.getLikes())
+                .commentCount(postMetric.getComments())
+                .build())
+            .emotionData(ReportResponse.EmotionData.builder()
+                .positiveCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.POSITIVE).count())
+                .negativeCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEGATIVE).count())
+                .neutralCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEUTRAL).count())
+                .positiveKeywords(groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of()))
+                .negativeKeywords(groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of()))
+                .neutralKeywords(groupedKeywords.getOrDefault(SentimentType.NEUTRAL, List.of()))
+                .build())
+            .title(postInfo.getTitle())
+            .description(postInfo.getDescription())
+            .url(postInfo.getUrl())
+            .tags(postInfo.getTags())
+            .publishAt(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
             .build();
+    }
     }
     
 
