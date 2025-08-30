@@ -42,13 +42,11 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, PostInfoRequestMessage> postInfoRequestListenerFactory(
-            ConsumerFactory<String, PostInfoRequestMessage> requestConsumerFactory,
-            KafkaTemplate<String, PostInfoResponseMessage> replyKafkaTemplate
+            ConsumerFactory<String, PostInfoRequestMessage> requestConsumerFactory
     ) {
         ConcurrentKafkaListenerContainerFactory<String, PostInfoRequestMessage> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(requestConsumerFactory);
-        factory.setReplyTemplate(replyKafkaTemplate);
         return factory;
     }
 
