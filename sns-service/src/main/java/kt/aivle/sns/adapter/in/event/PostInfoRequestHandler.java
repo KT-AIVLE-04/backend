@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import kt.aivle.sns.adapter.in.event.dto.PostInfoRequestMessage;
 import kt.aivle.sns.adapter.in.event.dto.PostInfoResponseMessage;
 import kt.aivle.sns.adapter.out.persistence.repository.JpaPostRepository;
+import kt.aivle.sns.application.messaging.Topics;
 import kt.aivle.sns.domain.model.PostEntity;
 import kt.aivle.sns.domain.model.SnsType;
 import kt.aivle.sns.infra.CloudFrontSigner;
@@ -22,11 +23,11 @@ public class PostInfoRequestHandler {
     private final CloudFrontSigner cloudFrontSigner;
 
     @KafkaListener(
-            topics = "post-info.request",
+            topics = Topics.POST_INFO_REQUEST,
             groupId = "sns-post-info-group",
             containerFactory = "postInfoRequestListenerFactory"
     )
-    @SendTo
+    @SendTo(Topics.POST_INFO_REPLY)
     public PostInfoResponseMessage handle(PostInfoRequestMessage request) {
         try {
             log.info("📨 [KAFKA] Received request - postId: {}", request.getPostId());
