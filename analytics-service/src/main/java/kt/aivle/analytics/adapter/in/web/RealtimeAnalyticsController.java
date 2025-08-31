@@ -20,6 +20,9 @@ import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.common.code.CommonResponseCode;
 import kt.aivle.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 
 @Validated
 @RestController
@@ -74,6 +77,8 @@ public class RealtimeAnalyticsController {
             @RequestParam("postId") Long postId,
             @RequestHeader("X-USER-ID") Long userId,
             @RequestHeader("X-STORE-ID") Long storeId) {
+
+        log.info("[REPORT] controller request - postId: {}, userId: {}, accountId: {}, storeId: {}", postId, userId, accountId, storeId);
         
         // storeId는 향후 권한 검증에 사용할 수 있음
         ReportResponse response = analyticsQueryUseCase.generateReport(userId, accountId, postId,storeId);
