@@ -22,7 +22,6 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
-import org.springframework.util.backoff.FixedBackOff;
 
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoRequestMessage;
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoResponseMessage;
@@ -75,10 +74,10 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, SnsPostEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(postEventConsumerFactory());
         
-        // 에러 처리 설정
+        // AI 서비스는 시간이 오래 걸리므로 재시도 로직 제거
         factory.setCommonErrorHandler(new DefaultErrorHandler((record, exception) -> {
             log.error("Error in kafka listener: {}", exception.getMessage(), exception);
-        }, new FixedBackOff(1000L, 3L))); // 1초 간격으로 3번 재시도
+        }));
         
         return factory;
     }
@@ -100,10 +99,10 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, SnsAccountEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(snsAccountEventConsumerFactory());
         
-        // 에러 처리 설정
+        // AI 서비스는 시간이 오래 걸리므로 재시도 로직 제거
         factory.setCommonErrorHandler(new DefaultErrorHandler((record, exception) -> {
             log.error("Error in kafka listener: {}", exception.getMessage(), exception);
-        }, new FixedBackOff(1000L, 3L))); // 1초 간격으로 3번 재시도
+        }));
         
         return factory;
     }
