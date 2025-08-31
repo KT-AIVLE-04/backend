@@ -37,6 +37,8 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "sns-post-info-group");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), valueDeserializer);
     }
 
@@ -47,6 +49,7 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, PostInfoRequestMessage> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(requestConsumerFactory);
+        factory.setReplyTemplate(postInfoReplyKafkaTemplate(postInfoReplyProducerFactory()));
         return factory;
     }
 
@@ -65,6 +68,8 @@ public class KafkaConfig {
     ) {
         return new KafkaTemplate<>(pf);
     }
+
+
 
     /* ====== 일반 이벤트 발행용 KafkaTemplate(Object) ====== */
     @Bean

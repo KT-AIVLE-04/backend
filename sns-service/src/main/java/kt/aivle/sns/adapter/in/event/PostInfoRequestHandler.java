@@ -24,14 +24,14 @@ public class PostInfoRequestHandler {
 
     @KafkaListener(
             topics = Topics.POST_INFO_REQUEST,
-            groupId = "sns-post-info-group"
+            containerFactory = "postInfoRequestListenerFactory"
     )
     @SendTo(Topics.POST_INFO_REPLY)
     public PostInfoResponseMessage handle(PostInfoRequestMessage request) {
         try {
             log.info("📨 [KAFKA] Received request - postId: {}", request.getPostId());
             
-            PostEntity post = postRepository.findById(request.getPostId())
+            PostEntity post = postRepository.findByIdWithTags(request.getPostId())
                     .orElseThrow(() -> new RuntimeException("Post not found: " + request.getPostId()));
             
             // URL 생성

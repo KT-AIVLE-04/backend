@@ -1,12 +1,9 @@
 package kt.aivle.analytics.config;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -41,47 +38,17 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrap;
     
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 로깅 Serializer
-    private class LoggingJsonSerializer extends JsonSerializer<Object> {
-        @Override
-        public byte[] serialize(String topic, Object data) {
-            try {
-                String json = objectMapper.writeValueAsString(data);
-                log.info("📤 [KAFKA SERIALIZER] 토픽: {}, 데이터: {}", topic, json);
-            } catch (Exception e) {
-                log.warn("Kafka serializer 로깅 중 오류: {}", e.getMessage());
-            }
-            return super.serialize(topic, data);
-        }
-    }
 
-    // 로깅 Deserializer
-    private class LoggingJsonDeserializer<T> extends JsonDeserializer<T> {
-        
-        public LoggingJsonDeserializer(Class<T> targetType, boolean useTypeHeaders) {
-            super(targetType, useTypeHeaders);
-        }
-        
-        @Override
-        public T deserialize(String topic, byte[] data) {
-            try {
-                String json = new String(data, StandardCharsets.UTF_8);
-                log.info("📥 [KAFKA DESERIALIZER] 토픽: {}, 데이터: {}", topic, json);
-            } catch (Exception e) {
-                log.warn("Kafka deserializer 로깅 중 오류: {}", e.getMessage());
-            }
-            return super.deserialize(topic, data);
-        }
-    }
+
+
 
     private Map<String, Object> getCommonConsumerProps() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "analytics-service");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LoggingJsonDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "kt.aivle.*");
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         
@@ -146,7 +113,7 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, LoggingJsonSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
         return props;
     }
@@ -158,8 +125,8 @@ public class KafkaConfig {
 
     @Bean
     public ConsumerFactory<String, PostInfoResponseMessage> postInfoReplyConsumerFactory() {
-        LoggingJsonDeserializer<PostInfoResponseMessage> valueDeserializer =
-                new LoggingJsonDeserializer<>(PostInfoResponseMessage.class, false);
+        JsonDeserializer<PostInfoResponseMessage> valueDeserializer =
+                new JsonDeserializer<>(PostInfoResponseMessage.class, false);
         valueDeserializer.addTrustedPackages("*");
 
         Map<String, Object> props = new HashMap<>();
