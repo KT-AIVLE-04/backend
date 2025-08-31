@@ -24,8 +24,8 @@ public class RestTemplateConfig {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
 
         // 타임아웃 설정 - AI 서비스는 오래 걸리므로 타임아웃 없앰
-        factory.setConnectTimeout(60000);  // 연결 타임아웃: 60초
-        factory.setReadTimeout(600000);         // 읽기 타임아웃: 10분 (600초)
+        factory.setConnectTimeout(120000);  // 연결 타임아웃: 60초
+        factory.setReadTimeout(900000);         // 읽기 타임아웃: 15분 (900초)
         
         RestTemplate restTemplate = new RestTemplate(new BufferingClientHttpRequestFactory(factory));
         

@@ -113,7 +113,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             if (existingTask != null && !existingTask.isDone()) {
                 log.info("🔄 [AI] Already processing postId: {}, waiting for existing task", postId);
                 try {
-                    return existingTask.get(5, TimeUnit.MINUTES); // 기존 작업 완료 대기
+                    return existingTask.get(10, TimeUnit.MINUTES); // 기존 작업 완료 대기
                 } catch (Exception e) {
                     log.warn("Existing task failed for postId: {}, starting new one", postId);
                     processingTasks.remove(postId);
@@ -133,7 +133,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             
             log.info("🤖 [AI] Starting new analysis - postId: {}, title: {}", postId, request.getTitle());
             
-            return newTask.get(5, TimeUnit.MINUTES);
+            return newTask.get(10, TimeUnit.MINUTES);
             
         } catch (Exception e) {
             processingTasks.remove(postId);
