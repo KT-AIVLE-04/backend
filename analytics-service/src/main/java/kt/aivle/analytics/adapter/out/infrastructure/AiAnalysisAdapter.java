@@ -2,6 +2,9 @@ package kt.aivle.analytics.adapter.out.infrastructure;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +37,9 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     
     @Value("${ai.origin-url}")
     private String aiOriginUrl;
+    
+    // 처리 중인 AI 분석 작업을 추적하는 캐시
+    private final Map<Long, CompletableFuture<AiReportResponse>> processingTasks = new ConcurrentHashMap<>();
     
     @Override
     public AiAnalysisResponse analyzeComments(List<SnsPostCommentMetric> comments, Long postId) {
@@ -99,10 +105,45 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     
     @Override
     public AiReportResponse generateReport(AiReportRequest request, Long storeId) {
+        Long postId = request.getMetrics().getPost_id();
+        
         try {
-            log.info("🤖 [AI] Sending request - postId: {}, title: {}", 
-                    request.getMetrics().getPost_id(), request.getTitle());
+            // 1. 이미 처리 중인지 확인
+            CompletableFuture<AiReportResponse> existingTask = processingTasks.get(postId);
+            if (existingTask != null && !existingTask.isDone()) {
+                log.info("🔄 [AI] Already processing postId: {}, waiting for existing task", postId);
+                try {
+                    return existingTask.get(5, TimeUnit.MINUTES); // 기존 작업 완료 대기
+                } catch (Exception e) {
+                    log.warn("Existing task failed for postId: {}, starting new one", postId);
+                    processingTasks.remove(postId);
+                }
+            }
             
+            // 2. 새 작업 시작
+            CompletableFuture<AiReportResponse> newTask = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return callAiService(request, storeId);
+                } finally {
+                    processingTasks.remove(postId); // 완료 후 제거
+                }
+            });
+            
+            processingTasks.put(postId, newTask);
+            
+            log.info("🤖 [AI] Starting new analysis - postId: {}, title: {}", postId, request.getTitle());
+            
+            return newTask.get(5, TimeUnit.MINUTES);
+            
+        } catch (Exception e) {
+            processingTasks.remove(postId);
+            log.error("❌ [AI] Failed - postId: {}, error: {}", postId, e.getMessage());
+            throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
+        }
+    }
+    
+    private AiReportResponse callAiService(AiReportRequest request, Long storeId) {
+        try {
             // HTTP 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
