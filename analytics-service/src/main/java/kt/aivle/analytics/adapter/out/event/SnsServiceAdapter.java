@@ -24,7 +24,7 @@ public class SnsServiceAdapter implements SnsServicePort {
 
     @Override
     public CompletableFuture<PostInfoResponseMessage> getPostInfo(Long postId, Long userId, Long accountId, Long storeId) {
-        log.info("📤 [KAFKA] Sending request - postId: {}", postId);
+        log.info("📤 [KAFKA] Sending request - postId: {}, topic: {}", postId, Topics.POST_INFO_REQUEST);
         
         PostInfoRequestMessage request = PostInfoRequestMessage.builder()
                 .postId(postId)
@@ -41,12 +41,12 @@ public class SnsServiceAdapter implements SnsServicePort {
                 ConsumerRecord<String, PostInfoResponseMessage> response = 
                     replyingKafkaTemplate.sendAndReceive(record).get(60, TimeUnit.SECONDS);
                 
-                log.info("📨 [KAFKA] Received response - postId: {}, title: {}", 
-                        postId, response.value().getTitle());
+                log.info("📨 [KAFKA] Received response - postId: {}, topic: {}, partition: {}, offset: {}, title: {}", 
+                        postId, response.topic(), response.partition(), response.offset(), response.value().getTitle());
                 
                 return response.value();
             } catch (Exception e) {
-                log.error("❌ [KAFKA] Failed - postId: {}, error: {}", postId, e.getMessage());
+                log.error("❌ [KAFKA] Failed - postId: {}, topic: {}, error: {}", postId, Topics.POST_INFO_REQUEST, e.getMessage());
                 throw new RuntimeException(e);
             }
         });
