@@ -545,7 +545,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     @Override
     @Cacheable(value = "report", key = "#postId")
     public ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId) {
-        log.info("📊 [REPORT] Starting - postId: {}", postId);
+        log.info("service generateReport - postId: {}", postId);
         
         validationPort.validateAccountId(accountId);
         

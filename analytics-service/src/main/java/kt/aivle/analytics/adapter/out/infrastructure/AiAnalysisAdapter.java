@@ -106,7 +106,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     @Override
     public AiReportResponse generateReport(AiReportRequest request, Long storeId) {
         Long postId = request.getMetrics().getPost_id();
-        
+        log.info("[AI] adapter request - postId: {}, storeId: {}", postId, storeId);
         try {
             // 1. 이미 처리 중인지 확인
             CompletableFuture<AiReportResponse> existingTask = processingTasks.get(postId);
