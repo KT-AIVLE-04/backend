@@ -2,6 +2,8 @@ package kt.aivle.analytics.adapter.out.infrastructure.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,10 +20,17 @@ public class AiReportRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Metrics {
-        private Long post_id;
-        private Long view_count;
-        private Long like_count;
-        private Long comment_count;
+        @JsonProperty("post_id")
+        private Long postId;
+        
+        @JsonProperty("view_count")
+        private Long viewCount;
+        
+        @JsonProperty("like_count")
+        private Long likeCount;
+        
+        @JsonProperty("comment_count")
+        private Long commentCount;
     }
     
     @Data
@@ -29,19 +38,35 @@ public class AiReportRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class EmotionData {
-        private Long positive_count;
-        private Long negative_count;
-        private Long neutral_count;
-        private List<String> positive_keywords;
-        private List<String> negative_keywords;
-        private List<String> neutral_keywords;
+        @JsonProperty("positive_count")
+        private Long positiveCount;
+        
+        @JsonProperty("negative_count")
+        private Long negativeCount;
+        
+        @JsonProperty("neutral_count")
+        private Long neutralCount;
+        
+        @JsonProperty("positive_keywords")
+        private List<String> positiveKeywords;
+        
+        @JsonProperty("negative_keywords")
+        private List<String> negativeKeywords;
+        
+        @JsonProperty("neutral_keywords")
+        private List<String> neutralKeywords;
     }
     
     private Metrics metrics;
-    private EmotionData emotion_data;
+    
+    @JsonProperty("emotion_data")
+    private EmotionData emotionData;
+    
     private String title;
     private String description;
     private String url;
     private List<String> tags;
-    private String publish_at;
+    
+    @JsonProperty("publish_at")
+    private String publishAt;
 }
