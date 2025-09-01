@@ -13,6 +13,5 @@ public class ReportRequestMessage {
     private String action;
     private Long postId;
     private Long accountId;
-    private Long userId;
     private Long storeId;
 }
