@@ -6,6 +6,7 @@ import kt.aivle.common.exception.BusinessException;
 import kt.aivle.gateway.config.ExcludePaths;
 import kt.aivle.gateway.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -21,6 +22,7 @@ import java.net.URI;
 
 import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
@@ -90,19 +92,34 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
         
-        // WebSocket 요청인지 확인 (ws:// 또는 wss:// 프로토콜)
-        if (isWebSocketRequest(uri)) {
+        log.info("[JWT Filter] URI: {}, Scheme: {}, Query: {}", uri, uri.getScheme(), uri.getQuery());
+        log.info("[JWT Filter] Headers - Upgrade: {}, Connection: {}", 
+            request.getHeaders().getFirst("Upgrade"), 
+            request.getHeaders().getFirst("Connection"));
+        
+        // WebSocket 요청인지 확인 (HTTP 헤더 기반)
+        boolean isWebSocket = isWebSocketRequest(request);
+        log.info("[JWT Filter] Is WebSocket: {}", isWebSocket);
+        
+        if (isWebSocket) {
             // WebSocket: 쿼리 파라미터에서 token 추출
-            return extractTokenFromQuery(uri);
+            String token = extractTokenFromQuery(uri);
+            log.info("[JWT Filter] WebSocket token extracted: {}", token != null ? "SUCCESS" : "FAILED");
+            return token;
         } else {
             // HTTP: Authorization 헤더에서 token 추출
-            return extractTokenFromHeader(request);
+            String token = extractTokenFromHeader(request);
+            log.info("[JWT Filter] HTTP token extracted: {}", token != null ? "SUCCESS" : "FAILED");
+            return token;
         }
     }
 
-    private boolean isWebSocketRequest(URI uri) {
-        String scheme = uri.getScheme();
-        return "ws".equals(scheme) || "wss".equals(scheme);
+    private boolean isWebSocketRequest(ServerHttpRequest request) {
+        String upgrade = request.getHeaders().getFirst("Upgrade");
+        String connection = request.getHeaders().getFirst("Connection");
+        
+        return "websocket".equalsIgnoreCase(upgrade) && 
+               "upgrade".equalsIgnoreCase(connection);
     }
 
     private String extractTokenFromQuery(URI uri) {
