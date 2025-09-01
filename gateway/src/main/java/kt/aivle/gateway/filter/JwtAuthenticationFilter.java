@@ -17,6 +17,8 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+
 import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
 @Component
