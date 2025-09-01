@@ -1,12 +1,14 @@
 package kt.aivle.analytics.application.port.in;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
+import kt.aivle.analytics.adapter.in.websocket.dto.WebSocketResponseMessage;
 
 public interface AnalyticsQueryUseCase {
     
@@ -28,4 +30,7 @@ public interface AnalyticsQueryUseCase {
     
     // AI 보고서 생성 (캐시 포함)
     ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId);
+    
+    // 통합된 비동기 AI 보고서 생성 (WebSocket용) - 캐시 확인 포함
+    CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long userId, Long accountId, Long postId, Long storeId);
 }

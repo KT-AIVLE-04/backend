@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
+import kt.aivle.analytics.adapter.in.websocket.dto.WebSocketResponseMessage;
 import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
 import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
@@ -29,7 +32,6 @@ import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountMetricRepositoryPort;
-import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
@@ -52,13 +54,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final SnsPostMetricRepositoryPort snsPostMetricRepositoryPort;
     private final SnsAccountMetricRepositoryPort snsAccountMetricRepositoryPort;
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
-    private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
     private final PostCommentKeywordRepositoryPort postCommentKeywordRepository;
     private final ExternalApiPort externalApiPort;
     private final ValidationPort validationPort;
     private final AiAnalysisPort aiAnalysisPort;
     private final SnsServicePort snsServicePort;
+    private final CacheManager cacheManager;
     
     // ===== PUBLIC METHODS =====
     
@@ -178,6 +180,74 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         }
         
         return getHistoricalEmotionAnalysisInternal(userId, postId, accountId, date);
+    }
+    
+    // AI 보고서 생성 (REST API용)
+    @Override
+    @Cacheable(value = "report", key = "#postId + '_' + #userId + '_' + #accountId + '_' + #storeId")
+    public ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId) {
+        log.info("service generateReport - postId: {}", postId);
+        
+        // WebSocket용 단계별 메서드들을 사용하여 코드 중복 제거
+        PostInfoResponseMessage postInfo = getPostInfo(userId, accountId, postId, storeId);
+        SnsPostMetric postMetric = getPostMetrics(userId, accountId, postId);
+        
+        return generateAiReport(userId, accountId, postId, storeId, postInfo, postMetric);
+    }
+    
+    // 통합된 비동기 AI 보고서 생성 (WebSocket용) - 캐시 확인 포함
+    @Override
+    public CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long userId, Long accountId, Long postId, Long storeId) {
+        log.info("[WebSocket] 비동기 AI 보고서 생성 시작 - postId: {}", postId);
+        
+        // 1. 캐시 확인
+        return CompletableFuture.supplyAsync(() -> {
+            log.info("[WebSocket] 캐시 확인 중 - postId: {}", postId);
+            try {
+                return getCachedReport(userId, accountId, postId, storeId);
+            } catch (Exception e) {
+                log.warn("[WebSocket] 캐시 확인 중 에러 발생, 계속 진행 - postId: {}, error: {}", postId, e.getMessage());
+                return null; // 에러 시 null 반환하여 계속 진행
+            }
+        })
+        .thenCompose(cachedReport -> {
+            if (cachedReport != null) {
+                // 캐시된 보고서가 있으면 바로 완료
+                return CompletableFuture.completedFuture(
+                    WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!")
+                );
+            }
+            
+            // 2. 캐시가 없으면 단계별로 처리
+            return CompletableFuture.supplyAsync(() -> {
+                log.info("[WebSocket] 1단계: SNS 서비스에서 post 정보 가져오기 - postId: {}", postId);
+                return getPostInfo(userId, accountId, postId, storeId);
+            })
+            .thenCompose(postInfo -> 
+                CompletableFuture.supplyAsync(() -> {
+                    log.info("[WebSocket] 2단계: 게시물 메트릭 조회 - postId: {}", postId);
+                    return getPostMetrics(userId, accountId, postId);
+                })
+                .thenCompose(postMetrics -> 
+                    CompletableFuture.supplyAsync(() -> {
+                        log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);
+                        return generateAiReport(userId, accountId, postId, storeId, postInfo, postMetrics);
+                    })
+                )
+            )
+            .thenApply(reportResponse -> {
+                // 새로 생성된 보고서를 캐시에 저장
+                try {
+                    String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
+                    cacheManager.getCache("report").put(cacheKey, reportResponse);
+                    log.info("[WebSocket] 새로 생성된 보고서를 캐시에 저장 - postId: {}, cacheKey: {}", postId, cacheKey);
+                } catch (Exception e) {
+                    log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
+                }
+                
+                return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
+            });
+        });
     }
     
     // ===== PRIVATE METHODS =====
@@ -542,93 +612,102 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .build();
     }
     
-    @Override
-    @Cacheable(value = "report", key = "#postId")
-    public ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId) {
-        log.info("service generateReport - postId: {}", postId);
+    // ===== AI 보고서 단계별 생성 메서드들 (private) =====
+    
+    private PostInfoResponseMessage getPostInfo(Long userId, Long accountId, Long postId, Long storeId) {
+        log.info("[WebSocket] 1단계: SNS 서비스에서 post 정보 가져오기 - postId: {}", postId);
         
+        // 1단계에서만 계정 ID 검증
         validationPort.validateAccountId(accountId);
         
-        // 1. SNS 서비스에서 post 정보 가져오기
-        var postInfoFuture = snsServicePort.getPostInfo(postId, userId, accountId, storeId);
+        try {
+            var postInfoFuture = snsServicePort.getPostInfo(postId, userId, accountId, storeId);
+            return postInfoFuture.get(); // CompletableFuture를 동기적으로 처리
+        } catch (Exception e) {
+            log.error("[WebSocket] SNS 서비스에서 post 정보를 가져오는 중 오류 발생: {}", e.getMessage());
+            throw new BusinessException(AnalyticsErrorCode.EXTERNAL_API_ERROR);
+        }
+    }
+    
+    private SnsPostMetric getPostMetrics(Long userId, Long accountId, Long postId) {
+        log.info("[WebSocket] 2단계: 게시물 메트릭 조회 - postId: {}", postId);
         
-        // 2. 게시물 메트릭 조회 (가장 최근 데이터)
         SnsPostMetric postMetric = snsPostMetricRepositoryPort.findLatestByPostId(postId)
             .orElseThrow(() -> {
-                log.warn("게시물 메트릭을 찾을 수 없습니다 - Post ID: {}, Account ID: {}, User ID: {}", postId, accountId, userId);
+                log.warn("[WebSocket] 게시물 메트릭을 찾을 수 없습니다 - Post ID: {}", postId);
                 return new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND);
             });
         
-        log.info("게시물 메트릭 조회 성공 - Post ID: {}, Views: {}, Likes: {}, Comments: {}", 
+        log.info("[WebSocket] 게시물 메트릭 조회 성공 - Post ID: {}, Views: {}, Likes: {}, Comments: {}", 
             postId, postMetric.getViews(), postMetric.getLikes(), postMetric.getComments());
         
-        // 3. 감정 분석 데이터 조회
-        Map<SentimentType, List<String>> groupedKeywords = postCommentKeywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
+        return postMetric;
+    }
+    
+    private ReportResponse generateAiReport(Long userId, Long accountId, Long postId, Long storeId, 
+        PostInfoResponseMessage postInfo, 
+        SnsPostMetric postMetric) {
         
-        // 4. 댓글 수 조회
+        log.info("[WebSocket] 4단계: AI 보고서 생성 - postId: {}", postId);
+        
+        // 감정 분석 데이터 조회
+        Map<SentimentType, List<String>> groupedKeywords = postCommentKeywordRepository.findKeywordsByPostIdGroupedBySentiment(postId);
         List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostId(postId);
         
-        // 5. SNS 서비스에서 받은 post 정보와 analytics 데이터를 조합
-        PostInfoResponseMessage postInfo;
-        try {
-            postInfo = postInfoFuture.get(); // CompletableFuture를 동기적으로 처리
-        } catch (Exception e) {
-            log.error("SNS 서비스에서 post 정보를 가져오는 중 오류 발생: {}", e.getMessage());
-            throw new BusinessException(AnalyticsErrorCode.EXTERNAL_API_ERROR);
-        }
-        
         // AI 보고서 요청 데이터 구성
-        AiReportRequest.Metrics metrics = AiReportRequest.Metrics.builder()
-            .post_id(postId)
-            .view_count(postMetric.getViews())
-            .like_count(postMetric.getLikes())
-            .comment_count(postMetric.getComments())
+        AiReportRequest.Metrics metricsData = AiReportRequest.Metrics.builder()
+            .postId(postId)
+            .viewCount(postMetric.getViews())
+            .likeCount(postMetric.getLikes())
+            .commentCount(postMetric.getComments())
             .build();
         
-        AiReportRequest.EmotionData emotionData = AiReportRequest.EmotionData.builder()
-            .positive_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.POSITIVE).count())
-            .negative_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEGATIVE).count())
-            .neutral_count((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEUTRAL).count())
-            .positive_keywords(groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of()))
-            .negative_keywords(groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of()))
-            .neutral_keywords(groupedKeywords.getOrDefault(SentimentType.NEUTRAL, List.of()))
+        AiReportRequest.EmotionData emotionDataRequest = AiReportRequest.EmotionData.builder()
+            .positiveCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.POSITIVE).count())
+            .negativeCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEGATIVE).count())
+            .neutralCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEUTRAL).count())
+            .positiveKeywords(groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of()))
+            .negativeKeywords(groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of()))
+            .neutralKeywords(groupedKeywords.getOrDefault(SentimentType.NEUTRAL, List.of()))
             .build();
         
         AiReportRequest request = AiReportRequest.builder()
-            .metrics(metrics)
-            .emotion_data(emotionData)
-            .title(postInfo.getTitle())
-            .description(postInfo.getDescription())
-            .url(postInfo.getUrl())
-            .tags(postInfo.getTags())
-            .publish_at(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
-            .build();
-        
-        // 6. AI 서버에 보고서 생성 요청
-        AiReportResponse aiResponse = aiAnalysisPort.generateReport(request, storeId);
-        
-        return ReportResponse.builder()
-            .postId(postId)
-            .markdownReport(aiResponse.getMarkdown_report())
-            .metrics(ReportResponse.MetricsData.builder()
-                .postId(postId)
-                .viewCount(postMetric.getViews())
-                .likeCount(postMetric.getLikes())
-                .commentCount(postMetric.getComments())
-                .build())
-            .emotionData(ReportResponse.EmotionData.builder()
-                .positiveCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.POSITIVE).count())
-                .negativeCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEGATIVE).count())
-                .neutralCount((long) comments.stream().filter(c -> c.getSentiment() == SentimentType.NEUTRAL).count())
-                .positiveKeywords(groupedKeywords.getOrDefault(SentimentType.POSITIVE, List.of()))
-                .negativeKeywords(groupedKeywords.getOrDefault(SentimentType.NEGATIVE, List.of()))
-                .neutralKeywords(groupedKeywords.getOrDefault(SentimentType.NEUTRAL, List.of()))
-                .build())
+            .metrics(metricsData)
+            .emotionData(emotionDataRequest)
             .title(postInfo.getTitle())
             .description(postInfo.getDescription())
             .url(postInfo.getUrl())
             .tags(postInfo.getTags())
             .publishAt(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
             .build();
+        
+        // AI 서버에 보고서 생성 요청
+        AiReportResponse aiResponse = aiAnalysisPort.generateReport(request, storeId);
+        
+        // 최종 ReportResponse 생성 (클라이언트용)
+        return ReportResponse.builder()
+            .postId(postId)
+            .markdownReport(aiResponse.getMarkdownReport())
+            .title(postInfo.getTitle())
+            .description(postInfo.getDescription())
+            .url(postInfo.getUrl())
+            .publishAt(postInfo.getPublishAt() != null ? postInfo.getPublishAt().toString() : null)
+            .build();
+    }
+    
+    private ReportResponse getCachedReport(Long userId, Long accountId, Long postId, Long storeId) {
+        log.info("[WebSocket] 캐시된 보고서 확인 - postId: {}", postId);
+        
+        // 캐시에서 보고서 조회 시도
+        String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
+        ReportResponse cachedResponse = cacheManager.getCache("report").get(cacheKey, ReportResponse.class);
+        
+        if (cachedResponse != null) {
+            log.info("[WebSocket] 캐시된 보고서 발견 - postId: {}", postId);
+            return cachedResponse;
+        }
+        
+        log.info("[WebSocket] 캐시된 보고서 없음 - postId: {}", postId);
+        return null;
     }
 }
