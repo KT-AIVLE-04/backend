@@ -37,6 +37,9 @@ dependencies {
     // kafka
     implementation 'org.springframework.kafka:spring-kafka'
     
+    // WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
     // JSON 처리
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

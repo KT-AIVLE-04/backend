@@ -1,5 +1,7 @@
 package kt.aivle.analytics.adapter.out.infrastructure.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,5 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiReportResponse {
-    private String markdown_report;
+    @JsonProperty("markdown_report")
+    private String markdownReport;
 }

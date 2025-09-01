@@ -105,7 +105,7 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
     
     @Override
     public AiReportResponse generateReport(AiReportRequest request, Long storeId) {
-        Long postId = request.getMetrics().getPost_id();
+        Long postId = request.getMetrics().getPostId();
         log.info("[AI] adapter request - postId: {}, storeId: {}", postId, storeId);
         try {
             // 1. 이미 처리 중인지 확인
@@ -155,17 +155,17 @@ public class AiAnalysisAdapter implements AiAnalysisPort {
             // AI 보고서 생성 서버 호출
             AiReportResponse response = restTemplate.postForObject(reportUrl, entity, AiReportResponse.class);
             
-            if (response == null || response.getMarkdown_report() == null) {
+            if (response == null || response.getMarkdownReport() == null) {
                 log.error("❌ [AI] Response is null or markdown_report is null");
                 throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
             }
             
-            log.info("✅ [AI] Received response - postId: {}", request.getMetrics().getPost_id());
+            log.info("✅ [AI] Received response - postId: {}", request.getMetrics().getPostId());
             return response;
             
         } catch (Exception e) {
             log.error("❌ [AI] Failed - postId: {}, error: {}", 
-                    request.getMetrics().getPost_id(), e.getMessage());
+                    request.getMetrics().getPostId(), e.getMessage());
             throw new BusinessException(AnalyticsErrorCode.AI_ANALYSIS_ERROR);
         }
     }
