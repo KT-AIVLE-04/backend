@@ -1000,6 +1000,6 @@ git push --force-with-lease origin release
 
 **🏗️ Built with Spring Boot and Microservice Architecture**
 
-**© 2025 KT AIVLE School 4기 - Marketing Platform Team**
+**© 2025 KT AIVLE School 7기 - Chaos Team**
 
 </div>
