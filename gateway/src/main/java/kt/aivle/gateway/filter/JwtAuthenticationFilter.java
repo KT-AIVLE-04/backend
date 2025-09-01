@@ -14,7 +14,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
@@ -36,13 +39,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // 1. Authorization 헤더 확인
-        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 1. 토큰 추출 (WebSocket이면 쿼리 파라미터에서, HTTP면 헤더에서)
+        String token = extractToken(exchange);
+        if (token == null) {
             throw new BusinessException(INVALID_TOKEN);
         }
-
-        String token = authHeader.substring(7);
 
         // 2. 토큰 검증
         Claims claims;
@@ -83,6 +84,40 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                     return chain.filter(mutatedExchange);
                 });
+    }
+
+    private String extractToken(ServerWebExchange exchange) {
+        ServerHttpRequest request = exchange.getRequest();
+        URI uri = request.getURI();
+        
+        // WebSocket 요청인지 확인 (ws:// 또는 wss:// 프로토콜)
+        if (isWebSocketRequest(uri)) {
+            // WebSocket: 쿼리 파라미터에서 token 추출
+            return extractTokenFromQuery(uri);
+        } else {
+            // HTTP: Authorization 헤더에서 token 추출
+            return extractTokenFromHeader(request);
+        }
+    }
+
+    private boolean isWebSocketRequest(URI uri) {
+        String scheme = uri.getScheme();
+        return "ws".equals(scheme) || "wss".equals(scheme);
+    }
+
+    private String extractTokenFromQuery(URI uri) {
+        return UriComponentsBuilder.fromUri(uri)
+            .build()
+            .getQueryParams()
+            .getFirst("token");
+    }
+
+    private String extractTokenFromHeader(ServerHttpRequest request) {
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        return authHeader.substring(7);
     }
 
     @Override
