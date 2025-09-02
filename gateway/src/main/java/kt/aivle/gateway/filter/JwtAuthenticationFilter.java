@@ -15,10 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
-
-import java.net.URI;
 
 import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
@@ -41,7 +38,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // 1. 토큰 추출 (WebSocket이면 쿼리 파라미터에서, HTTP면 헤더에서)
+        // 1. 토큰 추출 (HTTP 헤더에서)
         String token = extractToken(exchange);
         if (token == null) {
             throw new BusinessException(INVALID_TOKEN);
@@ -90,44 +87,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private String extractToken(ServerWebExchange exchange) {
         ServerHttpRequest request = exchange.getRequest();
-        URI uri = request.getURI();
         
-        log.info("[JWT Filter] URI: {}, Scheme: {}, Query: {}", uri, uri.getScheme(), uri.getQuery());
-        log.info("[JWT Filter] Headers - Upgrade: {}, Connection: {}", 
-            request.getHeaders().getFirst("Upgrade"), 
-            request.getHeaders().getFirst("Connection"));
-        
-        // WebSocket 요청인지 확인 (HTTP 헤더 기반)
-        boolean isWebSocket = isWebSocketRequest(request);
-        log.info("[JWT Filter] Is WebSocket: {}", isWebSocket);
-        
-        if (isWebSocket) {
-            // WebSocket: 쿼리 파라미터에서 token 추출
-            String token = extractTokenFromQuery(uri);
-            log.info("[JWT Filter] WebSocket token extracted: {}", token != null ? "SUCCESS" : "FAILED");
-            return token;
-        } else {
-            // HTTP: Authorization 헤더에서 token 추출
-            String token = extractTokenFromHeader(request);
-            log.info("[JWT Filter] HTTP token extracted: {}", token != null ? "SUCCESS" : "FAILED");
-            return token;
-        }
+        // HTTP: Authorization 헤더에서 token 추출
+        String token = extractTokenFromHeader(request);
+        log.info("[JWT Filter] HTTP token extracted: {}", token != null ? "SUCCESS" : "FAILED");
+        return token;
     }
 
-    private boolean isWebSocketRequest(ServerHttpRequest request) {
-        String upgrade = request.getHeaders().getFirst("Upgrade");
-        String connection = request.getHeaders().getFirst("Connection");
-        
-        return "websocket".equalsIgnoreCase(upgrade) && 
-               "upgrade".equalsIgnoreCase(connection);
-    }
 
-    private String extractTokenFromQuery(URI uri) {
-        return UriComponentsBuilder.fromUri(uri)
-            .build()
-            .getQueryParams()
-            .getFirst("token");
-    }
 
     private String extractTokenFromHeader(ServerHttpRequest request) {
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
