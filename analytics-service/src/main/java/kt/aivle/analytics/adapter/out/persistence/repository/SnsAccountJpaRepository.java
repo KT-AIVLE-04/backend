@@ -3,6 +3,7 @@ package kt.aivle.analytics.adapter.out.persistence.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import kt.aivle.analytics.domain.entity.SnsAccount;
@@ -14,5 +15,6 @@ public interface SnsAccountJpaRepository extends BaseJpaRepository<SnsAccount, L
     List<SnsAccount> findByUserIdAndType(Long userId, SnsType type);
     
     // accountId로 userId 조회 (id 필드가 accountId 역할)
+    @Query("SELECT s.userId FROM SnsAccount s WHERE s.id = :accountId")
     Optional<Long> findUserIdById(Long accountId);
 }
