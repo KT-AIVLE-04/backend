@@ -245,10 +245,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 })
                 .thenCompose(progressMessage2 -> 
                     CompletableFuture.supplyAsync(() -> {
-                        log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);
-                        
+                        log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);                        
                         ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfoRef.get(), postMetricsRef.get());
-                        
+
                         // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
                         try {
                             String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
@@ -263,7 +262,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                     })
                 )
             );
-        });
     }
     
     // ===== PRIVATE METHODS =====
