@@ -39,8 +39,8 @@ public class SnsAccountRepository implements SnsAccountRepositoryPort {
     }
 
     @Override
-    public Optional<Long> findUserIdByAccountId(Long accountId) {
-        return snsAccountJpaRepository.findUserIdByAccountId(accountId);
+    public Optional<Long> findUserIdById(Long accountId) {
+        return snsAccountJpaRepository.findUserIdById(accountId);
     }
 
     @Override
