@@ -218,10 +218,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         })
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
-                // 캐시된 보고서가 있으면 바로 완료
-                return CompletableFuture.completedFuture(
-                    WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!")
-                );
+                // 캐시된 보고서가 있으면 즉시 완료
+                return CompletableFuture.completedFuture(cachedReport);
             }
             
             // 2. 캐시가 없으면 단계별로 처리
@@ -242,7 +240,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 )
             )
             .thenApply(reportResponse -> {
-                // 새로 생성된 보고서를 캐시에 저장
+                // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
                 try {
                     String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
                     cacheManager.getCache("report").put(cacheKey, reportResponse);
@@ -251,8 +249,19 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                     log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
                 }
                 
-                return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
+                return reportResponse;
             });
+        })
+        .thenApply(reportResponse -> {
+            // WebSocket 연결 안정성을 위한 지연 (캐시든 새로 생성이든)
+            try {
+                Thread.sleep(100); // 100ms 지연으로 연결 안정화
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // 최종 결과를 WebSocketResponseMessage로 변환
+            return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
         });
     }
     
