@@ -103,19 +103,39 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
             if (throwable != null) {
                 log.error("[WebSocket] 작업 완료 오류: {}", throwable.getMessage());
             }
+            
+            // 완료 후 연결 유지를 위한 지연 (캐싱된 데이터 처리 시 중요)
+            if (isSessionActive(session)) {
+                try {
+                    Thread.sleep(200); // 200ms 지연으로 연결 안정화
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         });
         
         // 작업 추적
         activeTasks.put(taskId, CompletableFuture.completedFuture(null));
     }
-
+    
     private void sendMessage(WebSocketSession session, WebSocketResponseMessage<?> message) {
         try {
+            // 세션 상태 확인
+            if (!isSessionActive(session)) {
+                log.warn("[WebSocket] 비활성 세션에 메시지 전송 시도 - sessionId: {}", session.getId());
+                return;
+            }
+            
             String jsonMessage = objectMapper.writeValueAsString(message);
+            log.info("[WebSocket] 메시지 전송: {}", jsonMessage);
             session.sendMessage(new TextMessage(jsonMessage));
             log.debug("[WebSocket] 메시지 전송: {}", jsonMessage);
         } catch (IOException e) {
             log.error("[WebSocket] 메시지 전송 실패: {}", e.getMessage(), e);
         }
+    }
+    
+    private boolean isSessionActive(WebSocketSession session) {
+        return session != null && session.isOpen();
     }
 }
