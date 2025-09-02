@@ -218,8 +218,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         })
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
-                // 캐시된 보고서가 있으면 즉시 완료
-                log.info("[WebSocket] 캐시된 보고서 발견 - date: {}", cachedReport);
+                // 캐시된 보고서가 있으면 즉시 완료 (하지만 thenApply는 거침)
                 return CompletableFuture.completedFuture(cachedReport);
             }
             
@@ -236,26 +235,24 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                 .thenCompose(postMetrics -> 
                     CompletableFuture.supplyAsync(() -> {
                         log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);
-                        return generateAiReport(userId, accountId, postId, storeId, postInfo, postMetrics);
+                        ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfo, postMetrics);
+                        
+                        // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
+                        try {
+                            String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
+                            cacheManager.getCache("report").put(cacheKey, reportResponse);
+                            log.info("[WebSocket] 새로 생성된 보고서를 캐시에 저장 - postId: {}, cacheKey: {}", postId, cacheKey);
+                        } catch (Exception e) {
+                            log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
+                        }
+                        
+                        return reportResponse;
                     })
                 )
-            )
-            .thenApply(reportResponse -> {
-                // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
-                try {
-                    String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
-                    cacheManager.getCache("report").put(cacheKey, reportResponse);
-                    log.info("[WebSocket] 새로 생성된 보고서를 캐시에 저장 - postId: {}, cacheKey: {}", postId, cacheKey);
-                } catch (Exception e) {
-                    log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
-                }
-                
-                return reportResponse;
-            });
+            );
         })
         .thenApply(reportResponse -> {
             log.info("[WebSocket] 최종 결과 반환 - data: {}", reportResponse);
-
             
             // 최종 결과를 WebSocketResponseMessage로 변환
             return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
