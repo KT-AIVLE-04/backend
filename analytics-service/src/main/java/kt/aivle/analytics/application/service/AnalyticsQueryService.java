@@ -224,9 +224,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
                 // 캐시된 보고서가 있으면 즉시 완료
-                return CompletableFuture.completedFuture(
-                    WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!")
-                );
+                return CompletableFuture.supplyAsync(() -> WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!"));
             }
             
             // 2. 캐시가 없으면 단계별로 처리
