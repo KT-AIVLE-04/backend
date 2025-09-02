@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.CacheManager;
@@ -206,6 +207,10 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         Long userId = getUserIdByAccountId(accountId);
         log.info("[WebSocket] accountId {}로 userId {} 조회", accountId, userId);
         
+        // 메서드 내부 변수 선언 (스코프 문제 해결)
+        final AtomicReference<PostInfoResponseMessage> postInfoRef = new AtomicReference<>();
+        final AtomicReference<SnsPostMetric> postMetricsRef = new AtomicReference<>();
+        
         // 1. 캐시 확인
         return CompletableFuture.supplyAsync(() -> {
             log.info("[WebSocket] 캐시 확인 중 - postId: {}", postId);
@@ -218,24 +223,33 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         })
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
-                // 캐시된 보고서가 있으면 즉시 완료 (하지만 thenApply는 거침)
-                return CompletableFuture.completedFuture(cachedReport);
+                // 캐시된 보고서가 있으면 즉시 완료
+                return CompletableFuture.completedFuture(
+                    WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!")
+                );
             }
             
             // 2. 캐시가 없으면 단계별로 처리
             return CompletableFuture.supplyAsync(() -> {
                 log.info("[WebSocket] 1단계: SNS 서비스에서 post 정보 가져오기 - postId: {}", postId);
-                return getPostInfo(userId, accountId, postId, storeId);
+                postInfoRef.set(getPostInfo(userId, accountId, postId, storeId));
+                
+                // 1단계 완료 시 progress 메시지 반환
+                return WebSocketResponseMessage.progress(25, "SNS 서비스에서 게시물 정보를 가져왔습니다.");
             })
-            .thenCompose(postInfo -> 
+            .thenCompose(progressMessage1 -> 
                 CompletableFuture.supplyAsync(() -> {
                     log.info("[WebSocket] 2단계: 게시물 메트릭 조회 - postId: {}", postId);
-                    return getPostMetrics(userId, accountId, postId);
+                    postMetricsRef.set(getPostMetrics(userId, accountId, postId));
+                    
+                    // 2단계 완료 시 progress 메시지 반환
+                    return WebSocketResponseMessage.progress(50, "게시물 메트릭을 조회했습니다.");
                 })
-                .thenCompose(postMetrics -> 
+                .thenCompose(progressMessage2 -> 
                     CompletableFuture.supplyAsync(() -> {
                         log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);
-                        ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfo, postMetrics);
+                        
+                        ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfoRef.get(), postMetricsRef.get());
                         
                         // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
                         try {
@@ -246,16 +260,11 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                             log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
                         }
                         
-                        return reportResponse;
+                        // 3단계 완료 시 바로 complete 메시지 반환
+                        return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
                     })
                 )
             );
-        })
-        .thenApply(reportResponse -> {
-            log.info("[WebSocket] 최종 결과 반환 - data: {}", reportResponse);
-            
-            // 최종 결과를 WebSocketResponseMessage로 변환
-            return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
         });
     }
     
