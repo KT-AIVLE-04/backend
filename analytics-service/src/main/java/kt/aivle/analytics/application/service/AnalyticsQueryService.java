@@ -262,6 +262,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
                     })
                 )
             );
+        });
     }
     
     // ===== PRIVATE METHODS =====
