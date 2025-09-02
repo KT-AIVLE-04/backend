@@ -219,6 +219,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
                 // 캐시된 보고서가 있으면 즉시 완료
+                log.info("[WebSocket] 캐시된 보고서 발견 - date: {}", cachedReport);
                 return CompletableFuture.completedFuture(cachedReport);
             }
             
@@ -253,12 +254,8 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             });
         })
         .thenApply(reportResponse -> {
-            // WebSocket 연결 안정성을 위한 지연 (캐시든 새로 생성이든)
-            try {
-                Thread.sleep(100); // 100ms 지연으로 연결 안정화
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            log.info("[WebSocket] 최종 결과 반환 - data: {}", reportResponse);
+
             
             // 최종 결과를 WebSocketResponseMessage로 변환
             return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
