@@ -32,6 +32,7 @@ import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
 import kt.aivle.analytics.application.port.out.infrastructure.ValidationPort;
 import kt.aivle.analytics.application.port.out.repository.PostCommentKeywordRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsAccountMetricRepositoryPort;
+import kt.aivle.analytics.application.port.out.repository.SnsAccountRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostCommentMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostMetricRepositoryPort;
 import kt.aivle.analytics.application.port.out.repository.SnsPostRepositoryPort;
@@ -55,6 +56,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private final SnsAccountMetricRepositoryPort snsAccountMetricRepositoryPort;
     private final SnsPostCommentMetricRepositoryPort snsPostCommentMetricRepositoryPort;
     private final SnsPostRepositoryPort snsPostRepositoryPort;
+    private final SnsAccountRepositoryPort snsAccountRepositoryPort;
     private final PostCommentKeywordRepositoryPort postCommentKeywordRepository;
     private final ExternalApiPort externalApiPort;
     private final ValidationPort validationPort;
@@ -197,8 +199,12 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 통합된 비동기 AI 보고서 생성 (WebSocket용) - 캐시 확인 포함
     @Override
-    public CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long userId, Long accountId, Long postId, Long storeId) {
+    public CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long accountId, Long postId, Long storeId) {
         log.info("[WebSocket] 비동기 AI 보고서 생성 시작 - postId: {}", postId);
+        
+        // accountId로 userId 조회
+        Long userId = getUserIdByAccountId(accountId);
+        log.info("[WebSocket] accountId {}로 userId {} 조회", accountId, userId);
         
         // 1. 캐시 확인
         return CompletableFuture.supplyAsync(() -> {
@@ -454,6 +460,14 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private void validatePostExists(Long postId) {
         snsPostRepositoryPort.findById(postId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
+    }
+    
+    /**
+     * 계정 ID로 사용자 ID 조회
+     */
+    private Long getUserIdByAccountId(Long accountId) {
+        return snsAccountRepositoryPort.findUserIdByAccountId(accountId)
+            .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
     }
     
     /**

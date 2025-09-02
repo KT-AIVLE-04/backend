@@ -76,30 +76,15 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
     private void processReportAsync(WebSocketSession session, ReportRequestMessage request) {
         String taskId = "task-" + taskCounter.incrementAndGet();
         
-        
-        Long userId;
-        try {
-            // Gateway에서 제공하는 X-USER-ID 헤더에서 userId 추출
-            String userIdHeader = session.getHandshakeHeaders().getFirst("X-USER-ID");
-            if (userIdHeader == null) {
-                sendMessage(session, WebSocketResponseMessage.error("사용자 인증 정보가 없습니다."));
-                return;
-            }
-            userId = Long.parseLong(userIdHeader);
-        } catch (NumberFormatException e) {
-            sendMessage(session, WebSocketResponseMessage.error("잘못된 사용자 ID 형식입니다."));
-            return;
-        }
-        
-        log.info("[WebSocket] AI 분석 보고서 생성 요청 - userId: {}, postId: {}, accountId: {}, storeId: {}", 
-            userId, request.getPostId(), request.getAccountId(), request.getStoreId());
+        log.info("[WebSocket] AI 분석 보고서 생성 요청 - postId: {}, accountId: {}, storeId: {}", 
+            request.getPostId(), request.getAccountId(), request.getStoreId());
         
         // 진행률 전송 시작
         sendMessage(session, WebSocketResponseMessage.progress(0, "AI 분석 보고서 생성을 시작합니다..."));
         
-        // 통합된 비동기 메서드 호출 (캐시 확인 포함)
+        // accountId로 userId 조회 후 AI 분석 진행
+        // userId는 sns_account 테이블에서 조회하여 사용
         analyticsQueryUseCase.generateReportAsync(
-            userId,  // 헤더에서 추출한 userId 사용
             request.getAccountId(), 
             request.getPostId(), 
             request.getStoreId()
