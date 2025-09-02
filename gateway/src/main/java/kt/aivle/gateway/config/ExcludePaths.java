@@ -18,6 +18,9 @@ public class ExcludePaths {
             "/api/auth/oauth2/code/**",
             "/api/sns/oauth/**/callback/**",
 
+            // WebSocket
+            "/api/analytics/report",
+
             // swagger
             "/swagger-ui.html",
             "/swagger-ui/**",

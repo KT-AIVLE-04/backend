@@ -32,5 +32,5 @@ public interface AnalyticsQueryUseCase {
     ReportResponse generateReport(Long userId, Long accountId, Long postId, Long storeId);
     
     // 통합된 비동기 AI 보고서 생성 (WebSocket용) - 캐시 확인 포함
-    CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long userId, Long accountId, Long postId, Long storeId);
+    CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long accountId, Long postId, Long storeId);
 }
