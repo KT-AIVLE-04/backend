@@ -13,6 +13,6 @@ public interface SnsAccountJpaRepository extends BaseJpaRepository<SnsAccount, L
     List<SnsAccount> findByUserId(Long userId);
     List<SnsAccount> findByUserIdAndType(Long userId, SnsType type);
     
-    // accountId로 userId 조회
-    Optional<Long> findUserIdByAccountId(Long accountId);
+    // accountId로 userId 조회 (id 필드가 accountId 역할)
+    Optional<Long> findUserIdById(Long accountId);
 }

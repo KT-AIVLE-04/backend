@@ -466,7 +466,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
      * 계정 ID로 사용자 ID 조회
      */
     private Long getUserIdByAccountId(Long accountId) {
-        return snsAccountRepositoryPort.findUserIdByAccountId(accountId)
+        return snsAccountRepositoryPort.findUserIdById(accountId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.ACCOUNT_NOT_FOUND));
     }
     

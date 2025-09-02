@@ -15,8 +15,8 @@ public interface SnsAccountRepositoryPort {
     long countAll();
     List<SnsAccount> findByUserId(Long userId);
     
-    // accountId로 userId 조회
-    Optional<Long> findUserIdByAccountId(Long accountId);
+    // accountId로 userId 조회 (id 필드가 accountId 역할)
+    Optional<Long> findUserIdById(Long accountId);
 
     void deleteById(Long id);
     List<SnsAccount> findAllWithPagination(int page, int size);
