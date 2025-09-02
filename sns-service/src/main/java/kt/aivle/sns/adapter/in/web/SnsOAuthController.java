@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import static kt.aivle.common.code.CommonResponseCode.OK;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/sns/oauth")
 @RequiredArgsConstructor
@@ -40,8 +41,15 @@ public class SnsOAuthController {
                                                         @RequestParam String state) {
         try {
             OAuthContext ctx = delegator.handleCallback(snsType, state, code);
-            // account 초기화
-            syncDelegator.accountSync(snsType, ctx.userId(), ctx.storeId());
+            
+            // account 초기화 - 예외가 발생해도 OAuth는 성공했으므로 성공 페이지 반환
+            try {
+                syncDelegator.accountSync(snsType, ctx.userId(), ctx.storeId());
+            } catch (Exception syncException) {
+                log.warn("Account sync failed but OAuth was successful: snsType={}, userId={}, storeId={}, error={}", 
+                        snsType, ctx.userId(), ctx.storeId(), syncException.getMessage());
+                // 계정 동기화 실패해도 OAuth는 성공했으므로 성공 페이지 반환
+            }
             
             log.info("SNS OAuth 연동 성공: snsType={}, userId={}, storeId={}", 
                     snsType, ctx.userId(), ctx.storeId());
