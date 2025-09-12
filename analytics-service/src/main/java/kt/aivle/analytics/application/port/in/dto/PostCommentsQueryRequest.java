@@ -1,7 +1,5 @@
 package kt.aivle.analytics.application.port.in.dto;
 
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
@@ -12,13 +10,16 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @SuperBuilder
-public class PostCommentsQueryRequest extends BaseQueryRequest {
+public class PostCommentsQueryRequest {
+    
+    private Long userId; // 사용자 ID
     
     private Long postId; // null이면 모든 게시물
     
-    @Min(value = 0, message = "Page must be 0 or greater")
-    @Builder.Default
-    private Integer page = 0; // 기본값 0
+    /**
+     * YouTube API 페이지네이션 토큰 (첫 페이지는 null)
+     */
+    private String pageToken;
     
     @Min(value = 1, message = "Size must be 1 or greater")
     @Max(value = 100, message = "Size must be 100 or less")
@@ -27,22 +28,18 @@ public class PostCommentsQueryRequest extends BaseQueryRequest {
     
     private Long accountId; // 계정 ID
 
-    public static PostCommentsQueryRequest forCurrentDate(Long postId, Integer page, Integer size, Long accountId) {
-        return new PostCommentsQueryRequest(null, postId, page, size, accountId);
-    }
-    public static PostCommentsQueryRequest forDate(LocalDate date, Long postId, Integer page, Integer size, Long accountId) {
-        return new PostCommentsQueryRequest(date, postId, page, size, accountId);
+    public static PostCommentsQueryRequest forPost(Long userId, Long postId, String pageToken, Integer size, Long accountId) {
+        return new PostCommentsQueryRequest(userId, postId, pageToken, size, accountId);
     }
     
-    public static PostCommentsQueryRequest forLatestPostByAccountId(Long accountId, Integer page, Integer size) {
-        return new PostCommentsQueryRequest(null, null, page, size, accountId);
+    public static PostCommentsQueryRequest forLatestPostByAccountId(Long userId, Long accountId, String pageToken, Integer size) {
+        return new PostCommentsQueryRequest(userId, null, pageToken, size, accountId);
     }
 
-    
-    public PostCommentsQueryRequest(LocalDate date, Long postId, Integer page, Integer size, Long accountId) {
-        super(date);
+    public PostCommentsQueryRequest(Long userId, Long postId, String pageToken, Integer size, Long accountId) {
+        this.userId = userId;
         this.postId = postId;
-        this.page = page != null ? page : 0;
+        this.pageToken = pageToken;
         this.size = size != null ? size : 20;
         this.accountId = accountId;
     }

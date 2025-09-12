@@ -14,6 +14,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsPageResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.application.port.in.MetricsCollectionUseCase;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
@@ -301,7 +302,8 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
                 postId, pageCount, pageToken != null ? "있음" : "없음");
             
             // ExternalApiPort를 통해 댓글 조회 (페이지네이션 지원)
-            List<PostCommentsResponse> pageComments = externalApiPort.getVideoCommentsWithPagination(post.getSnsPostId(), pageToken);
+            PostCommentsPageResponse pageResponse = externalApiPort.getVideoCommentsWithPagination(post.getSnsPostId(), pageToken, 100);
+            List<PostCommentsResponse> pageComments = pageResponse.getData();
             
             if (pageComments.isEmpty()) {
                 log.info("📄 빈 페이지 - postId: {}, 페이지: {}", postId, pageCount);
@@ -347,7 +349,7 @@ public class MetricsCollectionService implements MetricsCollectionUseCase {
             }
             
             // 다음 페이지 토큰 가져오기
-            pageToken = externalApiPort.getNextPageToken(post.getSnsPostId(), pageToken);
+            pageToken = pageResponse.getNextPageToken();
             
         } while (pageToken != null);
         

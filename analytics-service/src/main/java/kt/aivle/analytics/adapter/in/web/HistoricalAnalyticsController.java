@@ -1,7 +1,5 @@
 package kt.aivle.analytics.adapter.in.web;
 
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +12,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
 import kt.aivle.common.code.CommonResponseCode;
@@ -55,20 +52,6 @@ public class HistoricalAnalyticsController {
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @Operation(summary = "히스토리 게시물 댓글 조회", description = "게시물 댓글 히스토리를 페이지네이션으로 조회합니다.")
-    @GetMapping("/posts/comments")
-    public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getHistoricalPostComments(
-            @RequestParam("date") String dateStr,
-            @RequestParam("accountId") Long accountId,
-            @RequestParam(value = "postId", required = false) Long postId,
-            @RequestParam(value = "page", defaultValue = "0") Integer page,
-            @RequestParam(value = "size", defaultValue = "20") Integer size,
-            @RequestHeader("X-USER-ID") Long userId) {
-        
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getHistoricalPostComments(userId, dateStr, accountId, postId, page, size);
-        
-        return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
-    }
     
     @Operation(summary = "히스토리 게시물 감정분석 조회", description = "특정 날짜의 게시물 댓글 감정분석 결과와 키워드를 조회합니다.")
     @GetMapping("/posts/emotion-analysis")

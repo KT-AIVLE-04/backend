@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsPageResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.application.port.out.infrastructure.ExternalApiPort;
@@ -102,44 +103,13 @@ public class YouTubeApiAdapter implements ExternalApiPort {
     }
     
     @Override
-    public List<PostCommentsResponse> getVideoComments(String videoId) {
-        return getVideoCommentsWithLimit(videoId, 20); // 기본 20개로 제한
-    }
-    
-    @Override
-    public List<PostCommentsResponse> getVideoCommentsWithLimit(String videoId, int limit) {
+    public PostCommentsPageResponse getVideoCommentsWithPagination(String videoId, String pageToken, int maxResults) {
         try {
             YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
                 .list(List.of("snippet"))
                 .setKey(apiKey)
                 .setVideoId(videoId)
-                .setMaxResults(Math.min(limit, 100L)); // 최대 100개, 요청된 개수와 비교하여 작은 값 사용
-            
-            CommentThreadListResponse response = request.execute();
-            
-            if (response.getItems() == null) {
-                return List.of();
-            }
-            
-            return response.getItems().stream()
-                .limit(limit) // 추가로 limit 적용
-                .map(this::toPostCommentsResponse)
-                .collect(Collectors.toList());
-            
-        } catch (IOException e) {
-            handleYouTubeApiError(e, "video comments");
-            return List.of();
-        }
-    }
-    
-    @Override
-    public List<PostCommentsResponse> getVideoCommentsWithPagination(String videoId, String pageToken) {
-        try {
-            YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
-                .list(List.of("snippet"))
-                .setKey(apiKey)
-                .setVideoId(videoId)
-                .setMaxResults(100L);
+                .setMaxResults(Math.min(maxResults, 100L));
             
             if (pageToken != null) {
                 request.setPageToken(pageToken);
@@ -147,41 +117,25 @@ public class YouTubeApiAdapter implements ExternalApiPort {
             
             CommentThreadListResponse response = request.execute();
             
-            if (response.getItems() == null) {
-                return List.of();
-            }
+            List<PostCommentsResponse> comments = response.getItems() != null 
+                ? response.getItems().stream()
+                    .map(this::toPostCommentsResponse)
+                    .collect(Collectors.toList())
+                : List.of();
             
-            return response.getItems().stream()
-                .map(this::toPostCommentsResponse)
-                .collect(Collectors.toList());
-            
-        } catch (IOException e) {
-            handleYouTubeApiError(e, "video comments with pagination");
-            return List.of();
-        }
-    }
-    
-    @Override
-    public String getNextPageToken(String videoId, String currentPageToken) {
-        try {
-            YouTube.CommentThreads.List request = getYouTubeClient().commentThreads()
-                .list(List.of("snippet"))
-                .setKey(apiKey)
-                .setVideoId(videoId)
-                .setMaxResults(100L);
-            
-            if (currentPageToken != null) {
-                request.setPageToken(currentPageToken);
-            }
-            
-            CommentThreadListResponse response = request.execute();
-            return response.getNextPageToken();
+            return PostCommentsPageResponse.builder()
+                .data(comments)
+                .nextPageToken(response.getNextPageToken())
+                .hasNextPage(response.getNextPageToken() != null)
+                .currentPageSize(comments.size())
+                .build();
             
         } catch (IOException e) {
-            handleYouTubeApiError(e, "get next page token");
-            return null;
+            handleYouTubeApiError(e, "video comments with pagination response");
+            return PostCommentsPageResponse.empty();
         }
     }
+
     
     // AI 분석은 별도 AiAnalysisAdapter에서 처리
     
