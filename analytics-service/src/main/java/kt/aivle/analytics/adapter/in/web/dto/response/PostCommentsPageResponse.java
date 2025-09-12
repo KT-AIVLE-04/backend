@@ -2,14 +2,18 @@ package kt.aivle.analytics.adapter.in.web.dto.response;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * YouTube API 페이지네이션을 지원하는 댓글 응답 DTO
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PostCommentsPageResponse {
     
     /**
