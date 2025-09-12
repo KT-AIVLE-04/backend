@@ -20,10 +20,10 @@ import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
-import kt.aivle.analytics.adapter.in.websocket.dto.WebSocketResponseMessage;
 import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
 import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
+import kt.aivle.analytics.application.port.in.ProgressCallback;
 import kt.aivle.analytics.application.port.in.dto.AccountMetricsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostCommentsQueryRequest;
 import kt.aivle.analytics.application.port.in.dto.PostMetricsQueryRequest;
@@ -200,7 +200,7 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     
     // 통합된 비동기 AI 보고서 생성 (WebSocket용) - 캐시 확인 포함
     @Override
-    public CompletableFuture<WebSocketResponseMessage<ReportResponse>> generateReportAsync(Long accountId, Long postId, Long storeId) {
+    public CompletableFuture<ReportResponse> generateReportAsync(Long accountId, Long postId, Long storeId, ProgressCallback callback) {
         log.info("[WebSocket] 비동기 AI 보고서 생성 시작 - postId: {}", postId);
         
         // accountId로 userId 조회
@@ -223,44 +223,41 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         })
         .thenCompose(cachedReport -> {
             if (cachedReport != null) {
-                // 캐시된 보고서가 있으면 즉시 완료
-                return CompletableFuture.supplyAsync(() -> WebSocketResponseMessage.complete(cachedReport, "캐시된 보고서를 찾았습니다!"));
+                // 캐시된 보고서가 있으면 콜백으로 알림
+                callback.onProgress(100, "캐시된 보고서를 찾았습니다!");
+                return CompletableFuture.completedFuture(cachedReport);
             }
             
             // 2. 캐시가 없으면 단계별로 처리
             return CompletableFuture.supplyAsync(() -> {
                 log.info("[WebSocket] 1단계: SNS 서비스에서 post 정보 가져오기 - postId: {}", postId);
                 postInfoRef.set(getPostInfo(userId, accountId, postId, storeId));
-                
-                // 1단계 완료 시 progress 메시지 반환
-                return WebSocketResponseMessage.progress(25, "SNS 서비스에서 게시물 정보를 가져왔습니다.");
+                callback.onProgress(25, "SNS 서비스에서 게시물 정보를 가져왔습니다.");
+                return postInfoRef.get();
             })
-            .thenCompose(progressMessage1 -> 
+            .thenCompose(postInfo -> 
                 CompletableFuture.supplyAsync(() -> {
                     log.info("[WebSocket] 2단계: 게시물 메트릭 조회 - postId: {}", postId);
                     postMetricsRef.set(getPostMetrics(userId, accountId, postId));
-                    
-                    // 2단계 완료 시 progress 메시지 반환
-                    return WebSocketResponseMessage.progress(50, "게시물 메트릭을 조회했습니다.");
+                    callback.onProgress(50, "게시물 메트릭을 조회했습니다.");
+                    return postMetricsRef.get();
                 })
-                .thenCompose(progressMessage2 -> 
-                    CompletableFuture.supplyAsync(() -> {
-                        log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);                        
-                        ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfoRef.get(), postMetricsRef.get());
+            )
+            .thenCompose(metrics -> 
+                CompletableFuture.supplyAsync(() -> {
+                    log.info("[WebSocket] 3단계: AI 보고서 생성 - postId: {}", postId);                        
+                    ReportResponse reportResponse = generateAiReport(userId, accountId, postId, storeId, postInfoRef.get(), postMetricsRef.get());
 
-                        // 새로 생성된 보고서를 캐시에 저장 (cachedReport가 null일 때만)
-                        try {
-                            String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
-                            cacheManager.getCache("report").put(cacheKey, reportResponse);
-                            log.info("[WebSocket] 새로 생성된 보고서를 캐시에 저장 - postId: {}, cacheKey: {}", postId, cacheKey);
-                        } catch (Exception e) {
-                            log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
-                        }
-                        
-                        // 3단계 완료 시 바로 complete 메시지 반환
-                        return WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!");
-                    })
-                )
+                    // 새로 생성된 보고서를 캐시에 저장
+                    try {
+                        String cacheKey = postId + "_" + userId + "_" + accountId + "_" + storeId;
+                        cacheManager.getCache("report").put(cacheKey, reportResponse);
+                        log.info("[WebSocket] 새로 생성된 보고서를 캐시에 저장 - postId: {}, cacheKey: {}", postId, cacheKey);
+                    } catch (Exception e) {
+                        log.warn("[WebSocket] 캐시 저장 중 에러 발생 - postId: {}, error: {}", postId, e.getMessage());
+                    }
+                    return reportResponse;
+                })
             );
         });
     }
