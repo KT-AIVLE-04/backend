@@ -13,6 +13,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
 import kt.aivle.analytics.adapter.in.websocket.dto.MessageType;
 import kt.aivle.analytics.adapter.in.websocket.dto.ReportRequestMessage;
 import kt.aivle.analytics.adapter.in.websocket.dto.WebSocketResponseMessage;
@@ -29,7 +30,7 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     
     private final AtomicLong taskCounter = new AtomicLong(0);
-    private final ConcurrentHashMap<String, CompletableFuture<Void>> activeTasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<ReportResponse>> activeTasks = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -79,30 +80,38 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
         log.info("[WebSocket] AI 분석 보고서 생성 요청 - postId: {}, accountId: {}, storeId: {}", 
             request.getPostId(), request.getAccountId(), request.getStoreId());
         
+        // 중복 요청 방지: 이미 진행 중인 작업이 있는지 확인
+        if (!activeTasks.isEmpty()) {
+            log.info("[WebSocket] 이미 진행 중인 작업이 있습니다. 요청을 무시합니다. - sessionId: {}", session.getId());
+            return; // 조용히 무시
+        }
+        
         // 진행률 전송 시작
-        sendMessage(session, WebSocketResponseMessage.progress(0, "AI 분석 보고서 생성을 시작합니다..."));
+        sendMessage(session, WebSocketResponseMessage.progress(10, "AI 분석 보고서 생성을 시작합니다..."));
         
         // accountId로 userId 조회 후 AI 분석 진행
         // userId는 sns_account 테이블에서 조회하여 사용
-        analyticsQueryUseCase.generateReportAsync(
+        CompletableFuture<ReportResponse> reportFuture = analyticsQueryUseCase.generateReportAsync(
             request.getAccountId(), 
             request.getPostId(), 
-            request.getStoreId()
-        )
-        .thenAccept(wsMessage -> {
-            // WebSocket 메시지를 직접 전송
-            sendMessage(session, wsMessage);
-        })
-        .exceptionally(throwable -> {
-            log.error("[WebSocket] AI 분석 처리 오류: {}", throwable.getMessage(), throwable);
-            sendMessage(session, WebSocketResponseMessage.error("AI 분석 처리 오류: " + throwable.getMessage()));
-            return null;
-        })
-        .whenComplete((result, throwable) -> {
-            activeTasks.remove(taskId);
-            if (throwable != null) {
-                log.error("[WebSocket] 작업 완료 오류: {}", throwable.getMessage());
+            request.getStoreId(),
+            (progress, message) -> {
+                // 진행률 콜백으로 WebSocket 메시지 전송
+                sendMessage(session, WebSocketResponseMessage.progress(progress, message));
             }
+        )
+        .whenComplete((reportResponse, throwable) -> {
+            if (throwable != null) {
+                // 에러 발생 시
+                log.error("[WebSocket] AI 분석 처리 오류: {}", throwable.getMessage(), throwable);
+                sendMessage(session, WebSocketResponseMessage.error("AI 분석 처리 오류: " + throwable.getMessage()));
+            } else {
+                // 성공 시 최종 완료 메시지 전송
+                sendMessage(session, WebSocketResponseMessage.complete(reportResponse, "AI 분석 보고서가 완성되었습니다!"));
+            }
+            
+            // 작업 정리
+            activeTasks.remove(taskId);
             
             // 완료 후 연결 유지를 위한 지연 (캐싱된 데이터 처리 시 중요)
             if (isSessionActive(session)) {
@@ -114,8 +123,8 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
             }
         });
         
-        // 작업 추적
-        activeTasks.put(taskId, CompletableFuture.completedFuture(null));
+        // 작업 추적 - 실제 CompletableFuture를 저장
+        activeTasks.put(taskId, reportFuture);
     }
     
     private void sendMessage(WebSocketSession session, WebSocketResponseMessage<?> message) {
@@ -127,9 +136,8 @@ public class ReportWebSocketHandler extends TextWebSocketHandler {
             }
             
             String jsonMessage = objectMapper.writeValueAsString(message);
-            log.info("[WebSocket] 메시지 전송: {}", jsonMessage);
             session.sendMessage(new TextMessage(jsonMessage));
-            log.debug("[WebSocket] 메시지 전송: {}", jsonMessage);
+            log.info("[WebSocket] 메시지 전송: {}", jsonMessage);
         } catch (IOException e) {
             log.error("[WebSocket] 메시지 전송 실패: {}", e.getMessage(), e);
         }
