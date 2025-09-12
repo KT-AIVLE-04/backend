@@ -3,7 +3,7 @@ package kt.aivle.analytics.application.port.out.infrastructure;
 import java.util.List;
 
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsPageResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 
 /**
@@ -23,24 +23,9 @@ public interface ExternalApiPort {
     VideoStatistics getVideoStatistics(String videoId);
     
     /**
-     * YouTube 비디오 댓글 조회
-     */
-    List<PostCommentsResponse> getVideoComments(String videoId);
-    
-    /**
-     * YouTube 비디오 댓글 조회 (개수 제한)
-     */
-    List<PostCommentsResponse> getVideoCommentsWithLimit(String videoId, int limit);
-    
-    /**
      * YouTube 비디오 댓글 조회 (페이지네이션 지원)
      */
-    List<PostCommentsResponse> getVideoCommentsWithPagination(String videoId, String pageToken);
-    
-    /**
-     * 다음 페이지 토큰 조회
-     */
-    String getNextPageToken(String videoId, String currentPageToken);
+    PostCommentsPageResponse getVideoCommentsWithPagination(String videoId, String pageToken, int maxResults);
     
     /**
      * 실시간 게시물 메트릭 조회

@@ -2,7 +2,6 @@ package kt.aivle.analytics.application.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Service;
 import kt.aivle.analytics.adapter.in.event.dto.PostInfoResponseMessage;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.EmotionAnalysisResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsPageResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
 import kt.aivle.analytics.adapter.out.infrastructure.dto.AiReportRequest;
@@ -94,19 +93,19 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     }
     
     @Override
-    @Cacheable(value = "realtime-comments", key = "'comments-' + #userId + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getRealtimePostComments(Long userId, Long accountId, Long postId, Integer page, Integer size) {
+    @Cacheable(value = "realtime-comments", key = "'comments-' + #userId + ',' + #accountId + ',' + #postId + ',' + #pageToken + ',' + #size")
+    public PostCommentsPageResponse getRealtimePostComments(Long userId, Long accountId, Long postId, String pageToken, Integer size) {
         validationPort.validateAccountId(accountId);
         
         PostCommentsQueryRequest queryRequest;
         
         if (postId != null) {
-            queryRequest = PostCommentsQueryRequest.forCurrentDate(postId, page, size, accountId);
+            queryRequest = PostCommentsQueryRequest.forPost(userId, postId, pageToken, size, accountId);
         } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
+            queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(userId, accountId, pageToken, size);
         }
         
-        return getRealtimePostCommentsInternal(userId, queryRequest);
+        return getRealtimePostCommentsInternal(queryRequest);
     }
     
     // 히스토리 데이터 조회 메서드들
@@ -155,21 +154,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         return getAccountMetricsInternal(userId, queryRequest);
     }
     
-    @Override
-    @Cacheable(value = "history-comments", key = "'history-comments-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId + ',' + #page + ',' + #size")
-    public List<PostCommentsResponse> getHistoricalPostComments(Long userId, String dateStr, Long accountId, Long postId, Integer page, Integer size) {
-        LocalDate date = validationPort.validateAndParseDate(dateStr);
-        validationPort.validateAccountId(accountId);
-        
-        PostCommentsQueryRequest queryRequest;
-        if (postId != null) {
-            queryRequest = PostCommentsQueryRequest.forDate(date, postId, page, size, accountId);
-        } else {
-            queryRequest = PostCommentsQueryRequest.forLatestPostByAccountId(accountId, page, size);
-        }
-        
-        return getHistoricalPostCommentsInternal(userId, queryRequest, date);
-    }
     
     @Override
     @Cacheable(value = "history-emotion-analysis", key = "'history-emotion-' + #userId + ',' + #dateStr + ',' + #accountId + ',' + #postId")
@@ -316,33 +300,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .build();
     }
     
-    /**
-     * 히스토리 댓글 조회 내부 로직 (날짜 기준 필터링)
-     */
-    private List<PostCommentsResponse> getHistoricalPostCommentsInternal(Long userId, PostCommentsQueryRequest request, LocalDate date) {
-        log.info("Getting historical post comments for userId: {}, postId: {}, accountId: {}, date: {}, page: {}, size: {}", 
-                userId, request.getPostId(), request.getAccountId(), date, request.getPage(), request.getSize());
-        
-        Long targetPostId;
-        if (request.getPostId() != null) {
-            targetPostId = request.getPostId();
-            // postId가 제공된 경우 계정 ID 검증
-            validatePostAccountId(targetPostId, request.getAccountId());
-        } else {
-            targetPostId = getLatestPostIdByAccountId(request.getAccountId());
-        }
-        
-        // 날짜 기준으로 publishedAt 이전의 댓글을 최신순으로 페이지네이션하여 조회
-        List<SnsPostCommentMetric> comments = snsPostCommentMetricRepositoryPort.findByPostIdAndPublishedAtBeforeWithPagination(
-            targetPostId, date, request.getPage(), request.getSize());
-        
-        log.info("Retrieved historical comments from DB for postId: {}, date: {}, page: {}, size: {}, result count: {}", 
-            targetPostId, date, request.getPage(), request.getSize(), comments.size());
-        
-        return comments.stream()
-            .map(this::toSnsPostCommentsResponse)
-            .collect(Collectors.toList());
-    }
     
     /**
      * 내부 히스토리 감정분석 로직 (캐시 적용)
@@ -375,7 +332,9 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
     private PostMetricsResponse getRealtimePostMetricsInternal(Long userId, PostMetricsQueryRequest request) {
         log.info("Getting realtime post metrics for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
         
-        Long targetPostId = getTargetPostIdForRealtime(userId, request);
+        Long targetPostId = request.getPostId() != null 
+            ? request.getPostId() 
+            : getLatestPostIdByAccountId(request.getAccountId());
         
         // postId가 제공된 경우 계정 ID 검증
         if (request.getPostId() != null) {
@@ -403,10 +362,13 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             responses.get(0);
     }
     
-    private List<PostCommentsResponse> getRealtimePostCommentsInternal(Long userId, PostCommentsQueryRequest request) {
-        log.info("Getting realtime post comments for userId: {}, postId: {}, accountId: {}", userId, request.getPostId(), request.getAccountId());
+    private PostCommentsPageResponse getRealtimePostCommentsInternal(PostCommentsQueryRequest request) {
+        log.info("Getting realtime post comments for userId: {}, postId: {}, accountId: {}, pageToken: {}", 
+            request.getUserId(), request.getPostId(), request.getAccountId(), request.getPageToken());
         
-        Long targetPostId = getTargetPostIdForRealtime(userId, request);
+        Long targetPostId = request.getPostId() != null 
+            ? request.getPostId() 
+            : getLatestPostIdByAccountId(request.getAccountId());
         
         // postId가 제공된 경우 계정 ID 검증
         if (request.getPostId() != null) {
@@ -419,33 +381,21 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
         SnsPost post = snsPostRepositoryPort.findById(targetPostId)
             .orElseThrow(() -> new BusinessException(AnalyticsErrorCode.POST_NOT_FOUND));
         
-        // 외부 API에서 댓글 조회 (개수 제한 적용)
-    
-        List<PostCommentsResponse> comments = externalApiPort.getVideoCommentsWithLimit(post.getSnsPostId(), request.getSize());
-        log.info("Retrieved comments from external API for postId: {}, comment count: {}", targetPostId, comments.size());
+        // 외부 API에서 댓글 조회 (YouTube API 네이티브 페이지네이션 사용)
+        PostCommentsPageResponse response = externalApiPort.getVideoCommentsWithPagination(
+            post.getSnsPostId(), 
+            request.getPageToken(), 
+            request.getSize()
+        );
         
-        // 페이지네이션 적용
-        int start = request.getPage() * request.getSize();
-        int end = Math.min(start + request.getSize(), comments.size());
+        log.info("Retrieved comments from external API for postId: {}, comment count: {}, hasNextPage: {}, nextPageToken: {}", 
+            targetPostId, response.getCurrentPageSize(), response.isHasNextPage(), response.getNextPageToken());
         
-        if (start >= comments.size()) {
-            return List.of(); // 빈 목록 반환
-        }
-        
-        List<PostCommentsResponse> paginatedComments = new ArrayList<>(comments.subList(start, end));
-        log.info("Applied pagination for postId: {}, page: {}, size: {}, result count: {}", 
-            targetPostId, request.getPage(), request.getSize(), paginatedComments.size());
-        
-        return paginatedComments;
+        return response;
     }
     
     // 헬퍼 메서드들
     
-
-    
-
-    
-
     
     /**
      * 계정 ID로 최근 게시물 ID 조회
@@ -537,27 +487,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
             .build();
     }
     
-    /**
-     * 실시간 조회를 위한 타겟 게시물 ID 조회
-     */
-    private Long getTargetPostIdForRealtime(Long userId, PostMetricsQueryRequest request) {
-        if (request.getPostId() != null) {
-            return request.getPostId();
-        } else {
-            return getLatestPostIdByAccountId(request.getAccountId());
-        }
-    }
-    
-    /**
-     * 실시간 조회를 위한 타겟 게시물 ID 조회 (댓글용)
-     */
-    private Long getTargetPostIdForRealtime(Long userId, PostCommentsQueryRequest request) {
-        if (request.getPostId() != null) {
-            return request.getPostId();
-        } else {
-            return getLatestPostIdByAccountId(request.getAccountId());
-        }
-    }
     
     // 변환 메서드들
     
@@ -621,16 +550,6 @@ public class AnalyticsQueryService implements AnalyticsQueryUseCase {
 
     
 
-    
-    private PostCommentsResponse toSnsPostCommentsResponse(SnsPostCommentMetric comment) {
-        return PostCommentsResponse.builder()
-            .snsCommentId(comment.getSnsCommentId())  // SNS ID 사용
-            .snsAuthorId(comment.getAuthorId())
-            .text(comment.getContent())
-            .likeCount(comment.getLikeCount())
-            .publishedAt(comment.getPublishedAt())
-            .build();
-    }
     
     // ===== AI 보고서 단계별 생성 메서드들 (private) =====
     

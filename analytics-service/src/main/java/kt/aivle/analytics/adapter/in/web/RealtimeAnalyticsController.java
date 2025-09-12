@@ -1,7 +1,5 @@
 package kt.aivle.analytics.adapter.in.web;
 
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kt.aivle.analytics.adapter.in.web.dto.response.AccountMetricsResponse;
-import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsResponse;
+import kt.aivle.analytics.adapter.in.web.dto.response.PostCommentsPageResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.PostMetricsResponse;
 import kt.aivle.analytics.adapter.in.web.dto.response.ReportResponse;
 import kt.aivle.analytics.application.port.in.AnalyticsQueryUseCase;
@@ -56,16 +54,16 @@ public class RealtimeAnalyticsController {
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
     
-    @Operation(summary = "실시간 게시물 댓글 조회", description = "특정 게시물의 실시간 댓글을 페이지네이션으로 조회합니다.")
+    @Operation(summary = "실시간 게시물 댓글 조회", description = "특정 게시물의 실시간 댓글을 YouTube API 네이티브 페이지네이션으로 조회합니다.")
     @GetMapping("/posts/comments")
-    public ResponseEntity<ApiResponse<List<PostCommentsResponse>>> getRealtimePostComments(
+    public ResponseEntity<ApiResponse<PostCommentsPageResponse>> getRealtimePostComments(
             @RequestParam("accountId") Long accountId,
             @RequestParam(value = "postId", required = false) Long postId,
-            @RequestParam(value = "page", defaultValue = "0") Integer page,
+            @RequestParam(value = "pageToken", required = false) String pageToken,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
             @RequestHeader("X-USER-ID") Long userId) {
         
-        List<PostCommentsResponse> response = analyticsQueryUseCase.getRealtimePostComments(userId, accountId, postId, page, size);
+        PostCommentsPageResponse response = analyticsQueryUseCase.getRealtimePostComments(userId, accountId, postId, pageToken, size);
         
         return ResponseEntity.ok(ApiResponse.of(CommonResponseCode.OK, response));
     }
