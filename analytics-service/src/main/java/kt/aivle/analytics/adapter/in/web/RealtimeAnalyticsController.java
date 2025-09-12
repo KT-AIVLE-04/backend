@@ -60,7 +60,7 @@ public class RealtimeAnalyticsController {
             @RequestParam("accountId") Long accountId,
             @RequestParam(value = "postId", required = false) Long postId,
             @RequestParam(value = "pageToken", required = false) String pageToken,
-            @RequestParam(value = "size", defaultValue = "20") Integer size,
+            @RequestParam(value = "size", defaultValue = "5") Integer size,
             @RequestHeader("X-USER-ID") Long userId) {
         
         PostCommentsPageResponse response = analyticsQueryUseCase.getRealtimePostComments(userId, accountId, postId, pageToken, size);
