@@ -29,7 +29,20 @@ public class ExcludePaths {
             "/api/shorts/v3/api-docs/**",
             "/api/contents/v3/api-docs/**",
             "/api/sns/v3/api-docs/**",
-            "/api/analytics/v3/api-docs/**"
+            "/api/analytics/v3/api-docs/**",
+
+            // actuator (monitoring)
+            "/actuator/**",
+            "/api/auth/actuator/**",
+            "/api/stores/actuator/**",
+            "/api/shorts/actuator/**",
+            "/api/contents/actuator/**",
+            "/api/sns/actuator/**",
+            "/api/analytics/actuator/**",
+            
+            // performance testing (temporary)
+            "/api/shorts/**",
+            "/api/shorts-mvc/**"
     );
 
     public static boolean isPatternMatch(String path) {

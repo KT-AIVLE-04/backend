@@ -72,13 +72,13 @@ public class ShortsController {
     @PostMapping(consumes = "multipart/form-data")
     public Mono<ResponseEntity<ApiResponse<CreateShortsAccepted>>> createShorts(
             @RequestPart("request") @Valid CreateShortsRequest request,
-            @RequestPart("images") Flux<FilePart> images
+            @RequestPart("images") FilePart images
     ) {
         if (images == null) {
             return Mono.error(new BusinessException(BAD_REQUEST, "이미지를 업로드해주세요."));
         }
 
-        CreateShortsCommand command = toCommandMapper.toCreateShortsCommand(request, images);
+        CreateShortsCommand command = toCommandMapper.toCreateShortsCommand(request, Flux.just(images));
 
         shortsUseCase.startCreateShorts(command);
 

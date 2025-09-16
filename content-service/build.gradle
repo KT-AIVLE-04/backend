@@ -37,4 +37,10 @@ dependencies {
     // image processing
     implementation 'net.bramp.ffmpeg:ffmpeg'
     implementation 'net.coobird:thumbnailator'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

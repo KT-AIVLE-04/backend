@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+
+  # Spring Boot 서비스들
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:8080']
+    scrape_interval: 5s
+
+  - job_name: 'auth-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-service:8080']
+    scrape_interval: 5s
+
+  - job_name: 'store-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['store-service:8080']
+    scrape_interval: 5s
+
+  - job_name: 'shorts-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['shorts-service:8080']
+    scrape_interval: 5s
+
+  - job_name: 'shorts-service-mvc'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'shorts-service-mvc:8080' ]
+    scrape_interval: 5s
+
+  - job_name: 'content-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['content-service:8080']
+    scrape_interval: 5s
+
+  # MySQL (mysqld_exporter 추가 시)
+  # - job_name: 'mysql'
+  #   static_configs:
+  #     - targets: ['mysqld-exporter:9104']
+
+  # Redis (redis_exporter 추가 시)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # Kafka (kafka_exporter 추가 시)
+  # - job_name: 'kafka'
+  #   static_configs:
+  #     - targets: ['kafka-exporter:9308']

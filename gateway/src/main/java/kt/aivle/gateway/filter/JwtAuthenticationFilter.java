@@ -6,6 +6,7 @@ import kt.aivle.common.exception.BusinessException;
 import kt.aivle.gateway.config.ExcludePaths;
 import kt.aivle.gateway.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import static kt.aivle.gateway.exception.GatewayErrorCode.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {

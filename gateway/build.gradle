@@ -22,6 +22,10 @@ dependencies {
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui'
 
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

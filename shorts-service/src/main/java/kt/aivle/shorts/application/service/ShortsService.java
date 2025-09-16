@@ -62,13 +62,16 @@ public class ShortsService implements ShortsUseCase {
                 .map(urls -> new GenerateShortsRequest(
                         command.sessionId(), command.title(), command.content(),
                         command.adDuration(), urls))
-                .flatMap(aiShortsPort::generateShorts) // FastAPI 완료 시 key 반환
+                .flatMap(aiShortsPort::generateShorts)
                 .timeout(Duration.ofMinutes(45))
                 .doOnSubscribe(s -> {
                     jobStore.start(jobId);
                     orchestrator.start(jobId); // 가짜 진행률 0→95%
                 })
-                .doOnSuccess(res -> jobStore.success(jobId, res.key()))  // 100%
+                .doOnSuccess(res -> {
+                    publishContentEvent(command, res.key()).subscribe();
+                    jobStore.success(jobId, res.key());  // 100%
+                })
                 .doOnError(e -> jobStore.fail(jobId, e.getMessage()))
                 .subscribe();
     }
@@ -110,5 +113,12 @@ public class ShortsService implements ShortsUseCase {
                 .flatMap(mediaStoragePort::uploadTempImage)
                 .collectList()
                 .onErrorMap(e -> new BusinessException(IMAGE_UPLOAD_ERROR, e.getMessage()));
+    }
+
+    private Mono<Void> publishContentEvent(CreateShortsCommand command, String resultKey) {
+        CreateContentRequest request = toRequestMapper.toCreateContentRequest(
+                command.sessionId(), command.title(), command.content(), resultKey);
+        return contentServicePort.createContent(request)
+                .onErrorMap(e -> new BusinessException(CONTENTS_EVENT_ERROR, e.getMessage()));
     }
 }

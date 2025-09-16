@@ -8,7 +8,7 @@ services:
     ports:
       - "2181:2181"
     networks:
-      - backend
+      - monitoring
 
   kafka:
     image: confluentinc/cp-kafka:7.4.3
@@ -26,38 +26,23 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     networks:
-      - backend
+      - monitoring
 
   redis:
-    image: redis:7.2
+    image: redis
     container_name: redis
     restart: always
     networks:
-      - backend
+      - monitoring
 
-  redis-stack:
-    image: redis/redis-stack:latest
-    container_name: redis-stack
-    ports:
-      - "6378:6379"
-    restart: always
-    networks:
-      - backend
-
-  analytics-service:
-    build:
-      context: ./analytics-service
-      dockerfile: Dockerfile
-    container_name: analytics-service
-    depends_on:
-      - mysql
-      - kafka
-      - redis
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - TZ=Asia/Seoul
-    networks:
-      - backend
+#  redis-stack:
+#    image: redis/redis-stack:latest
+#    container_name: redis-stack
+#    ports:
+#      - "6378:6379"
+#    restart: always
+#    networks:
+#      - backend
 
   mysql:
     image: mysql:8.0
@@ -74,15 +59,15 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - backend
+      - monitoring
 
-  fastapi:
-    image: shee9812/backend_ai:latest
-    container_name: fastapi
-    ports:
-      - "8000:8000"
-    networks:
-      - backend
+#  fastapi:
+#    image: shee9812/backend_ai:latest
+#    container_name: fastapi
+#    ports:
+#      - "8000:8000"
+#    networks:
+#      - backend
 
   gateway:
     build:
@@ -94,7 +79,7 @@ services:
     ports:
       - "8080:8080"
     networks:
-      - backend
+      - monitoring
 
   auth-service:
     build:
@@ -107,7 +92,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - backend
+      - monitoring
 
   store-service:
     build:
@@ -119,7 +104,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - backend
+      - monitoring
 
   shorts-service:
     build:
@@ -127,9 +112,9 @@ services:
       dockerfile: Dockerfile
     container_name: shorts-service
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,mock
     networks:
-      - backend
+      - monitoring
 
   content-service:
     build:
@@ -143,25 +128,70 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
     networks:
-      - backend
+      - monitoring
 
-  sns-service:
+  shorts-service-mvc:
     build:
-      context: ./sns-service
+      context: ./shorts-service-mvc
       dockerfile: Dockerfile
-    container_name: sns-service
+    container_name: shorts-service-mvc
     depends_on:
-      - mysql
       - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
     networks:
-      - backend
+      - monitoring
+
+#  sns-service:
+#    build:
+#      context: ./sns-service
+#      dockerfile: Dockerfile
+#    container_name: sns-service
+#    depends_on:
+#      - mysql
+#      - kafka
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#      - CLOUDFRONT_PRIVATE_KEY=${CLOUDFRONT_PRIVATE_KEY}
+#    networks:
+#      - backend
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
 volumes:
   mysql_data:
+  grafana_data:
 
 networks:
-  backend:
-    driver: bridge
+  monitoring:

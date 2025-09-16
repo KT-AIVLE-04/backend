@@ -32,4 +32,6 @@ public interface toRequestMapper {
     GenerateShortsRequest toGenerateShortsRequest(CreateShortsCommand command, List<String> imageUrls);
 
     CreateContentRequest toCreateContentRequest(SaveShortsCommand command);
+    
+    CreateContentRequest toCreateContentRequest(String sessionId, String title, String content, String resultKey);
 }

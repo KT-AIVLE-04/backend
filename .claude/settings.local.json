@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)",
+      "Bash(./gradlew:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
