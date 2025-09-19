@@ -31,5 +31,6 @@ public interface toRequestMapper {
 
     GenerateShortsRequest toGenerateShortsRequest(CreateShortsCommand command, List<String> imageUrls);
 
+    @Mapping(target = "requestId", expression = "java(java.util.UUID.randomUUID().toString())")
     CreateContentRequest toCreateContentRequest(SaveShortsCommand command);
 }

@@ -14,4 +14,6 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             Long storeId,
             String title
     );
+
+    List<Content> findTop1ByUserIdAndStoreIdOrderByCreatedAtDesc(Long userId, Long storeId);
 }

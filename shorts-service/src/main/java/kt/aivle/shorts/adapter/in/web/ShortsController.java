@@ -13,6 +13,7 @@ import kt.aivle.shorts.adapter.in.web.dto.response.ScenarioResponse;
 import kt.aivle.shorts.adapter.in.web.mapper.toCommandMapper;
 import kt.aivle.shorts.adapter.in.web.mapper.toResponseMapper;
 import kt.aivle.shorts.application.port.in.ShortsUseCase;
+import kt.aivle.shorts.application.service.SagaShortsService;
 import kt.aivle.shorts.application.port.in.command.CreateScenarioCommand;
 import kt.aivle.shorts.application.port.in.command.CreateShortsCommand;
 import kt.aivle.shorts.application.port.in.command.SaveShortsCommand;
@@ -37,6 +38,7 @@ import static kt.aivle.common.code.CommonResponseCode.OK;
 public class ShortsController {
 
     private final ShortsUseCase shortsUseCase;
+    private final SagaShortsService sagaShortsService;
     private final JobStore jobStore;
     private final MediaStoragePort mediaStoragePort;
     private final ResponseUtils responseUtils;
@@ -123,6 +125,10 @@ public class ShortsController {
             @RequestBody @Valid SaveShortsRequest request
     ) {
         SaveShortsCommand command = toCommandMapper.toSaveShortsCommand(userId, storeId, request);
-        return shortsUseCase.saveShorts(command).then(Mono.just(responseUtils.build(OK, null)));
+
+        // Saga 패턴으로 변경
+        sagaShortsService.saveShortsWithSaga(command);
+
+        return Mono.just(responseUtils.build(OK, null));
     }
 }
